@@ -49,13 +49,13 @@ function AnimatedRoutes() {
       {/* All authenticated routes */}
       <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
         <Route path="/" element={<RoleBasedRedirect />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/report" element={<ReportPage />} />
-        <Route path="/emergency" element={<EmergencyPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/dashboard" element={<ProtectedRoute roles={['director','supervisor','manager','viewer']}><DashboardPage /></ProtectedRoute>} />
+        <Route path="/report" element={<ProtectedRoute roles={['director','supervisor','manager','agent']}><ReportPage /></ProtectedRoute>} />
+        <Route path="/emergency" element={<ProtectedRoute roles={['director','supervisor','manager','agent']}><EmergencyPage /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute roles={['director','supervisor','manager']}><HistoryPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute roles={['director']}><AdminPage /></ProtectedRoute>} />
         <Route path="/report-fields" element={<ProtectedRoute roles={['director','supervisor']}><ReportFieldsPage /></ProtectedRoute>} />
-        <Route path="/supervisor-panel" element={<SupervisorPanelPage />} />
+        <Route path="/supervisor-panel" element={<ProtectedRoute roles={['director','supervisor']}><SupervisorPanelPage /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
