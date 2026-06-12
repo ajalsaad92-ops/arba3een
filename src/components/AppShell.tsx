@@ -44,17 +44,36 @@ export default function AppShell() {
   const user = state.currentUser;
   const isAgent = user.role === 'agent';
   const isDirector = user.role === 'director';
+  const isViewer = user.role === 'viewer';
   const isSupervisorPlus = user.role === 'director' || user.role === 'supervisor';
 
   const navItems: { to: string; label: string; icon: any; show: boolean }[] = [
     { to: '/dashboard', label: 'لوحة القيادة', icon: LayoutDashboard, show: !isAgent },
-    { to: '/report', label: 'إدخال التقرير', icon: FileText, show: true },
-    { to: '/emergency', label: 'حالة طارئة', icon: AlertOctagon, show: true },
-    { to: '/history', label: 'السجل والتصدير', icon: History, show: !isAgent },
+    { to: '/report', label: 'إدخال التقرير', icon: FileText, show: !isViewer },
+    { to: '/emergency', label: 'حالة طارئة', icon: AlertOctagon, show: !isViewer },
+    { to: '/history', label: 'السجل والتصدير', icon: History, show: !isAgent && !isViewer },
     { to: '/supervisor-panel', label: 'لوحة المشرف', icon: Timer, show: isSupervisorPlus },
     { to: '/report-fields', label: 'حقول التقرير', icon: Settings2, show: isSupervisorPlus },
     { to: '/admin', label: 'المستخدمون', icon: Users, show: isDirector },
   ];
+
+  // Where each notification type should take the user when clicked.
+  const notifTarget = (type: string): string => {
+    switch (type) {
+      case 'emergency': return '/emergency';
+      case 'extension': return '/supervisor-panel';
+      case 'report': return isViewer ? '/dashboard' : '/history';
+      default: return '/dashboard';
+    }
+  };
+
+  const handleNotificationClick = (a: { id: string; type: string }) => {
+    dispatch({ type: 'MARK_NOTIFICATION_READ', id: a.id });
+    setBellOpen(false);
+    const dest = notifTarget(a.type);
+    // Viewers can only reach the dashboard.
+    navigate(isViewer ? '/dashboard' : dest);
+  };
 
   const handleLogout = async () => {
     await actions.signOut();
