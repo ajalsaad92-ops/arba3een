@@ -36,7 +36,7 @@ export const DEMO_LOGIN_HINTS: DemoCredHint[] = [
 
 // ─── Type guards / row mappers ────────────────────────────────────────
 function isRole(v: unknown): v is Role {
-  return v === 'director' || v === 'supervisor' || v === 'manager' || v === 'agent';
+  return v === 'director' || v === 'supervisor' || v === 'manager' || v === 'agent' || v === 'viewer';
 }
 
 type ProfileRow = {
