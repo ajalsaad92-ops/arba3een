@@ -208,12 +208,15 @@ export default function AppShell() {
                       </div>
                     </div>
                     <div className="divide-y divide-[#1E293B]">
-                      {state.lastActivity.slice(0, 5).map((a, i) => {
+                      {state.lastActivity
+                        .filter(a => !(isViewer && a.type === 'emergency'))
+                        .slice(0, 5)
+                        .map((a, i) => {
                         const isRead = (a as any).read;
                         return (
                           <div
                             key={i}
-                            onClick={() => dispatch({ type: 'MARK_NOTIFICATION_READ', id: a.id })}
+                            onClick={() => handleNotificationClick(a)}
                             className={`p-3 cursor-pointer transition-colors ${isRead ? 'bg-[#0B0F19]/50' : 'bg-[#1E293B]/30 hover:bg-[#1E293B]/50'}`}
                           >
                             <div className="flex items-start gap-2">
@@ -225,12 +228,13 @@ export default function AppShell() {
                               <div className="flex-1 min-w-0">
                                 <div className={`text-xs ${isRead ? 'text-slate-400' : 'text-slate-200 font-semibold'}`}>{a.text}</div>
                                 <div className="text-[10px] text-slate-500 mt-1">{new Date(a.createdAt).toLocaleString('ar-IQ')}</div>
+                                <div className="text-[10px] text-amber-400/80 mt-1">اضغط للانتقال ←</div>
                               </div>
                             </div>
                           </div>
                         );
                       })}
-                      {state.lastActivity.length === 0 && (
+                      {state.lastActivity.filter(a => !(isViewer && a.type === 'emergency')).length === 0 && (
                         <div className="p-6 text-center text-xs text-slate-500">لا توجد إشعارات جديدة</div>
                       )}
                     </div>
