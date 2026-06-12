@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useOps } from '../store/opsStore';
 import { AlertOctagon, MapPin, Send, Crosshair, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import WalkieTalkie from '../components/WalkieTalkie';
 
 const EMERGENCY_TYPES = [
   'بحاجة عجلات مياه إضافية',
