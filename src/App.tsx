@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { OpsProvider, useOps } from './store/opsStore';
+import { WalkieProvider } from './store/walkieStore';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AppShell from './components/AppShell';
@@ -99,25 +100,27 @@ export default function App() {
 
   return (
     <OpsProvider>
-      <BrowserRouter>
-        <AnimatedRoutes />
-        <ToastPermissions />
-        <Toaster
-          position="top-center"
-          dir="rtl"
-          theme="dark"
-          richColors
-          closeButton
-          toastOptions={{
-            style: {
-              background: '#111827',
-              border: '1px solid #1E293B',
-              color: '#F8FAFC',
-              fontFamily: 'Tajawal, sans-serif',
-            },
-          }}
-        />
-      </BrowserRouter>
+      <WalkieProvider>
+        <BrowserRouter>
+          <AnimatedRoutes />
+          <ToastPermissions />
+          <Toaster
+            position="top-center"
+            dir="rtl"
+            theme="dark"
+            richColors
+            closeButton
+            toastOptions={{
+              style: {
+                background: '#111827',
+                border: '1px solid #1E293B',
+                color: '#F8FAFC',
+                fontFamily: 'Tajawal, sans-serif',
+              },
+            }}
+          />
+        </BrowserRouter>
+      </WalkieProvider>
     </OpsProvider>
   );
 }
