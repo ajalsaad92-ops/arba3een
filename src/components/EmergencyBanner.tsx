@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { officeById } from '../data/offices';
 
 export default function EmergencyBanner() {
-  const { state } = useOps();
+  const { state, dispatch } = useOps();
+  const navigate = useNavigate();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const active = state.emergencies
