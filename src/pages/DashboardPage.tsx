@@ -405,8 +405,8 @@ function OpsView({ agg, effectiveFilter, selectedOffice, setSelectedOffice, acti
         <OpsKpiOverlay agg={agg} activeEmergencies={activeEmergencies} />
       </div>
 
-      {/* Emergency banner top-center */}
-      {activeEmergencies > 0 && (
+      {/* Emergency banner top-center (hidden for viewers — no critical alerts) */}
+      {activeEmergencies > 0 && state.currentUser?.role !== 'viewer' && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] bg-red-600/95 text-white px-4 py-2 rounded-lg animate-pulse-alert shadow-2xl flex items-center gap-2 text-sm font-bold">
           <AlertOctagon className="w-4 h-4" />
           <span>حالة طارئة نشطة في {officeById(state.emergencies.find((e: any) => e.status === 'active')?.officeId ?? '')?.nameAr}</span>
