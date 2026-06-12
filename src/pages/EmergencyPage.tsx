@@ -192,6 +192,9 @@ export default function EmergencyPage() {
           </div>
         </div>
 
+        {/* Live walkie-talkie */}
+        <WalkieTalkie />
+
         {/* Recent emergencies */}
         <div className="mt-5">
           <div className="text-sm font-bold text-slate-300 mb-3">الحالات الطارئة الأخيرة</div>
