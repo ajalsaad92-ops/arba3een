@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useOps } from '../store/opsStore';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../lib/supabase';
 import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Role } from '../data/types';
