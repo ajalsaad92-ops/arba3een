@@ -33,6 +33,33 @@ export function unlockAudio() {
   }
 }
 
+/** Short white-noise "shhh" static burst, used to frame walkie-talkie calls. */
+export function playStatic(duration = 0.32, volume = 0.12) {
+  const ctx = getCtx();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  try {
+    const frameCount = Math.floor(ctx.sampleRate * duration);
+    const buffer = ctx.createBuffer(1, frameCount, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < frameCount; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    // Band-pass-ish filter to make it sound like radio static.
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1800;
+    filter.Q.value = 0.7;
+    const g = ctx.createGain();
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(volume, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    src.connect(filter); filter.connect(g); g.connect(ctx.destination);
+    src.start(t); src.stop(t + duration + 0.02);
+  } catch {}
+}
+
 function beep(freq: number, duration: number, when = 0, volume = 0.25, type: OscillatorType = 'sine') {
   const ctx = getCtx();
   if (!ctx) return;
