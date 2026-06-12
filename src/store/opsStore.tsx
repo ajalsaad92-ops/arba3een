@@ -331,6 +331,11 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [ready, setReady] = useState(false);
 
+  // Keep a live ref to the current user so the realtime subscription (which is
+  // set up once) can read the latest role/id without re-subscribing.
+  const currentUserRef = useRef(state.currentUser);
+  useEffect(() => { currentUserRef.current = state.currentUser; }, [state.currentUser]);
+
   // Initial load
   useEffect(() => {
     (async () => {
@@ -417,11 +422,24 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         if (event.type === 'INSERT' && event.payload?.new) {
           dispatch({ type: 'ADD_EMERGENCY', emergency: event.payload.new });
           const e = event.payload.new;
-          fireAlert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
+          // Viewers must not receive critical/emergency alerts.
+          if (currentUserRef.current?.role !== 'viewer') {
+            fireAlert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
+          }
         }
         else if (event.type === 'UPDATE' && event.payload?.new) {
-          if (event.payload.new.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: event.payload.new.id });
-          else if (event.payload.new.status === 'acknowledged') dispatch({ type: 'ACK_EMERGENCY', id: event.payload.new.id, userId: event.payload.new.acknowledgedById || '' });
+          const e = event.payload.new;
+          if (e.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: e.id });
+          else if (e.status === 'acknowledged') dispatch({ type: 'ACK_EMERGENCY', id: e.id, userId: e.acknowledgedById || '' });
+          // Notify the person who created the emergency when it's acknowledged/resolved.
+          const me = currentUserRef.current;
+          if (me && e.reportedById === me.id) {
+            if (e.status === 'acknowledged') {
+              fireAlert('extension', '✅ تم استلام حالتك الطارئة', `${e.emergencyType} — تم تأكيد الاستلام من القيادة`);
+            } else if (e.status === 'resolved') {
+              fireAlert('report', '✔ تم حل حالتك الطارئة', `${e.emergencyType} — تم وضع الحالة كمنجزة`);
+            }
+          }
         }
       } else if (event.table === 'extension_requests') {
         if (event.type === 'INSERT' && event.payload?.new) {

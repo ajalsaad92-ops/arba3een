@@ -1,4 +1,4 @@
-export type Role = 'director' | 'supervisor' | 'manager' | 'agent';
+export type Role = 'director' | 'supervisor' | 'manager' | 'agent' | 'viewer';
 
 export interface Profile {
   id: string;

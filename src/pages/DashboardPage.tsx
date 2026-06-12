@@ -336,8 +336,8 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
           </div>
         </div>
 
-        {/* Emergency ticker */}
-        {activeEmergencies > 0 && (
+        {/* Emergency ticker (hidden for viewers — no critical alerts) */}
+        {activeEmergencies > 0 && user.role !== 'viewer' && (
           <div className="bg-red-900/20 border-2 border-red-500/50 rounded-xl p-3 glow-crimson">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -405,8 +405,8 @@ function OpsView({ agg, effectiveFilter, selectedOffice, setSelectedOffice, acti
         <OpsKpiOverlay agg={agg} activeEmergencies={activeEmergencies} />
       </div>
 
-      {/* Emergency banner top-center */}
-      {activeEmergencies > 0 && (
+      {/* Emergency banner top-center (hidden for viewers — no critical alerts) */}
+      {activeEmergencies > 0 && state.currentUser?.role !== 'viewer' && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] bg-red-600/95 text-white px-4 py-2 rounded-lg animate-pulse-alert shadow-2xl flex items-center gap-2 text-sm font-bold">
           <AlertOctagon className="w-4 h-4" />
           <span>حالة طارئة نشطة في {officeById(state.emergencies.find((e: any) => e.status === 'active')?.officeId ?? '')?.nameAr}</span>

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { supabase } from '../lib/supabase';
-import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2, Headphones, HeadphoneOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { playStatic } from '../lib/notify';
 import type { Role } from '../data/types';
 
 const SEGMENT_MS = 2200; // length of each streamed audio segment
@@ -24,6 +25,7 @@ const ROLE_LABELS: Record<Role, string> = {
   supervisor: 'المشرفون',
   manager: 'مدراء المكاتب',
   agent: 'المندوبون',
+  viewer: 'المشاهدون',
 };
 
 function pickMime(): string {
@@ -54,6 +56,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 export default function WalkieTalkie() {
   const { state } = useOps();
   const me = state.currentUser;
+  const isDirector = me?.role === 'director';
 
   const [target, setTarget] = useState<Target>({ mode: 'all' });
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -61,12 +64,17 @@ export default function WalkieTalkie() {
   const [transmitting, setTransmitting] = useState(false);
   const [incoming, setIncoming] = useState<string | null>(null);
   const [bgEnabled, setBgEnabled] = useState(false);
+  // Director-only: when ON, the director hears every call even if not addressed to him.
+  const [directorListening, setDirectorListening] = useState(false);
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const holdingRef = useRef(false);
   const wakeLockRef = useRef<any>(null);
+  // Tracks whether we're currently in the middle of receiving a call, so we can
+  // play the "shhh" static once at the start and once at the end.
+  const receivingRef = useRef(false);
 
   // Sequential playback queue for received segments
   const queueRef = useRef<string[]>([]);
@@ -75,7 +83,15 @@ export default function WalkieTalkie() {
   const playNext = useCallback(() => {
     if (playingRef.current) return;
     const url = queueRef.current.shift();
-    if (!url) { setIncoming(null); return; }
+    if (!url) {
+      // Reached the end of the call → "shhh" closing static.
+      if (receivingRef.current) {
+        receivingRef.current = false;
+        playStatic();
+      }
+      setIncoming(null);
+      return;
+    }
     playingRef.current = true;
     const audio = new Audio(url);
     audio.onended = audio.onerror = () => {
@@ -92,11 +108,14 @@ export default function WalkieTalkie() {
   const isForMe = useCallback((p: VoicePayload): boolean => {
     if (!me) return false;
     if (p.senderId === me.id) return false;
+    // The director only hears calls when he explicitly enables "listen" mode —
+    // and then he hears every call, even ones not addressed to him.
+    if (me.role === 'director') return directorListening;
     if (p.target.mode === 'all') return true;
     if (p.target.mode === 'role') return me.role === p.target.value;
     if (p.target.mode === 'user') return me.id === p.target.value;
     return false;
-  }, [me]);
+  }, [me, directorListening]);
 
   // Subscribe to the shared walkie-talkie channel
   useEffect(() => {
@@ -113,6 +132,11 @@ export default function WalkieTalkie() {
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
         const blob = new Blob([bytes], { type: p.mime });
         const url = URL.createObjectURL(blob);
+        // First incoming segment of a new call → "shhh" opening static.
+        if (!receivingRef.current) {
+          receivingRef.current = true;
+          playStatic();
+        }
         queueRef.current.push(url);
         setIncoming(`${p.senderName} • ${ROLE_LABELS[p.senderRole]}`);
         playNext();
@@ -247,6 +271,28 @@ export default function WalkieTalkie() {
     return u ? u.fullNameAr : 'شخص محدد';
   })();
 
+  // Everyone who can be called (the director can never be a recipient).
+  const callableUsers = useMemo(
+    () => state.users.filter((u) => u.id !== me?.id && u.role !== 'director'),
+    [state.users, me?.id],
+  );
+  const callableRoles = (Object.keys(ROLE_LABELS) as Role[]).filter((r) => r !== 'director');
+
+  // How many people will actually hear this call, broken down by category.
+  const recipients = useMemo(() => {
+    let list = callableUsers;
+    if (target.mode === 'role') list = callableUsers.filter((u) => u.role === target.value);
+    else if (target.mode === 'user') list = callableUsers.filter((u) => u.id === target.value);
+    const count = (r: Role) => list.filter((u) => u.role === r).length;
+    return {
+      supervisor: count('supervisor'),
+      manager: count('manager'),
+      agent: count('agent'),
+      other: list.filter((u) => !['supervisor', 'manager', 'agent'].includes(u.role)).length,
+      total: list.length,
+    };
+  }, [callableUsers, target]);
+
   return (
     <div className="bg-gradient-to-br from-indigo-950/40 to-[#0B0F19] border-2 border-indigo-500/30 rounded-2xl p-5 md:p-6 mt-5">
       <div className="flex items-center gap-3 mb-4">
@@ -287,7 +333,7 @@ export default function WalkieTalkie() {
               📢 الجميع المتصلون
             </button>
             <div className="px-3 pt-2 pb-1 text-[10px] text-slate-500 font-bold">حسب الصلاحية</div>
-            {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
+            {callableRoles.map((r) => (
               <button
                 key={r}
                 onClick={() => { setTarget({ mode: 'role', value: r }); setPickerOpen(false); }}
@@ -297,7 +343,7 @@ export default function WalkieTalkie() {
               </button>
             ))}
             <div className="px-3 pt-2 pb-1 text-[10px] text-slate-500 font-bold">شخص محدد</div>
-            {state.users.filter((u) => u.id !== me?.id).map((u) => (
+            {callableUsers.map((u) => (
               <button
                 key={u.id}
                 onClick={() => { setTarget({ mode: 'user', value: u.id }); setPickerOpen(false); }}
@@ -307,12 +353,52 @@ export default function WalkieTalkie() {
                 <span className="text-[10px] text-slate-500">{ROLE_LABELS[u.role]}</span>
               </button>
             ))}
-            {state.users.length === 0 && (
+            {callableUsers.length === 0 && (
               <div className="px-3 py-2 text-xs text-slate-500">لا يوجد مستخدمون آخرون</div>
             )}
           </div>
         )}
       </div>
+
+      {/* Who will hear this call (recipient breakdown) */}
+      <div className="mb-4 rounded-lg bg-[#0B0F19] border border-[#1E293B] p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] text-slate-400 font-bold">عدد من سيسمع النداء</span>
+          <span className="text-xs font-black text-indigo-300">{recipients.total} شخص</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { label: 'مشرفون', value: recipients.supervisor },
+            { label: 'مدراء مكاتب', value: recipients.manager },
+            { label: 'مدخلو البيانات', value: recipients.agent },
+            { label: 'غيرهم', value: recipients.other },
+          ].map((c) => (
+            <div key={c.label} className="rounded-md bg-[#111827] border border-[#1E293B] px-2 py-1.5 text-center">
+              <div className="text-base font-black text-slate-100">{c.value}</div>
+              <div className="text-[10px] text-slate-500">{c.label}</div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-slate-500 mt-2">
+          لا يمكن توجيه النداء للمدير العام؛ المدير العام يستمع فقط عند تفعيل زر الاستماع لديه.
+        </p>
+      </div>
+
+      {/* Director-only listen toggle */}
+      {isDirector && (
+        <button
+          type="button"
+          onClick={() => setDirectorListening((v) => !v)}
+          className={`w-full mb-3 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 border ${
+            directorListening
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+              : 'bg-[#1E293B] border-[#263244] text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          {directorListening ? <Headphones className="w-4 h-4" /> : <HeadphoneOff className="w-4 h-4" />}
+          {directorListening ? 'الاستماع مُفعّل — تسمع كل النداءات' : 'تفعيل الاستماع لكل النداءات'}
+        </button>
+      )}
 
       {/* Incoming indicator */}
       {incoming && (

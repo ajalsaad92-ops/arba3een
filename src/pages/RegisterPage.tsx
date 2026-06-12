@@ -11,6 +11,7 @@ const ROLES: { value: Role; label: string; desc: string; icon: string; gradient:
   { value: 'manager', label: 'مدير مكتب', desc: 'إدارة مكتب محدد', icon: '🏢', gradient: 'from-emerald-400 to-teal-600' },
   { value: 'supervisor', label: 'مشرف عام', desc: 'إدارة عدة مكاتب', icon: '⏱️', gradient: 'from-blue-400 to-indigo-600' },
   { value: 'director', label: 'مدير عام', desc: 'صلاحيات كاملة', icon: '⚡', gradient: 'from-amber-400 to-orange-600' },
+  { value: 'viewer', label: 'مشاهد', desc: 'مشاهدة لوحة القيادة فقط', icon: '👁️', gradient: 'from-violet-400 to-purple-600' },
 ];
 
 export default function RegisterPage() {

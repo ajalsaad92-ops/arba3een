@@ -12,6 +12,7 @@ const ROLE_VISUALS: Record<Role, { label: string; desc: string; gradient: string
   supervisor: { label: 'المشرف العام', desc: 'لوحة المشرف', gradient: 'from-blue-400 to-indigo-600', icon: '⏱️' },
   manager: { label: 'مدير مكتب', desc: 'إدارة مكتب محدد', gradient: 'from-emerald-400 to-teal-600', icon: '🕌' },
   agent: { label: 'مدخل بيانات', desc: 'إدخال التقارير', gradient: 'from-slate-400 to-slate-600', icon: '📋' },
+  viewer: { label: 'مشاهد', desc: 'مشاهدة لوحة القيادة', gradient: 'from-violet-400 to-purple-600', icon: '👁️' },
 };
 
 interface QuickAccessItem {
