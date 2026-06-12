@@ -34,7 +34,13 @@ export default function EmergencyBanner() {
         <span className="text-xs text-white/80 hidden sm:inline">منذ {minutesAgo} دقيقة</span>
       </div>
       <div className="relative flex items-center gap-1 shrink-0">
-        <button className="px-3 py-1 rounded-md bg-white/20 hover:bg-white/30 text-xs font-bold flex items-center gap-1 transition-colors">
+        <button
+          onClick={() => {
+            dispatch({ type: 'SELECT_OFFICE', id: em.officeId });
+            navigate('/emergency');
+          }}
+          className="px-3 py-1 rounded-md bg-white/20 hover:bg-white/30 text-xs font-bold flex items-center gap-1 transition-colors"
+        >
           عرض التفاصيل
           <ChevronLeft className="w-3 h-3" />
         </button>
