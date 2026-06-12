@@ -333,7 +333,7 @@ export default function WalkieTalkie() {
               📢 الجميع المتصلون
             </button>
             <div className="px-3 pt-2 pb-1 text-[10px] text-slate-500 font-bold">حسب الصلاحية</div>
-            {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
+            {callableRoles.map((r) => (
               <button
                 key={r}
                 onClick={() => { setTarget({ mode: 'role', value: r }); setPickerOpen(false); }}
@@ -343,7 +343,7 @@ export default function WalkieTalkie() {
               </button>
             ))}
             <div className="px-3 pt-2 pb-1 text-[10px] text-slate-500 font-bold">شخص محدد</div>
-            {state.users.filter((u) => u.id !== me?.id).map((u) => (
+            {callableUsers.map((u) => (
               <button
                 key={u.id}
                 onClick={() => { setTarget({ mode: 'user', value: u.id }); setPickerOpen(false); }}
@@ -353,12 +353,52 @@ export default function WalkieTalkie() {
                 <span className="text-[10px] text-slate-500">{ROLE_LABELS[u.role]}</span>
               </button>
             ))}
-            {state.users.length === 0 && (
+            {callableUsers.length === 0 && (
               <div className="px-3 py-2 text-xs text-slate-500">لا يوجد مستخدمون آخرون</div>
             )}
           </div>
         )}
       </div>
+
+      {/* Who will hear this call (recipient breakdown) */}
+      <div className="mb-4 rounded-lg bg-[#0B0F19] border border-[#1E293B] p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] text-slate-400 font-bold">عدد من سيسمع النداء</span>
+          <span className="text-xs font-black text-indigo-300">{recipients.total} شخص</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { label: 'مشرفون', value: recipients.supervisor },
+            { label: 'مدراء مكاتب', value: recipients.manager },
+            { label: 'مدخلو البيانات', value: recipients.agent },
+            { label: 'غيرهم', value: recipients.other },
+          ].map((c) => (
+            <div key={c.label} className="rounded-md bg-[#111827] border border-[#1E293B] px-2 py-1.5 text-center">
+              <div className="text-base font-black text-slate-100">{c.value}</div>
+              <div className="text-[10px] text-slate-500">{c.label}</div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-slate-500 mt-2">
+          لا يمكن توجيه النداء للمدير العام؛ المدير العام يستمع فقط عند تفعيل زر الاستماع لديه.
+        </p>
+      </div>
+
+      {/* Director-only listen toggle */}
+      {isDirector && (
+        <button
+          type="button"
+          onClick={() => setDirectorListening((v) => !v)}
+          className={`w-full mb-3 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 border ${
+            directorListening
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+              : 'bg-[#1E293B] border-[#263244] text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          {directorListening ? <Headphones className="w-4 h-4" /> : <HeadphoneOff className="w-4 h-4" />}
+          {directorListening ? 'الاستماع مُفعّل — تسمع كل النداءات' : 'تفعيل الاستماع لكل النداءات'}
+        </button>
+      )}
 
       {/* Incoming indicator */}
       {incoming && (
