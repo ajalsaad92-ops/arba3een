@@ -83,7 +83,15 @@ export default function WalkieTalkie() {
   const playNext = useCallback(() => {
     if (playingRef.current) return;
     const url = queueRef.current.shift();
-    if (!url) { setIncoming(null); return; }
+    if (!url) {
+      // Reached the end of the call → "shhh" closing static.
+      if (receivingRef.current) {
+        receivingRef.current = false;
+        playStatic();
+      }
+      setIncoming(null);
+      return;
+    }
     playingRef.current = true;
     const audio = new Audio(url);
     audio.onended = audio.onerror = () => {
@@ -100,11 +108,14 @@ export default function WalkieTalkie() {
   const isForMe = useCallback((p: VoicePayload): boolean => {
     if (!me) return false;
     if (p.senderId === me.id) return false;
+    // The director only hears calls when he explicitly enables "listen" mode —
+    // and then he hears every call, even ones not addressed to him.
+    if (me.role === 'director') return directorListening;
     if (p.target.mode === 'all') return true;
     if (p.target.mode === 'role') return me.role === p.target.value;
     if (p.target.mode === 'user') return me.id === p.target.value;
     return false;
-  }, [me]);
+  }, [me, directorListening]);
 
   // Subscribe to the shared walkie-talkie channel
   useEffect(() => {
@@ -121,6 +132,11 @@ export default function WalkieTalkie() {
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
         const blob = new Blob([bytes], { type: p.mime });
         const url = URL.createObjectURL(blob);
+        // First incoming segment of a new call → "shhh" opening static.
+        if (!receivingRef.current) {
+          receivingRef.current = true;
+          playStatic();
+        }
         queueRef.current.push(url);
         setIncoming(`${p.senderName} • ${ROLE_LABELS[p.senderRole]}`);
         playNext();
