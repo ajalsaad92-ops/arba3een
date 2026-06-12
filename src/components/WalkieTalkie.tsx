@@ -56,6 +56,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 export default function WalkieTalkie() {
   const { state } = useOps();
   const me = state.currentUser;
+  const isDirector = me?.role === 'director';
 
   const [target, setTarget] = useState<Target>({ mode: 'all' });
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -63,12 +64,17 @@ export default function WalkieTalkie() {
   const [transmitting, setTransmitting] = useState(false);
   const [incoming, setIncoming] = useState<string | null>(null);
   const [bgEnabled, setBgEnabled] = useState(false);
+  // Director-only: when ON, the director hears every call even if not addressed to him.
+  const [directorListening, setDirectorListening] = useState(false);
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const holdingRef = useRef(false);
   const wakeLockRef = useRef<any>(null);
+  // Tracks whether we're currently in the middle of receiving a call, so we can
+  // play the "shhh" static once at the start and once at the end.
+  const receivingRef = useRef(false);
 
   // Sequential playback queue for received segments
   const queueRef = useRef<string[]>([]);
