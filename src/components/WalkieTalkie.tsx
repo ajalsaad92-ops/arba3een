@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { supabase } from '../lib/supabase';
-import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2, Headphones, HeadphoneOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { playStatic } from '../lib/notify';
 import type { Role } from '../data/types';
 
 const SEGMENT_MS = 2200; // length of each streamed audio segment
