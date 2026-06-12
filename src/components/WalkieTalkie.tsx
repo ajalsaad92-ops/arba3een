@@ -1,268 +1,22 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
-import { supabase } from '../lib/supabase';
+import { useWalkie, ROLE_LABELS, type Target } from '../store/walkieStore';
 import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2, Headphones, HeadphoneOff } from 'lucide-react';
-import { toast } from 'sonner';
-import { playStatic } from '../lib/notify';
 import type { Role } from '../data/types';
-
-const SEGMENT_MS = 2200; // length of each streamed audio segment
-
-type TargetMode = 'all' | 'role' | 'user';
-type Target = { mode: TargetMode; value?: string };
-
-type VoicePayload = {
-  senderId: string;
-  senderName: string;
-  senderRole: Role;
-  target: Target;
-  mime: string;
-  audio: string; // base64 (without data: prefix)
-};
-
-const ROLE_LABELS: Record<Role, string> = {
-  director: 'المدراء العامون',
-  supervisor: 'المشرفون',
-  manager: 'مدراء المكاتب',
-  agent: 'المندوبون',
-  viewer: 'المشاهدون',
-};
-
-function pickMime(): string {
-  const candidates = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/mp4',
-    'audio/ogg;codecs=opus',
-  ];
-  for (const c of candidates) {
-    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(c)) return c;
-  }
-  return '';
-}
-
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const res = reader.result as string;
-      resolve(res.split(',')[1] ?? '');
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
 
 export default function WalkieTalkie() {
   const { state } = useOps();
   const me = state.currentUser;
-  const isDirector = me?.role === 'director';
+  const {
+    connected, transmitting, incoming,
+    target, setTarget,
+    bgEnabled, toggleBackground,
+    directorListening, setDirectorListening,
+    isDirector,
+    startTalking, stopTalking,
+  } = useWalkie();
 
-  const [target, setTarget] = useState<Target>({ mode: 'all' });
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [connected, setConnected] = useState(false);
-  const [transmitting, setTransmitting] = useState(false);
-  const [incoming, setIncoming] = useState<string | null>(null);
-  const [bgEnabled, setBgEnabled] = useState(false);
-  // Director-only: when ON, the director hears every call even if not addressed to him.
-  const [directorListening, setDirectorListening] = useState(false);
-
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const recRef = useRef<MediaRecorder | null>(null);
-  const holdingRef = useRef(false);
-  const wakeLockRef = useRef<any>(null);
-  // Tracks whether we're currently in the middle of receiving a call, so we can
-  // play the "shhh" static once at the start and once at the end.
-  const receivingRef = useRef(false);
-
-  // Sequential playback queue for received segments
-  const queueRef = useRef<string[]>([]);
-  const playingRef = useRef(false);
-
-  const playNext = useCallback(() => {
-    if (playingRef.current) return;
-    const url = queueRef.current.shift();
-    if (!url) {
-      // Reached the end of the call → "shhh" closing static.
-      if (receivingRef.current) {
-        receivingRef.current = false;
-        playStatic();
-      }
-      setIncoming(null);
-      return;
-    }
-    playingRef.current = true;
-    const audio = new Audio(url);
-    audio.onended = audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      playingRef.current = false;
-      playNext();
-    };
-    audio.play().catch(() => {
-      playingRef.current = false;
-      playNext();
-    });
-  }, []);
-
-  const isForMe = useCallback((p: VoicePayload): boolean => {
-    if (!me) return false;
-    if (p.senderId === me.id) return false;
-    // The director only hears calls when he explicitly enables "listen" mode —
-    // and then he hears every call, even ones not addressed to him.
-    if (me.role === 'director') return directorListening;
-    if (p.target.mode === 'all') return true;
-    if (p.target.mode === 'role') return me.role === p.target.value;
-    if (p.target.mode === 'user') return me.id === p.target.value;
-    return false;
-  }, [me, directorListening]);
-
-  // Subscribe to the shared walkie-talkie channel
-  useEffect(() => {
-    if (!me) return;
-    const channel = supabase.channel('walkie-talkie', {
-      config: { broadcast: { self: false } },
-    });
-    channel.on('broadcast', { event: 'voice' }, ({ payload }) => {
-      const p = payload as VoicePayload;
-      if (!isForMe(p)) return;
-      try {
-        const bin = atob(p.audio);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const blob = new Blob([bytes], { type: p.mime });
-        const url = URL.createObjectURL(blob);
-        // First incoming segment of a new call → "shhh" opening static.
-        if (!receivingRef.current) {
-          receivingRef.current = true;
-          playStatic();
-        }
-        queueRef.current.push(url);
-        setIncoming(`${p.senderName} • ${ROLE_LABELS[p.senderRole]}`);
-        playNext();
-      } catch { /* ignore malformed */ }
-    });
-    channel.subscribe((status) => {
-      setConnected(status === 'SUBSCRIBED');
-    });
-    channelRef.current = channel;
-    return () => {
-      supabase.removeChannel(channel);
-      channelRef.current = null;
-    };
-  }, [me, isForMe, playNext]);
-
-  const broadcastSegment = useCallback(async (blob: Blob, mime: string) => {
-    if (!me || !channelRef.current || blob.size === 0) return;
-    const audio = await blobToBase64(blob);
-    if (!audio) return;
-    await channelRef.current.send({
-      type: 'broadcast',
-      event: 'voice',
-      payload: {
-        senderId: me.id,
-        senderName: me.fullNameAr,
-        senderRole: me.role,
-        target,
-        mime,
-        audio,
-      } satisfies VoicePayload,
-    });
-  }, [me, target]);
-
-  const recordSegment = useCallback(() => {
-    const stream = streamRef.current;
-    if (!stream) return;
-    const mime = pickMime();
-    const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
-    const chunks: BlobPart[] = [];
-    rec.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-    rec.onstop = async () => {
-      const blob = new Blob(chunks, { type: rec.mimeType || mime || 'audio/webm' });
-      await broadcastSegment(blob, rec.mimeType || mime || 'audio/webm');
-      if (holdingRef.current) {
-        recordSegment();
-      } else {
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
-    };
-    recRef.current = rec;
-    rec.start();
-    window.setTimeout(() => {
-      if (rec.state !== 'inactive') rec.stop();
-    }, SEGMENT_MS);
-  }, [broadcastSegment]);
-
-  const startTalking = useCallback(async () => {
-    if (transmitting || !me) return;
-    if (!navigator.mediaDevices?.getUserMedia) {
-      toast.error('المايكروفون غير مدعوم في هذا المتصفح');
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
-      });
-      streamRef.current = stream;
-      holdingRef.current = true;
-      setTransmitting(true);
-      recordSegment();
-    } catch {
-      toast.error('تعذّر الوصول للمايكروفون — تأكد من منح الإذن');
-    }
-  }, [transmitting, me, recordSegment]);
-
-  const stopTalking = useCallback(() => {
-    if (!holdingRef.current) return;
-    holdingRef.current = false;
-    setTransmitting(false);
-    if (recRef.current && recRef.current.state !== 'inactive') {
-      recRef.current.stop(); // flush final segment
-    }
-  }, []);
-
-  // Background mode: wake lock + notification permission
-  const toggleBackground = useCallback(async () => {
-    if (bgEnabled) {
-      try { await wakeLockRef.current?.release?.(); } catch { /* noop */ }
-      wakeLockRef.current = null;
-      setBgEnabled(false);
-      toast.info('تم إيقاف وضع العمل بالخلفية');
-      return;
-    }
-    try {
-      if ('Notification' in window && Notification.permission === 'default') {
-        await Notification.requestPermission();
-      }
-      if ('wakeLock' in navigator) {
-        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
-      }
-      setBgEnabled(true);
-      toast.success('تم تفعيل وضع العمل بالخلفية — سيبقى الاستقبال نشطاً');
-    } catch {
-      toast.error('تعذّر تفعيل وضع الخلفية في هذا المتصفح');
-    }
-  }, [bgEnabled]);
-
-  // Re-acquire wake lock when tab becomes visible again
-  useEffect(() => {
-    const onVis = async () => {
-      if (bgEnabled && document.visibilityState === 'visible' && 'wakeLock' in navigator) {
-        try { wakeLockRef.current = await (navigator as any).wakeLock.request('screen'); } catch { /* noop */ }
-      }
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, [bgEnabled]);
-
-  useEffect(() => {
-    return () => {
-      holdingRef.current = false;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      try { wakeLockRef.current?.release?.(); } catch { /* noop */ }
-    };
-  }, []);
 
   const targetLabel = (() => {
     if (target.mode === 'all') return 'الجميع المتصلون';
@@ -292,6 +46,8 @@ export default function WalkieTalkie() {
       total: list.length,
     };
   }, [callableUsers, target]);
+
+  const pick = (t: Target) => { setTarget(t); setPickerOpen(false); };
 
   return (
     <div className="bg-gradient-to-br from-indigo-950/40 to-[#0B0F19] border-2 border-indigo-500/30 rounded-2xl p-5 md:p-6 mt-5">
@@ -327,7 +83,7 @@ export default function WalkieTalkie() {
         {pickerOpen && (
           <div className="absolute z-20 mt-1 w-full bg-[#111827] border border-[#1E293B] rounded-lg shadow-2xl max-h-72 overflow-y-auto p-1 animate-fade-in-up">
             <button
-              onClick={() => { setTarget({ mode: 'all' }); setPickerOpen(false); }}
+              onClick={() => pick({ mode: 'all' })}
               className="w-full text-right px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-indigo-500/15"
             >
               📢 الجميع المتصلون
@@ -336,7 +92,7 @@ export default function WalkieTalkie() {
             {callableRoles.map((r) => (
               <button
                 key={r}
-                onClick={() => { setTarget({ mode: 'role', value: r }); setPickerOpen(false); }}
+                onClick={() => pick({ mode: 'role', value: r })}
                 className="w-full text-right px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-indigo-500/15"
               >
                 {ROLE_LABELS[r]}
@@ -346,7 +102,7 @@ export default function WalkieTalkie() {
             {callableUsers.map((u) => (
               <button
                 key={u.id}
-                onClick={() => { setTarget({ mode: 'user', value: u.id }); setPickerOpen(false); }}
+                onClick={() => pick({ mode: 'user', value: u.id })}
                 className="w-full text-right px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-indigo-500/15 flex items-center justify-between"
               >
                 <span>{u.fullNameAr}</span>
@@ -388,7 +144,7 @@ export default function WalkieTalkie() {
       {isDirector && (
         <button
           type="button"
-          onClick={() => setDirectorListening((v) => !v)}
+          onClick={() => setDirectorListening(!directorListening)}
           className={`w-full mb-3 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 border ${
             directorListening
               ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
