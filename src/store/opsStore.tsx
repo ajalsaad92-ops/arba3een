@@ -331,6 +331,11 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [ready, setReady] = useState(false);
 
+  // Keep a live ref to the current user so the realtime subscription (which is
+  // set up once) can read the latest role/id without re-subscribing.
+  const currentUserRef = useRef(state.currentUser);
+  useEffect(() => { currentUserRef.current = state.currentUser; }, [state.currentUser]);
+
   // Initial load
   useEffect(() => {
     (async () => {
