@@ -24,6 +24,7 @@ const ROLE_LABELS: Record<Role, string> = {
   supervisor: 'المشرفون',
   manager: 'مدراء المكاتب',
   agent: 'المندوبون',
+  viewer: 'المشاهدون',
 };
 
 function pickMime(): string {

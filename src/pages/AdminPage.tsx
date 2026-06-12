@@ -11,12 +11,14 @@ const ROLE_LABELS: Record<Role, string> = {
   supervisor: 'مشرف عام',
   manager: 'مدير مكتب',
   agent: 'مدخل بيانات',
+  viewer: 'مشاهد',
 };
 const ROLE_COLORS: Record<Role, string> = {
   director: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
   supervisor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
   manager: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
   agent: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+  viewer: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
 };
 
 const PERMS = [

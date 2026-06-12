@@ -12,6 +12,7 @@ const roleLabels = {
   supervisor: 'مشرف عام',
   manager: 'مدير مكتب',
   agent: 'مدخل بيانات',
+  viewer: 'مشاهد',
 };
 
 const roleColors = {
@@ -19,6 +20,7 @@ const roleColors = {
   supervisor: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   manager: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
   agent: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+  viewer: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
 };
 
 export default function AppShell() {
