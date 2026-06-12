@@ -271,6 +271,28 @@ export default function WalkieTalkie() {
     return u ? u.fullNameAr : 'شخص محدد';
   })();
 
+  // Everyone who can be called (the director can never be a recipient).
+  const callableUsers = useMemo(
+    () => state.users.filter((u) => u.id !== me?.id && u.role !== 'director'),
+    [state.users, me?.id],
+  );
+  const callableRoles = (Object.keys(ROLE_LABELS) as Role[]).filter((r) => r !== 'director');
+
+  // How many people will actually hear this call, broken down by category.
+  const recipients = useMemo(() => {
+    let list = callableUsers;
+    if (target.mode === 'role') list = callableUsers.filter((u) => u.role === target.value);
+    else if (target.mode === 'user') list = callableUsers.filter((u) => u.id === target.value);
+    const count = (r: Role) => list.filter((u) => u.role === r).length;
+    return {
+      supervisor: count('supervisor'),
+      manager: count('manager'),
+      agent: count('agent'),
+      other: list.filter((u) => !['supervisor', 'manager', 'agent'].includes(u.role)).length,
+      total: list.length,
+    };
+  }, [callableUsers, target]);
+
   return (
     <div className="bg-gradient-to-br from-indigo-950/40 to-[#0B0F19] border-2 border-indigo-500/30 rounded-2xl p-5 md:p-6 mt-5">
       <div className="flex items-center gap-3 mb-4">
