@@ -1,11 +1,11 @@
-import { createContext, useContext, useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
 import type {
   Profile, DailyReport, Emergency, ExtensionRequest,
   AgentLocation, VisitorFlowPath, TimeWindow, TimeWindowStatus,
   ReportFieldGroup, ReportFieldDefinition,
 } from '../data/types';
 import { api } from '../lib/api';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import EnvErrorPage from '../pages/EnvErrorPage';
 import { fireAlert } from '../lib/notify';
 
