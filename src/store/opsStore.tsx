@@ -336,33 +336,38 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   const currentUserRef = useRef(state.currentUser);
   useEffect(() => { currentUserRef.current = state.currentUser; }, [state.currentUser]);
 
+  // Reusable loader for all dashboard data (used on first load and whenever
+  // the auth session becomes available/refreshes).
+  const loadAllData = useCallback(async () => {
+    const [users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow, serverTime] = await Promise.all([
+      api.getUsers(),
+      api.getTodayReports(),
+      api.getHistoricalReports(),
+      api.getEmergencies(),
+      api.getExtensions(),
+      api.getAgentLocations(),
+      api.getFlowPaths(),
+      api.getBorderCrossings(),
+      api.getTimeWindow(),
+      api.getServerTime(),
+    ]);
+    dispatch({ type: 'SET_DATA', users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow });
+    dispatch({ type: 'SET_SERVER_TIME', time: serverTime });
+    // Load dynamic report-field definitions; fail silently so a permission
+    // issue doesn't block the rest of the dashboard.
+    try {
+      const [fg, fd] = await Promise.all([api.getFieldGroups(), api.getFieldDefinitions()]);
+      dispatch({ type: 'SET_FIELD_DEFS', groups: fg, definitions: fd });
+    } catch (e) { console.warn('[opsStore] field defs load failed', e); }
+  }, []);
+
   // Initial load
   useEffect(() => {
     (async () => {
       dispatch({ type: 'AUTH_START' });
       try {
         const user = await api.getSession();
-        // Load all data
-        const [users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow, serverTime] = await Promise.all([
-          api.getUsers(),
-          api.getTodayReports(),
-          api.getHistoricalReports(),
-          api.getEmergencies(),
-          api.getExtensions(),
-          api.getAgentLocations(),
-          api.getFlowPaths(),
-          api.getBorderCrossings(),
-          api.getTimeWindow(),
-          api.getServerTime(),
-        ]);
-        dispatch({ type: 'SET_DATA', users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow });
-        dispatch({ type: 'SET_SERVER_TIME', time: serverTime });
-        // Load dynamic report-field definitions in parallel; fail silently
-        // so a permission issue doesn't block the rest of the dashboard.
-        try {
-          const [fg, fd] = await Promise.all([api.getFieldGroups(), api.getFieldDefinitions()]);
-          dispatch({ type: 'SET_FIELD_DEFS', groups: fg, definitions: fd });
-        } catch (e) { console.warn('[opsStore] field defs load failed', e); }
+        await loadAllData();
         if (user) dispatch({ type: 'AUTH_SUCCESS', user });
         else dispatch({ type: 'AUTH_FAIL' });
       } catch (e) {
@@ -372,7 +377,30 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         setReady(true);
       }
     })();
-  }, []);
+  }, [loadAllData]);
+
+  // Auto-reload once the auth session is truly ready. On a cold open the very
+  // first queries can race ahead of the restored session token, so RLS returns
+  // empty rows and the dashboard shows 0 until a manual refresh. Listening for
+  // the session here re-fetches automatically. Supabase calls are deferred with
+  // setTimeout to avoid the known deadlock inside the auth callback.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session?.user) return;
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        setTimeout(() => {
+          (async () => {
+            try {
+              const user = await api.getSession();
+              await loadAllData();
+              if (user) dispatch({ type: 'AUTH_SUCCESS', user });
+            } catch (e) { console.warn('[opsStore] auth-change reload failed', e); }
+          })();
+        }, 0);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [loadAllData]);
 
   // Server time sync every 60s
   useEffect(() => {
