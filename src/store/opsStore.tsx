@@ -432,9 +432,34 @@ export function OpsProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, [state.timeWindow.windowDate]);
 
-  // Live subscriptions (mimic Supabase realtime)
+  // Live subscriptions (Supabase realtime).
+  //
+  // CRITICAL: postgres_changes evaluates RLS against the JWT that was active
+  // when the channel SUBSCRIBED. If we open the channel before the auth session
+  // is restored, it binds as the anon role → RLS hides every row → NO realtime
+  // events reach anyone (managers/supervisors never see new emergencies, time
+  // window changes don't propagate, etc.). So we (re)create the channel keyed
+  // on the logged-in user id and push the fresh access token into the realtime
+  // socket via setAuth BEFORE subscribing.
+  const userId = state.currentUser?.id;
   useEffect(() => {
-    const unsub = api.subscribe((event) => {
+    if (!userId) return;
+    let unsub = () => {};
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        // Bind the realtime socket to the authenticated user so RLS lets the
+        // right rows through to this subscriber.
+        if (token) {
+          try { await (supabase.realtime as any).setAuth(token); } catch { /* noop */ }
+        }
+      } catch { /* noop */ }
+      if (cancelled) return;
+
+      unsub = api.subscribe((event) => {
       if (event.table === '*') {
         // Full refresh signal
         (async () => {
@@ -450,14 +475,21 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       if (event.table === 'daily_reports' && event.payload?.new) {
         dispatch({ type: 'ADD_REPORT', report: event.payload.new });
         const r = event.payload.new;
-        fireAlert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
+        // The author of the report shouldn't be alerted about their own submit.
+        if (currentUserRef.current?.id !== r.submittedBy) {
+          fireAlert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
+        }
       } else if (event.table === 'emergencies') {
         if (event.type === 'INSERT' && event.payload?.new) {
-          const isViewer = currentUserRef.current?.role === 'viewer';
-          dispatch({ type: 'ADD_EMERGENCY', emergency: event.payload.new, silent: isViewer });
           const e = event.payload.new;
-          // Viewers must not receive critical/emergency alerts.
-          if (!isViewer) {
+          const me = currentUserRef.current;
+          const isViewer = me?.role === 'viewer';
+          // The person who raised the emergency gets a confirmation toast from
+          // the form itself — don't blast them with the incoming-emergency siren
+          // for their own action. Viewers never get critical alerts either.
+          const isOwn = !!me && e.reportedById === me.id;
+          dispatch({ type: 'ADD_EMERGENCY', emergency: e, silent: isViewer || isOwn });
+          if (!isViewer && !isOwn) {
             fireAlert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
           }
         }
@@ -467,7 +499,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           else if (e.status === 'acknowledged') dispatch({ type: 'ACK_EMERGENCY', id: e.id, userId: e.acknowledgedById || '' });
           // Notify the person who created the emergency when it's acknowledged/resolved.
           const me = currentUserRef.current;
-          if (me && e.reportedById === me.id) {
+          if (me && e.reportedById === me.id && me.id !== e.acknowledgedById) {
             if (e.status === 'acknowledged') {
               fireAlert('extension', '✅ تم استلام حالتك الطارئة', `${e.emergencyType} — تم تأكيد الاستلام من القيادة`);
             } else if (e.status === 'resolved') {
@@ -479,9 +511,20 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         if (event.type === 'INSERT' && event.payload?.new) {
           dispatch({ type: 'ADD_EXTENSION', extension: event.payload.new });
           const x = event.payload.new;
-          fireAlert('extension', 'طلب تمديد جديد', `${x.requestedByName || x.officeId} يطلب تمديد الوقت`);
+          if (currentUserRef.current?.id !== x.requestedById) {
+            fireAlert('extension', 'طلب تمديد جديد', `${x.requestedByName || x.officeId} يطلب تمديد الوقت`);
+          }
         }
-        else if (event.type === 'UPDATE' && event.payload?.new) dispatch({ type: 'UPDATE_EXTENSION', id: event.payload.new.id, patch: event.payload.new });
+        else if (event.type === 'UPDATE' && event.payload?.new) {
+          const x = event.payload.new;
+          dispatch({ type: 'UPDATE_EXTENSION', id: x.id, patch: x });
+          // Tell the requester when their extension is approved/rejected.
+          const me = currentUserRef.current;
+          if (me && x.requestedById === me.id) {
+            if (x.status === 'approved') fireAlert('extension', '✅ تمت الموافقة على التمديد', 'تم فتح نافذة إضافية للإرسال');
+            else if (x.status === 'rejected') fireAlert('system', '❌ تم رفض طلب التمديد', 'لم تتم الموافقة على طلبك');
+          }
+        }
       } else if (event.table === 'time_windows' && event.payload?.new) {
         // Row is already mapped to camelCase by api.subscribe → use it directly.
         dispatch({ type: 'SET_TIME_WINDOW', window: event.payload.new as TimeWindow });
@@ -501,9 +544,11 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           isActive: p.is_active,
         } as Partial<Profile> });
       }
-    });
-    return unsub;
-  }, []);
+      });
+    })();
+
+    return () => { cancelled = true; unsub(); };
+  }, [userId]);
 
   // Simulate live agent GPS jitter (15s)
   const tickRef = useRef(0);
