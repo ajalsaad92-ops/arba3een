@@ -28,6 +28,7 @@ export default function AppShell() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // ProtectedRoute already checks auth, so this should never be null
   // But show loading just in case
