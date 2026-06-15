@@ -859,7 +859,10 @@ function CustomKpiGrid({ agg, aggYesterday, trend, activeEmergencies, cols = 3 }
 // ════════════════════════════════════════════════════════════════
 function OpsKpiOverlay({ agg, activeEmergencies }: any) {
   const { state } = useOps();
-  const ids = state.customKpis;
+  // Viewers must not see critical/emergency stats.
+  const ids = state.currentUser?.role === 'viewer'
+    ? state.customKpis.filter((id: string) => id !== 'emergencies')
+    : state.customKpis;
   const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
   const byId = (id: string) => catalog.find(k => k.id === id);
   const toneClass: Record<string, string> = {
