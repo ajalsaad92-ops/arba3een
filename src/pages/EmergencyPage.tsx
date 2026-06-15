@@ -100,12 +100,24 @@ export default function EmergencyPage() {
 
   const handleAck = async (id: string) => {
     if (!state.currentUser) return;
-    await actions.ackEmergency(id, state.currentUser.id);
-    toast.success('تم تأكيد استلام الحالة');
+    // Optimistic local update so the UI reflects the change immediately even
+    // before the realtime echo arrives.
+    dispatch({ type: 'ACK_EMERGENCY', id, userId: state.currentUser.id });
+    try {
+      await actions.ackEmergency(id, state.currentUser.id);
+      toast.success('تم تأكيد استلام الحالة');
+    } catch (e) {
+      toast.error('فشل تأكيد الاستلام');
+    }
   };
   const handleResolve = async (id: string) => {
-    await actions.resolveEmergency(id);
-    toast.success('✔ تم وضع الحالة كمنجزة');
+    dispatch({ type: 'RESOLVE_EMERGENCY', id });
+    try {
+      await actions.resolveEmergency(id);
+      toast.success('✔ تم وضع الحالة كمنجزة');
+    } catch (e) {
+      toast.error('فشل وضع الحالة كمنجزة');
+    }
   };
 
   return (
