@@ -32,6 +32,7 @@ export const DEMO_LOGIN_HINTS: DemoCredHint[] = [
   { userId: 'u-supervisor', email: 'u-supervisor@ops.iq', password: '123456', fullName: 'الحاج كاظم العبيدي',   role: 'supervisor', officeId: 'HQ'  },
   { userId: 'u-manager',    email: 'u-manager@ops.iq',    password: '123456', fullName: 'أحمد محمد الجبوري',    role: 'manager',    officeId: 'KRB' },
   { userId: 'u-agent',      email: 'u-agent@ops.iq',      password: '123456', fullName: 'محمد علي الحسناوي',    role: 'agent',      officeId: 'KRB' },
+  { userId: 'u-viewer',     email: 'visitor@ops.iq',      password: '123456', fullName: 'مشاهد',               role: 'viewer',     officeId: 'HQ'  },
 ];
 
 // ─── Type guards / row mappers ────────────────────────────────────────
