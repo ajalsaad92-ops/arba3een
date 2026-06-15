@@ -52,27 +52,43 @@ export default function AdminPage() {
 
   const save = async () => {
     if (!draft.fullNameAr) return toast.error('الاسم الكامل مطلوب');
-    if (!draft.officeId) return toast.error('المكتب مطلوب');
+    if (draft.role !== 'director' && !draft.officeId) return toast.error('المكتب مطلوب');
     try {
       if (creating) {
-        const { user: newUser, error: signUpErr } = await api.signUp({
-          fullNameAr: draft.fullNameAr!,
-          email: `${draft.fullNameAr?.replace(/\s+/g, '.').toLowerCase()}.${Date.now()}@ops.iq`,
-          password: '123456',
-          role: draft.role as Role,
-          officeId: draft.officeId!,
+        const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+          body: {
+            action: 'create',
+            fullNameAr: draft.fullNameAr,
+            password: draft.password || undefined,
+            role: draft.role ?? 'agent',
+            officeId: draft.officeId ?? OFFICES[0].id,
+            permittedOfficeIds: draft.permittedOfficeIds ?? [],
+            specialPermissions: draft.specialPermissions,
+          },
         });
-        if (signUpErr || !newUser) {
-          toast.error(signUpErr || 'فشل إنشاء المستخدم');
+        if (error || (data as any)?.error || !(data as any)?.user) {
+          toast.error((data as any)?.error || error?.message || 'فشل إنشاء المستخدم');
           return;
         }
         // M2: dispatch ADD_USER so the new row appears in the list immediately
         // without waiting for a refresh or a Realtime round-trip.
-        dispatch({ type: 'ADD_USER', user: newUser });
-        toast.success('تم إنشاء المستخدم بنجاح — كلمة المرور الافتراضية: 123456');
+        dispatch({ type: 'ADD_USER', user: (data as any).user });
+        toast.success(`تم إنشاء المستخدم بنجاح — كلمة المرور: ${draft.password || '123456'}`);
       } else if (editing) {
         await actions.updateUser(editing.id, draft);
-        toast.success('تم تحديث المستخدم');
+        // Optional password reset for an existing user (director only).
+        if (draft.password && draft.password.length >= 6) {
+          const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+            body: { action: 'resetPassword', userId: editing.id, password: draft.password },
+          });
+          if (error || (data as any)?.error) {
+            toast.error((data as any)?.error || error?.message || 'تعذّر تغيير كلمة المرور');
+            return;
+          }
+          toast.success('تم تحديث المستخدم وكلمة المرور');
+        } else {
+          toast.success('تم تحديث المستخدم');
+        }
       }
       setCreating(false); setEditing(null); setDraft({});
     } catch (e: any) {
