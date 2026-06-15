@@ -5,6 +5,7 @@ import {
 import { useOps } from './opsStore';
 import { supabase } from '../lib/supabase';
 import { playStatic } from '../lib/notify';
+import { toast } from 'sonner';
 import type { Role } from '../data/types';
 
 const SEGMENT_MS = 2200; // length of each streamed audio segment
@@ -248,7 +249,14 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
 
   const startTalking = useCallback(async () => {
     if (transmitting || !me) return;
-    if (!navigator.mediaDevices?.getUserMedia) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error('المتصفح لا يدعم الميكروفون على هذا الجهاز');
+      return;
+    }
+    if (!channelRef.current || !connected) {
+      toast.error('جاري الاتصال بالقناة… حاول بعد لحظة');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
@@ -257,8 +265,17 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
       holdingRef.current = true;
       setTransmitting(true);
       recordSegment();
-    } catch { /* mic denied */ }
-  }, [transmitting, me, recordSegment]);
+    } catch (err: any) {
+      const name = err?.name || '';
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        toast.error('تم رفض إذن الميكروفون — فعّله من إعدادات المتصفح');
+      } else if (name === 'NotFoundError') {
+        toast.error('لا يوجد ميكروفون متصل بالجهاز');
+      } else {
+        toast.error('تعذّر تشغيل الميكروفون');
+      }
+    }
+  }, [transmitting, me, recordSegment, connected]);
 
   const stopTalking = useCallback(() => {
     if (!holdingRef.current) return;
