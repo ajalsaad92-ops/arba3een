@@ -737,6 +737,7 @@ export const api = {
         case 'extension_requests': return rowToExtension(row);
         case 'agent_locations':    return rowToAgentLocation(row);
         case 'time_windows':       return rowToTimeWindow(row);
+        case 'border_crossings':   return rowToBorderCrossing(row);
         default:                   return row;
       }
     };
