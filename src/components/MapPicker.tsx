@@ -57,6 +57,28 @@ function CenterOnUser({ pos }: { pos: Pt | null }) {
   return null;
 }
 
+/**
+ * Leaflet only requests tiles for the area it believes is visible. When the map
+ * mounts inside an animated / flex modal, its container size is still 0, so no
+ * tiles load and the map appears blank. Forcing invalidateSize() after layout
+ * settles (and on window resize) fixes the blank-map issue.
+ */
+function FixSize() {
+  const map = useMap();
+  useEffect(() => {
+    const fix = () => map.invalidateSize();
+    const t1 = setTimeout(fix, 100);
+    const t2 = setTimeout(fix, 400);
+    const t3 = setTimeout(fix, 900);
+    window.addEventListener('resize', fix);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      window.removeEventListener('resize', fix);
+    };
+  }, [map]);
+  return null;
+}
+
 function userIcon() {
   return L.divIcon({
     className: 'map-user-icon',
