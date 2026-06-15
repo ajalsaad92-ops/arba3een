@@ -60,7 +60,7 @@ type Action =
   | { type: 'FORCE_OPEN_WINDOW' }
   | { type: 'FORCE_CLOSE_WINDOW' }
   | { type: 'ADD_REPORT'; report: DailyReport }
-  | { type: 'ADD_EMERGENCY'; emergency: Emergency }
+  | { type: 'ADD_EMERGENCY'; emergency: Emergency; silent?: boolean }
   | { type: 'ACK_EMERGENCY'; id: string; userId: string }
   | { type: 'RESOLVE_EMERGENCY'; id: string }
   | { type: 'ADD_EXTENSION'; extension: ExtensionRequest }
