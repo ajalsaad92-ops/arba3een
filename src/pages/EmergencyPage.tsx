@@ -15,7 +15,7 @@ const EMERGENCY_TYPES = [
 ];
 
 export default function EmergencyPage() {
-  const { state, actions } = useOps();
+  const { state, actions, dispatch } = useOps();
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');
   const [mgrs, setMgrs] = useState('');
