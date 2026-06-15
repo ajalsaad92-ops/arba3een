@@ -453,10 +453,11 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         fireAlert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
       } else if (event.table === 'emergencies') {
         if (event.type === 'INSERT' && event.payload?.new) {
-          dispatch({ type: 'ADD_EMERGENCY', emergency: event.payload.new });
+          const isViewer = currentUserRef.current?.role === 'viewer';
+          dispatch({ type: 'ADD_EMERGENCY', emergency: event.payload.new, silent: isViewer });
           const e = event.payload.new;
           // Viewers must not receive critical/emergency alerts.
-          if (currentUserRef.current?.role !== 'viewer') {
+          if (!isViewer) {
             fireAlert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
           }
         }
