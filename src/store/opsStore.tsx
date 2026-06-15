@@ -182,6 +182,11 @@ function reducer(state: OpsState, action: Action): OpsState {
     }
     case 'ADD_EMERGENCY': {
       const newAct = { id: `a-${Date.now()}`, type: 'emergency' as const, text: `حالة طارئة: ${action.emergency.emergencyType}`, officeId: action.emergency.officeId, createdAt: action.emergency.createdAt };
+      // Viewers must not receive critical/emergency notifications, so skip the
+      // unread badge bump and the activity-feed entry for them.
+      if (action.silent) {
+        return { ...state, emergencies: [action.emergency, ...state.emergencies] };
+      }
       return { ...state, emergencies: [action.emergency, ...state.emergencies], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
     }
     case 'ACK_EMERGENCY':
