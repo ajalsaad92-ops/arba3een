@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { relativeTime } from '../lib/utils';
 
 export default function SupervisorPanelPage() {
-  const { state, actions } = useOps();
+  const { state, actions, dispatch } = useOps();
   const user = state.currentUser!;
   const isDirector = user.role === 'director';
   const permittedIds = isDirector ? OFFICES.map(o => o.id) : user.permittedOfficeIds;
@@ -15,40 +15,88 @@ export default function SupervisorPanelPage() {
   const [closeTime, setCloseTime] = useState(state.timeWindow.closeTime);
 
   const saveTimes = async () => {
-    await actions.updateTimeWindow({ openTime, closeTime, isManuallyOpen: false, isManuallyClosed: false });
-    toast.success('تم حفظ المواعيد');
+    try {
+      const updated = await actions.updateTimeWindow({ openTime, closeTime, isManuallyOpen: false, isManuallyClosed: false });
+      dispatch({ type: 'SET_TIME_WINDOW', window: updated });
+      toast.success('تم حفظ المواعيد');
+    } catch (e: any) {
+      toast.error('تعذر حفظ المواعيد: ' + (e?.message ?? 'خطأ'));
+    }
   };
 
   const forwardExtension = async (id: string) => {
-    await actions.updateExtension(id, { status: 'forwarded_to_supervisor', managerReviewedById: user.id, managerReviewedAt: new Date().toISOString() });
-    toast.success('تم إحالة الطلب للمشرف العام');
+    try {
+      await actions.updateExtension(id, { status: 'forwarded_to_supervisor', managerReviewedById: user.id, managerReviewedAt: new Date().toISOString() });
+      dispatch({ type: 'UPDATE_EXTENSION', id, patch: { status: 'forwarded_to_supervisor', managerReviewedById: user.id } });
+      toast.success('تم إحالة الطلب للمشرف العام');
+    } catch (e: any) {
+      toast.error('تعذر إحالة الطلب: ' + (e?.message ?? 'خطأ'));
+    }
   };
 
   const approveExtension = async (id: string) => {
-    await actions.updateExtension(id, {
-      status: 'approved',
-      supervisorApprovedById: user.id,
-      supervisorApprovedAt: new Date().toISOString(),
-      extensionWindowEnd: new Date(Date.now() + 15 * 60_000).toISOString(),
-    });
-    toast.success('✅ تمت الموافقة — فتح نافذة 15 دقيقة');
+    try {
+      const windowEnd = new Date(Date.now() + 15 * 60_000).toISOString();
+      await actions.updateExtension(id, {
+        status: 'approved',
+        supervisorApprovedById: user.id,
+        supervisorApprovedAt: new Date().toISOString(),
+        extensionWindowEnd: windowEnd,
+      });
+      dispatch({ type: 'UPDATE_EXTENSION', id, patch: { status: 'approved', supervisorApprovedById: user.id, extensionWindowEnd: windowEnd } });
+      toast.success('✅ تمت الموافقة — فتح نافذة 15 دقيقة');
+    } catch (e: any) {
+      toast.error('تعذر الموافقة: ' + (e?.message ?? 'خطأ'));
+    }
   };
 
   const rejectExtension = async (id: string) => {
-    await actions.updateExtension(id, { status: 'rejected' });
-    toast.error('تم رفض طلب التمديد');
+    try {
+      await actions.updateExtension(id, { status: 'rejected' });
+      dispatch({ type: 'UPDATE_EXTENSION', id, patch: { status: 'rejected' } });
+      toast.error('تم رفض طلب التمديد');
+    } catch (e: any) {
+      toast.error('تعذر رفض الطلب: ' + (e?.message ?? 'خطأ'));
+    }
   };
 
   const handleForceOpen = async () => {
-    await actions.updateTimeWindow({ isManuallyOpen: true, isManuallyClosed: false });
-    toast.success('✅ تم فتح نافذة الإرسال يدوياً');
+    try {
+      const updated = await actions.updateTimeWindow({ isManuallyOpen: true, isManuallyClosed: false });
+      dispatch({ type: 'SET_TIME_WINDOW', window: updated });
+      toast.success('✅ تم فتح نافذة الإرسال يدوياً');
+    } catch (e: any) {
+      toast.error('تعذر فتح النافذة: ' + (e?.message ?? 'خطأ'));
+    }
   };
   const handleForceClose = async () => {
-    await actions.updateTimeWindow({ isManuallyOpen: false, isManuallyClosed: true });
-    toast.success('🔒 تم إغلاق نافذة الإرسال يدوياً');
+    try {
+      const updated = await actions.updateTimeWindow({ isManuallyOpen: false, isManuallyClosed: true });
+      dispatch({ type: 'SET_TIME_WINDOW', window: updated });
+      toast.success('🔒 تم إغلاق نافذة الإرسال يدوياً');
+    } catch (e: any) {
+      toast.error('تعذر إغلاق النافذة: ' + (e?.message ?? 'خطأ'));
+    }
   };
-  const handleAck = async (id: string) => { await actions.ackEmergency(id, user.id); toast.success('تم تأكيد الاستلام'); };
-  const handleResolve = async (id: string) => { await actions.resolveEmergency(id); toast.success('✔ تم الحل'); };
+  const handleAck = async (id: string) => {
+    try {
+      await actions.ackEmergency(id, user.id);
+      dispatch({ type: 'ACK_EMERGENCY', id, userId: user.id });
+      toast.success('تم تأكيد الاستلام');
+    } catch (e: any) {
+      toast.error('تعذر تأكيد الاستلام: ' + (e?.message ?? 'خطأ'));
+    }
+  };
+  const handleResolve = async (id: string) => {
+    try {
+      await actions.resolveEmergency(id);
+      dispatch({ type: 'RESOLVE_EMERGENCY', id });
+      toast.success('✔ تم الحل');
+    } catch (e: any) {
+      toast.error('تعذر حل الحالة: ' + (e?.message ?? 'خطأ'));
+    }
+  };
+
 
   const officeReports = OFFICES.filter(o => permittedIds.includes(o.id)).map(o => ({
     office: o,
