@@ -41,12 +41,14 @@ export default function AdminPage() {
 
   const startCreate = () => {
     setDraft({ fullNameAr: '', role: 'agent', officeId: OFFICES[0].id, permittedOfficeIds: [], specialPermissions: { canExport: false, canAddCrossings: false, canViewAllOffices: false, canOpenWindow: false, canEditReports: false }, isActive: true });
+    setUsername('');
     setCreating(true);
     setEditing(null);
   };
 
   const startEdit = (u: Profile) => {
     setDraft({ ...u });
+    setUsername('');
     setEditing(u);
     setCreating(false);
   };
