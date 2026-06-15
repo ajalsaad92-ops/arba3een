@@ -234,20 +234,21 @@ export default function AdminPage() {
                   />
                 </FieldRow>
 
-                {creating && (
-                  <FieldRow label="اسم المستخدم (للدخول)">
-                    <input
-                      value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      placeholder="مثال: ahmed.karbala"
-                      dir="ltr"
-                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/40 focus:outline-none"
-                    />
+                <FieldRow label={creating ? 'اسم المستخدم (للدخول)' : 'اسم المستخدم الجديد (اتركه فارغاً للإبقاء على الحالي)'}>
+                  <input
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    placeholder="مثال: ahmed.karbala"
+                    dir="ltr"
+                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/40 focus:outline-none"
+                  />
+                  {username.trim() && (
                     <div className="text-[10px] text-slate-500 mt-1">
                       أحرف إنجليزية وأرقام فقط. سيُسجّل الدخول بالبريد: {(username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '') || 'username')}@ops.iq
                     </div>
-                  </FieldRow>
-                )}
+                  )}
+                </FieldRow>
+
 
 
                 <FieldRow label="الدور">
