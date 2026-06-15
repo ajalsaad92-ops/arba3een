@@ -60,7 +60,7 @@ type Action =
   | { type: 'FORCE_OPEN_WINDOW' }
   | { type: 'FORCE_CLOSE_WINDOW' }
   | { type: 'ADD_REPORT'; report: DailyReport }
-  | { type: 'ADD_EMERGENCY'; emergency: Emergency }
+  | { type: 'ADD_EMERGENCY'; emergency: Emergency; silent?: boolean }
   | { type: 'ACK_EMERGENCY'; id: string; userId: string }
   | { type: 'RESOLVE_EMERGENCY'; id: string }
   | { type: 'ADD_EXTENSION'; extension: ExtensionRequest }
@@ -182,6 +182,11 @@ function reducer(state: OpsState, action: Action): OpsState {
     }
     case 'ADD_EMERGENCY': {
       const newAct = { id: `a-${Date.now()}`, type: 'emergency' as const, text: `حالة طارئة: ${action.emergency.emergencyType}`, officeId: action.emergency.officeId, createdAt: action.emergency.createdAt };
+      // Viewers must not receive critical/emergency notifications, so skip the
+      // unread badge bump and the activity-feed entry for them.
+      if (action.silent) {
+        return { ...state, emergencies: [action.emergency, ...state.emergencies] };
+      }
       return { ...state, emergencies: [action.emergency, ...state.emergencies], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
     }
     case 'ACK_EMERGENCY':
@@ -448,10 +453,11 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         fireAlert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
       } else if (event.table === 'emergencies') {
         if (event.type === 'INSERT' && event.payload?.new) {
-          dispatch({ type: 'ADD_EMERGENCY', emergency: event.payload.new });
+          const isViewer = currentUserRef.current?.role === 'viewer';
+          dispatch({ type: 'ADD_EMERGENCY', emergency: event.payload.new, silent: isViewer });
           const e = event.payload.new;
           // Viewers must not receive critical/emergency alerts.
-          if (currentUserRef.current?.role !== 'viewer') {
+          if (!isViewer) {
             fireAlert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
           }
         }
