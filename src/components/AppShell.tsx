@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useOps } from '../store/opsStore';
-import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2 } from 'lucide-react';
+import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal } from 'lucide-react';
 import TimeLockBar from './TimeLockBar';
 import EmergencyBanner from './EmergencyBanner';
 import { OFFICES } from '../data/offices';
@@ -28,6 +28,7 @@ export default function AppShell() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // ProtectedRoute already checks auth, so this should never be null
   // But show loading just in case
@@ -264,37 +265,96 @@ export default function AppShell() {
         </main>
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0B0F19]/95 backdrop-blur border-t border-[#1E293B] flex items-stretch">
-          {navItems.filter(i => i.show).slice(0, 5).map(item => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors ${
-                    isActive ? 'text-amber-400' : 'text-slate-400 hover:text-slate-200'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <Icon size={18} className={isActive ? 'scale-110 transition-transform' : ''} />
-                    <span className="truncate max-w-[68px]">{item.label}</span>
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
-          <button
-            onClick={handleLogout}
-            className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 text-[10px] text-slate-500 hover:text-red-400"
-            aria-label="تسجيل الخروج"
-          >
-            <LogOut size={18} />
-            <span>خروج</span>
-          </button>
-        </nav>
+        {(() => {
+          const visible = navItems.filter(i => i.show);
+          const primary = visible.slice(0, 4);
+          const overflow = visible.slice(4);
+          return (
+            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0B0F19]/95 backdrop-blur border-t border-[#1E293B] flex items-stretch">
+              {primary.map(item => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors ${
+                        isActive ? 'text-amber-400' : 'text-slate-400 hover:text-slate-200'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon size={18} className={isActive ? 'scale-110 transition-transform' : ''} />
+                        <span className="truncate max-w-[68px]">{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
+              {overflow.length > 0 && (
+                <button
+                  onClick={() => setMoreOpen(true)}
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] text-slate-400 hover:text-amber-400 transition-colors"
+                  aria-label="المزيد"
+                >
+                  <MoreHorizontal size={18} />
+                  <span>المزيد</span>
+                </button>
+              )}
+              {overflow.length === 0 && (
+                <button
+                  onClick={handleLogout}
+                  className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 text-[10px] text-slate-500 hover:text-red-400"
+                  aria-label="تسجيل الخروج"
+                >
+                  <LogOut size={18} />
+                  <span>خروج</span>
+                </button>
+              )}
+            </nav>
+          );
+        })()}
+
+        {/* Mobile "more" sheet */}
+        {moreOpen && (
+          <div className="md:hidden fixed inset-0 z-50" dir="rtl">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
+            <div className="absolute bottom-0 inset-x-0 bg-[#0B0F19] border-t border-[#1E293B] rounded-t-2xl p-4 pb-6">
+              <div className="w-10 h-1 rounded-full bg-[#1E293B] mx-auto mb-4" />
+              <div className="text-sm font-bold text-slate-200 mb-3 px-1">القائمة</div>
+              <div className="grid grid-cols-3 gap-2">
+                {navItems.filter(i => i.show).slice(4).map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMoreOpen(false)}
+                      className={({ isActive }) =>
+                        `flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border text-[11px] transition-colors ${
+                          isActive
+                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                            : 'text-slate-300 bg-[#111827] border-[#1E293B] hover:text-slate-100'
+                        }`
+                      }
+                    >
+                      <Icon size={20} />
+                      <span className="truncate max-w-[80px] text-center">{item.label}</span>
+                    </NavLink>
+                  );
+                })}
+                <button
+                  onClick={() => { setMoreOpen(false); handleLogout(); }}
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border border-red-500/20 bg-red-500/5 text-[11px] text-red-400 hover:bg-red-500/10"
+                >
+                  <LogOut size={20} />
+                  <span>تسجيل الخروج</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
