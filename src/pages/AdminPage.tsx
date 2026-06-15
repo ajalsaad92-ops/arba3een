@@ -35,17 +35,20 @@ export default function AdminPage() {
   const [editing, setEditing] = useState<Profile | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<Partial<Profile>>({});
+  const [username, setUsername] = useState('');
 
   const filtered = state.users.filter(u => u.fullNameAr.includes(search));
 
   const startCreate = () => {
     setDraft({ fullNameAr: '', role: 'agent', officeId: OFFICES[0].id, permittedOfficeIds: [], specialPermissions: { canExport: false, canAddCrossings: false, canViewAllOffices: false, canOpenWindow: false, canEditReports: false }, isActive: true });
+    setUsername('');
     setCreating(true);
     setEditing(null);
   };
 
   const startEdit = (u: Profile) => {
     setDraft({ ...u });
+    setUsername('');
     setEditing(u);
     setCreating(false);
   };
@@ -53,12 +56,18 @@ export default function AdminPage() {
   const save = async () => {
     if (!draft.fullNameAr) return toast.error('الاسم الكامل مطلوب');
     if (draft.role !== 'director' && !draft.officeId) return toast.error('المكتب مطلوب');
+    if (creating) {
+      const cleanUser = username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '');
+      if (!cleanUser) return toast.error('اسم المستخدم مطلوب (أحرف إنجليزية أو أرقام)');
+      if (!draft.password || draft.password.length < 6) return toast.error('كلمة المرور مطلوبة (6 أحرف على الأقل)');
+    }
     try {
       if (creating) {
         const { data, error } = await supabase.functions.invoke('admin-manage-users', {
           body: {
             action: 'create',
             fullNameAr: draft.fullNameAr,
+            username: username.toLowerCase().trim(),
             password: draft.password || undefined,
             role: draft.role ?? 'agent',
             officeId: draft.officeId ?? OFFICES[0].id,
@@ -73,7 +82,7 @@ export default function AdminPage() {
         // M2: dispatch ADD_USER so the new row appears in the list immediately
         // without waiting for a refresh or a Realtime round-trip.
         dispatch({ type: 'ADD_USER', user: (data as any).user });
-        toast.success(`تم إنشاء المستخدم بنجاح — كلمة المرور: ${draft.password || '123456'}`);
+        toast.success(`تم إنشاء المستخدم — اسم الدخول: ${(data as any).user.email} — كلمة المرور: ${draft.password || '123456'}`);
       } else if (editing) {
         await actions.updateUser(editing.id, draft);
         // Optional password reset for an existing user (director only).
@@ -90,7 +99,7 @@ export default function AdminPage() {
           toast.success('تم تحديث المستخدم');
         }
       }
-      setCreating(false); setEditing(null); setDraft({});
+      setCreating(false); setEditing(null); setDraft({}); setUsername('');
     } catch (e: any) {
       toast.error(e.message || 'فشل الحفظ');
     }
@@ -212,7 +221,7 @@ export default function AdminPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-sm font-bold text-amber-400">{creating ? 'مستخدم جديد' : `تعديل: ${editing?.fullNameAr}`}</div>
-                  <button onClick={() => { setCreating(false); setEditing(null); setDraft({}); }} className="p-1 rounded hover:bg-[#1E293B]">
+                  <button onClick={() => { setCreating(false); setEditing(null); setDraft({}); setUsername(''); }} className="p-1 rounded hover:bg-[#1E293B]">
                     <X className="w-4 h-4 text-slate-400" />
                   </button>
                 </div>
@@ -224,6 +233,22 @@ export default function AdminPage() {
                     className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none"
                   />
                 </FieldRow>
+
+                {creating && (
+                  <FieldRow label="اسم المستخدم (للدخول)">
+                    <input
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      placeholder="مثال: ahmed.karbala"
+                      dir="ltr"
+                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/40 focus:outline-none"
+                    />
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      أحرف إنجليزية وأرقام فقط. سيُسجّل الدخول بالبريد: {(username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '') || 'username')}@ops.iq
+                    </div>
+                  </FieldRow>
+                )}
+
 
                 <FieldRow label="الدور">
                   <select

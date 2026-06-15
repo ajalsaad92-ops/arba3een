@@ -12,6 +12,7 @@ type Role = "director" | "supervisor" | "manager" | "agent" | "viewer";
 type CreatePayload = {
   action: "create";
   fullNameAr: string;
+  username?: string;
   email?: string;
   password?: string;
   role: Role;
@@ -78,10 +79,25 @@ Deno.serve(async (req) => {
     // ── 3. Handle actions ──────────────────────────────────────────
     if (body.action === "create") {
       const isDirector = body.role === "director";
-      const email = (body.email && body.email.trim())
-        ? body.email.toLowerCase().trim()
-        : `${(body.fullNameAr || "user").replace(/\s+/g, ".").toLowerCase()}.${Date.now()}@ops.iq`;
+
+      // Build a VALID, ASCII-only email. Arabic characters are not allowed in
+      // the local part, so we sanitize the chosen username (or fall back to a
+      // generated handle). This fixes "Unable to validate email address".
+      const sanitizeLocal = (s: string) =>
+        s.toLowerCase().trim()
+          .replace(/[^a-z0-9._-]+/g, "")     // drop Arabic / spaces / symbols
+          .replace(/^[._-]+|[._-]+$/g, "");  // trim leading/trailing separators
+
+      let email: string;
+      if (body.email && body.email.includes("@")) {
+        email = body.email.toLowerCase().trim();
+      } else {
+        let local = body.username ? sanitizeLocal(body.username) : "";
+        if (!local) local = `user${Date.now()}`;
+        email = `${local}@ops.iq`;
+      }
       const password = body.password && body.password.length >= 6 ? body.password : "123456";
+
 
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
