@@ -551,17 +551,24 @@ export const api = {
   },
 
   async updateTimeWindow(patch: Partial<TimeWindow>): Promise<TimeWindow> {
-    const row: any = {};
-    if (patch.windowDate !== undefined) row.window_date = patch.windowDate;
-    if (patch.openTime !== undefined) row.open_time = patch.openTime;
-    if (patch.closeTime !== undefined) row.close_time = patch.closeTime;
-    if (patch.isManuallyOpen !== undefined) row.is_manually_open = patch.isManuallyOpen;
-    if (patch.isManuallyClosed !== undefined) row.is_manually_closed = patch.isManuallyClosed;
-    row.updated_at = new Date().toISOString();
+    // Read the current singleton row so an upsert preserves untouched fields.
+    // The time window is a single shared row; if it doesn't exist yet (fresh
+    // project) a plain UPDATE matches 0 rows and PostgREST returns 406. Using
+    // upsert creates the row on first write and updates it afterwards.
+    const current = await this.getTimeWindow();
+    const merged = { ...current, ...patch };
+    const row: any = {
+      id: SINGLE_TIME_WINDOW_ID,
+      window_date: merged.windowDate || new Date().toISOString().slice(0, 10),
+      open_time: merged.openTime,
+      close_time: merged.closeTime,
+      is_manually_open: merged.isManuallyOpen,
+      is_manually_closed: merged.isManuallyClosed,
+      updated_at: new Date().toISOString(),
+    };
     const { data, error } = await supabase
       .from('time_windows')
-      .update(row)
-      .eq('id', SINGLE_TIME_WINDOW_ID)
+      .upsert(row, { onConflict: 'id' })
       .select('*')
       .single();
     if (error) throw error;

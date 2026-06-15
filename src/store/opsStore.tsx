@@ -483,7 +483,14 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         }
         else if (event.type === 'UPDATE' && event.payload?.new) dispatch({ type: 'UPDATE_EXTENSION', id: event.payload.new.id, patch: event.payload.new });
       } else if (event.table === 'time_windows' && event.payload?.new) {
-        dispatch({ type: 'SET_TIME_WINDOW', window: event.payload.new });
+        const n = event.payload.new;
+        dispatch({ type: 'SET_TIME_WINDOW', window: {
+          windowDate: n.window_date,
+          openTime: n.open_time,
+          closeTime: n.close_time,
+          isManuallyOpen: !!n.is_manually_open,
+          isManuallyClosed: !!n.is_manually_closed,
+        } });
       } else if (event.table === 'agent_locations' && event.payload?.new) {
         dispatch({ type: 'UPDATE_AGENT_LOCATION', location: event.payload.new });
       } else if (event.table === 'border_crossings' && event.type === 'INSERT' && event.payload?.new) {
