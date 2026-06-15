@@ -824,7 +824,10 @@ function DrillDownPanel({ office, onClose }: { office: Office; onClose: () => vo
 // ════════════════════════════════════════════════════════════════
 function CustomKpiGrid({ agg, aggYesterday, trend, activeEmergencies, cols = 3 }: any) {
   const { state } = useOps();
-  const ids = state.customKpis;
+  // Viewers must not see critical/emergency stats.
+  const ids = state.currentUser?.role === 'viewer'
+    ? state.customKpis.filter((id: string) => id !== 'emergencies')
+    : state.customKpis;
   const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
   const byId = (id: string) => catalog.find(k => k.id === id);
   const valFor = (id: string) => id === 'emergencies' ? activeEmergencies : (agg as any)[id] || 0;
