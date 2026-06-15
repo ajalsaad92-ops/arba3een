@@ -57,6 +57,28 @@ function CenterOnUser({ pos }: { pos: Pt | null }) {
   return null;
 }
 
+/**
+ * Leaflet only requests tiles for the area it believes is visible. When the map
+ * mounts inside an animated / flex modal, its container size is still 0, so no
+ * tiles load and the map appears blank. Forcing invalidateSize() after layout
+ * settles (and on window resize) fixes the blank-map issue.
+ */
+function FixSize() {
+  const map = useMap();
+  useEffect(() => {
+    const fix = () => map.invalidateSize();
+    const t1 = setTimeout(fix, 100);
+    const t2 = setTimeout(fix, 400);
+    const t3 = setTimeout(fix, 900);
+    window.addEventListener('resize', fix);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      window.removeEventListener('resize', fix);
+    };
+  }, [map]);
+  return null;
+}
+
 function userIcon() {
   return L.divIcon({
     className: 'map-user-icon',
@@ -163,8 +185,9 @@ export default function MapPicker({
             maxZoom={19}
             maxBounds={IRAQ_BOUNDS}
             maxBoundsViscosity={0.8}
-            style={{ width: '100%', height: '100%', cursor: 'crosshair' }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'crosshair' }}
           >
+
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; OpenStreetMap &copy; CARTO'
@@ -172,6 +195,7 @@ export default function MapPicker({
             />
             <ClickCapture onClick={handleClick} />
             <CenterOnUser pos={livePos} />
+            <FixSize />
 
             {livePos && (
               <Marker position={[livePos.lat, livePos.lng]} icon={userIcon()} />
