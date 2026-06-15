@@ -483,20 +483,23 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         }
         else if (event.type === 'UPDATE' && event.payload?.new) dispatch({ type: 'UPDATE_EXTENSION', id: event.payload.new.id, patch: event.payload.new });
       } else if (event.table === 'time_windows' && event.payload?.new) {
-        const n = event.payload.new;
-        dispatch({ type: 'SET_TIME_WINDOW', window: {
-          windowDate: n.window_date,
-          openTime: n.open_time,
-          closeTime: n.close_time,
-          isManuallyOpen: !!n.is_manually_open,
-          isManuallyClosed: !!n.is_manually_closed,
-        } });
+        // Row is already mapped to camelCase by api.subscribe → use it directly.
+        dispatch({ type: 'SET_TIME_WINDOW', window: event.payload.new as TimeWindow });
       } else if (event.table === 'agent_locations' && event.payload?.new) {
         dispatch({ type: 'UPDATE_AGENT_LOCATION', location: event.payload.new });
       } else if (event.table === 'border_crossings' && event.type === 'INSERT' && event.payload?.new) {
         dispatch({ type: 'ADD_BORDER_CROSSING', crossing: event.payload.new });
       } else if (event.table === 'profiles' && event.type === 'UPDATE' && event.payload?.new) {
-        dispatch({ type: 'UPDATE_USER', id: event.payload.new.id, patch: event.payload.new });
+        // profiles is NOT mapped by api.subscribe (needs role row) → map the
+        // snake_case fields we care about here so UPDATE_USER gets camelCase.
+        const p = event.payload.new;
+        dispatch({ type: 'UPDATE_USER', id: p.id, patch: {
+          fullNameAr: p.full_name_ar,
+          officeId: p.office_id ?? '',
+          permittedOfficeIds: p.permitted_office_ids ?? [],
+          specialPermissions: p.special_permissions ?? undefined,
+          isActive: p.is_active,
+        } as Partial<Profile> });
       }
     });
     return unsub;
