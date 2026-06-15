@@ -99,7 +99,7 @@ export default function AdminPage() {
           toast.success('تم تحديث المستخدم');
         }
       }
-      setCreating(false); setEditing(null); setDraft({});
+      setCreating(false); setEditing(null); setDraft({}); setUsername('');
     } catch (e: any) {
       toast.error(e.message || 'فشل الحفظ');
     }
