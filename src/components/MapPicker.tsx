@@ -185,8 +185,9 @@ export default function MapPicker({
             maxZoom={19}
             maxBounds={IRAQ_BOUNDS}
             maxBoundsViscosity={0.8}
-            style={{ width: '100%', height: '100%', cursor: 'crosshair' }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'crosshair' }}
           >
+
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; OpenStreetMap &copy; CARTO'
