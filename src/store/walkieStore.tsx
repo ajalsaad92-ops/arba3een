@@ -5,6 +5,7 @@ import {
 import { useOps } from './opsStore';
 import { supabase } from '../lib/supabase';
 import { playStatic } from '../lib/notify';
+import { toast } from 'sonner';
 import type { Role } from '../data/types';
 
 const SEGMENT_MS = 2200; // length of each streamed audio segment
