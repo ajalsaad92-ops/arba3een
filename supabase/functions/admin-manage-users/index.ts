@@ -165,6 +165,22 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    if (body.action === "updateEmail") {
+      const local = (body.username ?? "").toLowerCase().trim()
+        .replace(/[^a-z0-9._-]+/g, "")
+        .replace(/^[._-]+|[._-]+$/g, "");
+      if (!body.userId || !local) {
+        return json({ error: "Invalid username" }, 400);
+      }
+      const email = `${local}@ops.iq`;
+      const { error } = await admin.auth.admin.updateUserById(body.userId, {
+        email,
+        email_confirm: true,
+      });
+      if (error) return json({ error: error.message }, 400);
+      return json({ success: true, email });
+    }
+
     if (body.action === "clearData") {
       const tables = [
         "daily_reports",
