@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [editing, setEditing] = useState<Profile | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<Partial<Profile>>({});
+  const [username, setUsername] = useState('');
 
   const filtered = state.users.filter(u => u.fullNameAr.includes(search));
 
