@@ -194,6 +194,7 @@ export default function MapPicker({
             />
             <ClickCapture onClick={handleClick} />
             <CenterOnUser pos={livePos} />
+            <FixSize />
 
             {livePos && (
               <Marker position={[livePos.lat, livePos.lng]} icon={userIcon()} />
