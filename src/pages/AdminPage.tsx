@@ -221,7 +221,7 @@ export default function AdminPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-sm font-bold text-amber-400">{creating ? 'مستخدم جديد' : `تعديل: ${editing?.fullNameAr}`}</div>
-                  <button onClick={() => { setCreating(false); setEditing(null); setDraft({}); }} className="p-1 rounded hover:bg-[#1E293B]">
+                  <button onClick={() => { setCreating(false); setEditing(null); setDraft({}); setUsername(''); }} className="p-1 rounded hover:bg-[#1E293B]">
                     <X className="w-4 h-4 text-slate-400" />
                   </button>
                 </div>
@@ -233,6 +233,22 @@ export default function AdminPage() {
                     className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none"
                   />
                 </FieldRow>
+
+                {creating && (
+                  <FieldRow label="اسم المستخدم (للدخول)">
+                    <input
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      placeholder="مثال: ahmed.karbala"
+                      dir="ltr"
+                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/40 focus:outline-none"
+                    />
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      أحرف إنجليزية وأرقام فقط. سيُسجّل الدخول بالبريد: {(username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '') || 'username')}@ops.iq
+                    </div>
+                  </FieldRow>
+                )}
+
 
                 <FieldRow label="الدور">
                   <select
