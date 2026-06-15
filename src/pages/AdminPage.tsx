@@ -130,13 +130,20 @@ export default function AdminPage() {
   };
 
   const clearData = async () => {
-    if (!confirm('سيتم حذف جميع البيانات المدخلة (التقارير، الطوارئ، التمديدات) مع الإبقاء على المستخدمين. هل أنت متأكد؟')) return;
+    if (!confirm('سيتم حذف جميع البيانات المدخلة (التقارير، الطوارئ، التمديدات، مواقع المندوبين) مع الإبقاء على المستخدمين. هل أنت متأكد؟')) return;
     const t = toast.loading('جاري تفريغ البيانات...');
     try {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'clearData' },
+      });
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.error || error?.message || 'فشل تفريغ البيانات', { id: t });
+        return;
+      }
       toast.success('تم تفريغ البيانات بنجاح', { id: t });
-      setTimeout(() => window.location.reload(), 1500);
-    } catch {
-      toast.error('فشل تفريغ البيانات', { id: t });
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (e: any) {
+      toast.error(e?.message || 'فشل تفريغ البيانات', { id: t });
     }
   };
 
