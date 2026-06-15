@@ -44,76 +44,38 @@ export default function LoginPage() {
   useEffect(() => {
     (async () => {
       try {
-        // Run both in parallel; never throw on failure (so the spinner always
-        // resolves, even if Supabase is unreachable or the table is empty).
-        const [users, creds] = await Promise.all([
+        // Quick-access is hint-driven: each demo hint carries a guaranteed valid
+        // email + password. Live profiles only enrich the display (name/office),
+        // since profile rows do not expose the auth email.
+        const [users, hints] = await Promise.all([
           api.getUsers().catch(() => [] as Profile[]),
-          (api as any).getAllCredentials?.().catch(() => null) ?? Promise.resolve(null),
+          api.getDemoLoginHints().catch(() => [] as DemoCredHint[]),
         ]);
-
-        // credMap is keyed by email in the new backend (was keyed by userId
-        // in the localStorage mock). Build an email -> {password,userId} map.
-        const credMap: Record<string, { password: string; userId: string }> = creds ?? {};
-
-        // Build a reverse lookup: userId -> { email, password }. The static
-        // hints carry string ids like "u-director" while Supabase profiles
-        // carry UUIDs, so we also fall back to matching by role for the demo
-        // hints when a profile's email matches the hint email.
-        const emailToCred: Record<string, { email: string; password: string }> = {};
-        Object.entries(credMap).forEach(([email, cred]: [string, any]) => {
-          if (email.includes('@')) emailToCred[email.toLowerCase()] = { email, password: cred.password };
-        });
 
         const seenRoles = new Set<Role>();
         const items: QuickAccessItem[] = [];
-        users.filter((u: Profile) => u.isActive).forEach((u: Profile) => {
-          if (seenRoles.has(u.role)) return;
-          seenRoles.add(u.role);
-          // First try the user's actual email; if not in credMap, try matching
-          // by role against the demo hints (handles UUID vs string-id mismatch).
-          let cred = emailToCred[(u as any).email?.toLowerCase?.() ?? ''];
-          if (!cred && (u as any).email) cred = emailToCred[(u as any).email.toLowerCase()];
-          const visual = ROLE_VISUALS[u.role];
+        hints.forEach((hint) => {
+          if (seenRoles.has(hint.role)) return;
+          seenRoles.add(hint.role);
+          const visual = ROLE_VISUALS[hint.role];
           if (!visual) return;
-          const office = officeById(u.officeId);
+          const profile = users.find((u) => u.role === hint.role && u.isActive);
+          const officeId = profile?.officeId || hint.officeId;
+          const office = officeById(officeId);
+          const fullName = profile?.fullNameAr || hint.fullName;
           items.push({
-            userId: u.id,
-            email: cred?.email ?? (u as any).email ?? '',
-            password: cred?.password ?? '123456',
-            fullName: u.fullNameAr,
-            role: u.role,
-            officeName: office?.nameAr || u.officeId,
+            userId: profile?.id ?? hint.userId,
+            email: hint.email,
+            password: hint.password,
+            fullName,
+            role: hint.role,
+            officeName: office?.nameAr || officeId,
             label: visual.label,
-            desc: `${u.fullNameAr} • ${office?.governorateAr || ''}`,
+            desc: `${fullName} • ${office?.governorateAr || ''}`,
             gradient: visual.gradient,
             icon: visual.icon,
           });
         });
-
-        // If profiles didn't match (e.g. Supabase unreachable), fall back to
-        // the demo hints directly so the user always sees something clickable.
-        if (items.length === 0) {
-          const hints: DemoCredHint[] = await api.getDemoLoginHints().catch(() => []);
-          hints.forEach((hint) => {
-            if (seenRoles.has(hint.role)) return;
-            seenRoles.add(hint.role);
-            const visual = ROLE_VISUALS[hint.role];
-            if (!visual) return;
-            const office = officeById(hint.officeId);
-            items.push({
-              userId: hint.userId,
-              email: hint.email,
-              password: hint.password,
-              fullName: hint.fullName,
-              role: hint.role,
-              officeName: office?.nameAr || hint.officeId,
-              label: visual.label,
-              desc: `${hint.fullName} • ${office?.governorateAr || ''}`,
-              gradient: visual.gradient,
-              icon: visual.icon,
-            });
-          });
-        }
 
         setQuickAccess(items);
       } catch (e) {
@@ -122,6 +84,7 @@ export default function LoginPage() {
       }
     })();
   }, [state.users.length]);
+
 
   const triggerError = (msg: string) => {
     setError(msg);
