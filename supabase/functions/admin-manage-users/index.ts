@@ -27,11 +27,17 @@ type ResetPayload = {
   password: string;
 };
 
+type UpdateEmailPayload = {
+  action: "updateEmail";
+  userId: string;
+  username: string;
+};
+
 type ClearPayload = {
   action: "clearData";
 };
 
-type Payload = CreatePayload | ResetPayload | ClearPayload;
+type Payload = CreatePayload | ResetPayload | UpdateEmailPayload | ClearPayload;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
