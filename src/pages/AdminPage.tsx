@@ -85,6 +85,17 @@ export default function AdminPage() {
         toast.success(`تم إنشاء المستخدم — اسم الدخول: ${(data as any).user.email} — كلمة المرور: ${draft.password || '123456'}`);
       } else if (editing) {
         await actions.updateUser(editing.id, draft);
+        const cleanUser = username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '');
+        // Optional username (login email) change.
+        if (cleanUser) {
+          const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+            body: { action: 'updateEmail', userId: editing.id, username: cleanUser },
+          });
+          if (error || (data as any)?.error) {
+            toast.error((data as any)?.error || error?.message || 'تعذّر تغيير اسم المستخدم');
+            return;
+          }
+        }
         // Optional password reset for an existing user (director only).
         if (draft.password && draft.password.length >= 6) {
           const { data, error } = await supabase.functions.invoke('admin-manage-users', {
@@ -96,7 +107,7 @@ export default function AdminPage() {
           }
           toast.success('تم تحديث المستخدم وكلمة المرور');
         } else {
-          toast.success('تم تحديث المستخدم');
+          toast.success(cleanUser ? 'تم تحديث المستخدم واسم الدخول' : 'تم تحديث المستخدم');
         }
       }
       setCreating(false); setEditing(null); setDraft({}); setUsername('');
