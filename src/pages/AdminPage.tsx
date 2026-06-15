@@ -56,12 +56,18 @@ export default function AdminPage() {
   const save = async () => {
     if (!draft.fullNameAr) return toast.error('الاسم الكامل مطلوب');
     if (draft.role !== 'director' && !draft.officeId) return toast.error('المكتب مطلوب');
+    if (creating) {
+      const cleanUser = username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '');
+      if (!cleanUser) return toast.error('اسم المستخدم مطلوب (أحرف إنجليزية أو أرقام)');
+      if (!draft.password || draft.password.length < 6) return toast.error('كلمة المرور مطلوبة (6 أحرف على الأقل)');
+    }
     try {
       if (creating) {
         const { data, error } = await supabase.functions.invoke('admin-manage-users', {
           body: {
             action: 'create',
             fullNameAr: draft.fullNameAr,
+            username: username.toLowerCase().trim(),
             password: draft.password || undefined,
             role: draft.role ?? 'agent',
             officeId: draft.officeId ?? OFFICES[0].id,
@@ -76,7 +82,7 @@ export default function AdminPage() {
         // M2: dispatch ADD_USER so the new row appears in the list immediately
         // without waiting for a refresh or a Realtime round-trip.
         dispatch({ type: 'ADD_USER', user: (data as any).user });
-        toast.success(`تم إنشاء المستخدم بنجاح — كلمة المرور: ${draft.password || '123456'}`);
+        toast.success(`تم إنشاء المستخدم — اسم الدخول: ${(data as any).user.email} — كلمة المرور: ${draft.password || '123456'}`);
       } else if (editing) {
         await actions.updateUser(editing.id, draft);
         // Optional password reset for an existing user (director only).
