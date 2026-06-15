@@ -85,7 +85,7 @@ const initialState: OpsState = {
   currentUser: null,
   authLoading: true,
   serverTime: new Date(),
-  timeWindow: { windowDate: new Date().toISOString().slice(0,10), openTime: '08:00', closeTime: '09:00', isManuallyOpen: false, isManuallyClosed: false },
+  timeWindow: { windowDate: new Date().toISOString().slice(0,10), openTime: '00:00', closeTime: '23:59', isManuallyOpen: false, isManuallyClosed: false },
   timeWindowStatus: 'open',
   users: [],
   todayReports: [],
