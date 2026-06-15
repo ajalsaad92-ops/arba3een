@@ -12,6 +12,7 @@ type Role = "director" | "supervisor" | "manager" | "agent" | "viewer";
 type CreatePayload = {
   action: "create";
   fullNameAr: string;
+  username?: string;
   email?: string;
   password?: string;
   role: Role;
