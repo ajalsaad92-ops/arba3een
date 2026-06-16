@@ -237,6 +237,14 @@ export default function MapPicker({
               ? (single ? `${single.lat.toFixed(5)}, ${single.lng.toFixed(5)}` : 'انقر لتحديد موقع')
               : `${pts.length} نقطة`}
           </div>
+          <button
+            onClick={locateMe}
+            disabled={locating}
+            className="absolute top-2 right-2 z-[500] flex items-center gap-1.5 bg-[#0B0F19]/90 border border-blue-500/40 hover:bg-blue-500/20 rounded-md px-2.5 py-1.5 text-[10px] sm:text-[11px] text-blue-300 font-bold disabled:opacity-60"
+          >
+            {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Crosshair className="w-3.5 h-3.5" />}
+            موقعي
+          </button>
           {livePos && (
             <div className="absolute bottom-2 left-2 bg-[#0B0F19]/85 border border-blue-500/30 rounded-md px-2.5 py-1 text-[10px] sm:text-[11px] text-blue-300 pointer-events-none flex items-center gap-1.5">
               <Crosshair className="w-3.5 h-3.5" /> موقعك الحالي
