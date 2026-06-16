@@ -121,18 +121,23 @@ export default function MapPicker({
   const [snapped, setSnapped] = useState<Pt[] | null>(null);
   const [snapping, setSnapping] = useState(false);
   const [livePos, setLivePos] = useState<Pt | null>(userLocation ?? null);
+  const [locating, setLocating] = useState(false);
 
-  // Try to obtain a high-accuracy GPS fix when the picker opens —
-  // independent from the parent (so the picker works even when the
-  // parent hasn't requested location yet).
-  useEffect(() => {
-    if (livePos || !navigator.geolocation) return;
+  // GPS is OPT-IN only. We never auto-request location when the picker opens,
+  // because the permission prompt (and Android's overlay error) blocks the user
+  // from simply tapping the map to drop a point. The map works fully without it.
+  const locateMe = () => {
+    if (!navigator.geolocation) {
+      toast.error('الموقع الجغرافي غير مدعوم على هذا الجهاز');
+      return;
+    }
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      p => setLivePos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => {},
+      p => { setLivePos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
+      () => { toast.error('تعذّر تحديد موقعك — يمكنك تحديد النقطة يدوياً على الخريطة'); setLocating(false); },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 }
     );
-  }, [livePos]);
+  };
 
   // close on ESC
   useEffect(() => {
