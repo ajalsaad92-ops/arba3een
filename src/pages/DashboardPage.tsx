@@ -525,33 +525,95 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
       {/* Row 2: Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
         <div className="lg:col-span-3 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-bold text-slate-200">حركة الزوار — آخر 14 يوم</div>
-            <div className="text-[10px] text-slate-500">بالمكتب المختار</div>
+            <div className="flex items-center gap-1">
+              {[
+                { id: 'area', label: 'مساحة', icon: Activity },
+                { id: 'line', label: 'خطي', icon: TrendingUp },
+                { id: 'vertical', label: 'أعمدة', icon: BarChart3 },
+                { id: 'horizontal', label: 'أفقي', icon: BarChart2 },
+              ].map((t) => {
+                const Icon = t.icon;
+                const active = visitorChartType === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setVisitorChartType(t.id as VisitorChartType)}
+                    title={t.label}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                      active ? 'bg-amber-500 text-black' : 'bg-[#0B0F19] text-slate-400 hover:text-slate-200 border border-[#1E293B]'
+                    }`}
+                  >
+                    <Icon className="w-3 h-3" />
+                    <span className="hidden sm:inline">{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={areaData}>
-              <defs>
-                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
-                  <linearGradient key={o.code} id={`g-${o.code}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.6} />
-                    <stop offset="100%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.02} />
+            {visitorChartType === 'horizontal' ? (
+              <BarChart data={horizontalData} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="hbarGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#FACC15" />
+                    <stop offset="50%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#EF4444" />
                   </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="name" width={60} tick={{ fill: '#94A3B8', fontSize: 10 }} />
+                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [formatFullNumber(v), 'الزوار']} />
+                <Bar dataKey="value" fill="url(#hbarGradient)" radius={[0, 4, 4, 0]} barSize={18} />
+              </BarChart>
+            ) : visitorChartType === 'vertical' ? (
+              <BarChart data={areaData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis dataKey="date" tick={{ fill: '#94A3B8', fontSize: 10 }} />
+                <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
+                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                  <Bar key={o.code} dataKey={o.code} fill={GOVERNORATE_COLORS[i]} stroke={GOVERNORATE_COLORS[i]} radius={[3, 3, 0, 0]} name={o.nameAr.replace('مكتب ', '')} />
                 ))}
-                <linearGradient id="axisGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#1E293B" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#1E293B" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-              <XAxis dataKey="date" tick={{ fill: '#94A3B8', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
-              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
-              {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
-                <Area key={o.code} type="monotone" dataKey={o.code} stroke={GOVERNORATE_COLORS[i]} fill={`url(#g-${o.code})`} strokeWidth={2} name={o.nameAr.replace('مكتب ', '')} />
-              ))}
-            </AreaChart>
+              </BarChart>
+            ) : visitorChartType === 'line' ? (
+              <LineChart data={areaData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis dataKey="date" tick={{ fill: '#94A3B8', fontSize: 10 }} />
+                <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
+                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                  <Line key={o.code} type="monotone" dataKey={o.code} stroke={GOVERNORATE_COLORS[i]} strokeWidth={2} dot={{ r: 2, fill: GOVERNORATE_COLORS[i] }} name={o.nameAr.replace('مكتب ', '')} />
+                ))}
+              </LineChart>
+            ) : (
+              <AreaChart data={areaData}>
+                <defs>
+                  {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                    <linearGradient key={o.code} id={`g-${o.code}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.6} />
+                      <stop offset="100%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.02} />
+                    </linearGradient>
+                  ))}
+                  <linearGradient id="axisGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#1E293B" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#1E293B" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis dataKey="date" tick={{ fill: '#94A3B8', fontSize: 10 }} />
+                <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
+                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                  <Area key={o.code} type="monotone" dataKey={o.code} stroke={GOVERNORATE_COLORS[i]} fill={`url(#g-${o.code})`} strokeWidth={2} name={o.nameAr.replace('مكتب ', '')} />
+                ))}
+              </AreaChart>
+            )}
           </ResponsiveContainer>
         </div>
 
