@@ -653,7 +653,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={60} tick={{ fill: '#94A3B8', fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [formatFullNumber(v), 'الزوار']} />
+                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [formatFullNumber(v), activeMetric.label]} />
                 <Bar dataKey="value" fill="url(#hbarGradient)" radius={[0, 4, 4, 0]} barSize={18} />
               </BarChart>
             ) : visitorChartType === 'vertical' ? (
