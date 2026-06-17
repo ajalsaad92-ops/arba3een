@@ -22,6 +22,19 @@ type ViewMode = 'command' | 'ops' | 'analytics';
 
 const GOVERNORATE_COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#EC4899', '#84CC16', '#FBBF24', '#A78BFA', '#34D399', '#F87171', '#FB923C', '#FB7185'];
 
+// Selectable metrics (categories) for the visitor-movement chart.
+const CHART_METRICS: { id: string; label: string; get: (r: any) => number }[] = [
+  { id: 'visitors', label: 'حركة الزوار', get: (r) => (r.visitorsIn || 0) + (r.visitorsOut || 0) },
+  { id: 'vehicles', label: 'حركة العجلات', get: (r) => r.vehiclesCount || 0 },
+  { id: 'processions', label: 'أعداد المواكب', get: (r) => r.processionsCount || 0 },
+  { id: 'deaths', label: 'الوفيات', get: (r) => r.deathsCount || 0 },
+  { id: 'violations', label: 'الخروقات', get: (r) => r.violationsCount || 0 },
+  { id: 'events', label: 'الفعاليات', get: (r) => r.eventsCount || 0 },
+  { id: 'incidents', label: 'الحوادث', get: (r) => r.incidentsCount || 0 },
+  { id: 'resources', label: 'الموارد الموزعة', get: (r) => r.resourcesDistributed || 0 },
+  { id: 'deployment', label: 'القوة المنتشرة', get: (r) => r.deploymentCount || 0 },
+];
+
 function computeAggregates(reports: any[], officeIds: string[], extraKeys: string[] = []): Record<string, number> {
   const filt = officeIds.length === 0 ? reports : reports.filter(r => officeIds.includes(r.officeId));
   const base: Record<string, number> = { visitors: 0, vehicles: 0, processions: 0, deaths: 0, violations: 0, events: 0, incidents: 0, resources: 0, deployment: 0 };
