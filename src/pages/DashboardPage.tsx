@@ -663,7 +663,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                {officesForChart.map((o: Office, i: number) => (
                   <Bar key={o.code} dataKey={o.code} fill={GOVERNORATE_COLORS[i]} stroke={GOVERNORATE_COLORS[i]} radius={[3, 3, 0, 0]} name={o.nameAr.replace('مكتب ', '')} />
                 ))}
               </BarChart>
@@ -674,14 +674,14 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                {officesForChart.map((o: Office, i: number) => (
                   <Line key={o.code} type="monotone" dataKey={o.code} stroke={GOVERNORATE_COLORS[i]} strokeWidth={2} dot={{ r: 2, fill: GOVERNORATE_COLORS[i] }} name={o.nameAr.replace('مكتب ', '')} />
                 ))}
               </LineChart>
             ) : (
               <AreaChart data={areaData}>
                 <defs>
-                  {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                  {officesForChart.map((o: Office, i: number) => (
                     <linearGradient key={o.code} id={`g-${o.code}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.6} />
                       <stop offset="100%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.02} />
@@ -697,7 +697,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                {officesForChart.map((o: Office, i: number) => (
                   <Area key={o.code} type="monotone" dataKey={o.code} stroke={GOVERNORATE_COLORS[i]} fill={`url(#g-${o.code})`} strokeWidth={2} name={o.nameAr.replace('مكتب ', '')} />
                 ))}
               </AreaChart>
