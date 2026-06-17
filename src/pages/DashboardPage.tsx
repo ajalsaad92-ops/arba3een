@@ -22,6 +22,19 @@ type ViewMode = 'command' | 'ops' | 'analytics';
 
 const GOVERNORATE_COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#EC4899', '#84CC16', '#FBBF24', '#A78BFA', '#34D399', '#F87171', '#FB923C', '#FB7185'];
 
+// Selectable metrics (categories) for the visitor-movement chart.
+const CHART_METRICS: { id: string; label: string; get: (r: any) => number }[] = [
+  { id: 'visitors', label: 'حركة الزوار', get: (r) => (r.visitorsIn || 0) + (r.visitorsOut || 0) },
+  { id: 'vehicles', label: 'حركة العجلات', get: (r) => r.vehiclesCount || 0 },
+  { id: 'processions', label: 'أعداد المواكب', get: (r) => r.processionsCount || 0 },
+  { id: 'deaths', label: 'الوفيات', get: (r) => r.deathsCount || 0 },
+  { id: 'violations', label: 'الخروقات', get: (r) => r.violationsCount || 0 },
+  { id: 'events', label: 'الفعاليات', get: (r) => r.eventsCount || 0 },
+  { id: 'incidents', label: 'الحوادث', get: (r) => r.incidentsCount || 0 },
+  { id: 'resources', label: 'الموارد الموزعة', get: (r) => r.resourcesDistributed || 0 },
+  { id: 'deployment', label: 'القوة المنتشرة', get: (r) => r.deploymentCount || 0 },
+];
+
 function computeAggregates(reports: any[], officeIds: string[], extraKeys: string[] = []): Record<string, number> {
   const filt = officeIds.length === 0 ? reports : reports.filter(r => officeIds.includes(r.officeId));
   const base: Record<string, number> = { visitors: 0, vehicles: 0, processions: 0, deaths: 0, violations: 0, events: 0, incidents: 0, resources: 0, deployment: 0 };
@@ -436,8 +449,26 @@ function OpsView({ agg, effectiveFilter, selectedOffice, setSelectedOffice, acti
 function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice, setSelectedOffice }: any) {
   const { state } = useOps();
 
+
   type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
   const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
+  const [chartMetric, setChartMetric] = useState<string>('visitors');
+  const [officeMenuOpen, setOfficeMenuOpen] = useState(false);
+  // Offices available for this user, and which are selected for the chart (max recommended 5 shown).
+  const availableOffices = useMemo(() => OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)), [effectiveFilter]);
+  const [selectedChartOffices, setSelectedChartOffices] = useState<string[]>(() => availableOffices.slice(0, 5).map((o: Office) => o.id));
+
+  const activeMetric = CHART_METRICS.find((m) => m.id === chartMetric) || CHART_METRICS[0];
+  const officesForChart = useMemo(
+    () => availableOffices.filter((o: Office) => selectedChartOffices.includes(o.id)).slice(0, 8),
+    [availableOffices, selectedChartOffices]
+  );
+
+  const toggleChartOffice = (id: string) => {
+    setSelectedChartOffices((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const hasAnyData =
     state.todayReports.length > 0 || state.historicalReports.length > 0;
@@ -461,20 +492,18 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
       const dsStr = date.toISOString().slice(0, 10);
       const obj: any = { date: dsStr.slice(5) };
       const dayReports = state.historicalReports.filter(r => r.reportDate === dsStr);
-      const officesForChart = OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5);
       officesForChart.forEach((officeForChart: Office) => {
         const r = d === 0
           ? state.todayReports.find(x => x.officeId === officeForChart.id)
           : dayReports.find(x => x.officeId === officeForChart.id);
-        obj[officeForChart.code] = r ? r.visitorsIn + r.visitorsOut : 0;
+        obj[officeForChart.code] = r ? activeMetric.get(r) : 0;
       });
       days.push(obj);
     }
     return days;
-  }, [state.historicalReports, state.todayReports, effectiveFilter]);
+  }, [state.historicalReports, state.todayReports, officesForChart, activeMetric]);
 
   const horizontalData = useMemo(() => {
-    const officesForChart = OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5);
     return officesForChart.map((o: Office) => {
       let total = 0;
       for (let d = 13; d >= 0; d--) {
@@ -483,11 +512,11 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
         const r = d === 0
           ? state.todayReports.find(x => x.officeId === o.id)
           : state.historicalReports.find(x => x.officeId === o.id && x.reportDate === dsStr);
-        if (r) total += r.visitorsIn + r.visitorsOut;
+        if (r) total += activeMetric.get(r);
       }
       return { name: o.nameAr.replace('مكتب ', '').slice(0, 10), value: total, officeId: o.id };
     }).sort((a, b) => b.value - a.value);
-  }, [state.historicalReports, state.todayReports, effectiveFilter]);
+  }, [state.historicalReports, state.todayReports, officesForChart, activeMetric]);
 
   const incidentsRanked = useMemo(() => {
     return state.todayReports
@@ -526,7 +555,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
         <div className="lg:col-span-3 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <div className="text-sm font-bold text-slate-200">حركة الزوار — آخر 14 يوم</div>
+            <div className="text-sm font-bold text-slate-200">{activeMetric.label} — آخر 14 يوم</div>
             <div className="flex items-center gap-1">
               {[
                 { id: 'area', label: 'مساحة', icon: Activity },
@@ -552,6 +581,65 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
               })}
             </div>
           </div>
+
+          {/* Filters: category (metric) + governorates */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-500 font-bold">الفئة:</span>
+              <select
+                value={chartMetric}
+                onChange={(e) => setChartMetric(e.target.value)}
+                className="bg-[#0B0F19] border border-[#1E293B] text-slate-200 text-[11px] font-bold rounded-md px-2 py-1 focus:outline-none focus:border-amber-500"
+              >
+                {CHART_METRICS.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setOfficeMenuOpen((v) => !v)}
+                className="flex items-center gap-1.5 bg-[#0B0F19] border border-[#1E293B] text-slate-200 text-[11px] font-bold rounded-md px-2 py-1 hover:border-amber-500 transition-colors"
+              >
+                <Map className="w-3 h-3 text-amber-400" />
+                <span>المحافظات ({selectedChartOffices.length})</span>
+              </button>
+              {officeMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setOfficeMenuOpen(false)} />
+                  <div className="absolute z-20 mt-1 right-0 w-56 max-h-64 overflow-y-auto bg-[#111827] border border-[#1E293B] rounded-lg shadow-xl p-2 space-y-0.5">
+                    <div className="flex items-center justify-between px-1 pb-1 mb-1 border-b border-[#1E293B]">
+                      <button
+                        onClick={() => setSelectedChartOffices(availableOffices.map((o: Office) => o.id))}
+                        className="text-[10px] text-amber-400 font-bold hover:underline"
+                      >تحديد الكل</button>
+                      <button
+                        onClick={() => setSelectedChartOffices([])}
+                        className="text-[10px] text-slate-400 font-bold hover:underline"
+                      >مسح الكل</button>
+                    </div>
+                    {availableOffices.map((o: Office) => {
+                      const checked = selectedChartOffices.includes(o.id);
+                      return (
+                        <button
+                          key={o.id}
+                          onClick={() => toggleChartOffice(o.id)}
+                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#0B0F19] text-right transition-colors"
+                        >
+                          <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${checked ? 'bg-amber-500 border-amber-500' : 'border-[#334155]'}`}>
+                            {checked && <Check className="w-3 h-3 text-black" />}
+                          </span>
+                          <span className="text-[11px] text-slate-200 flex-1">{o.nameAr.replace('مكتب ', '')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           <ResponsiveContainer width="100%" height={240}>
             {visitorChartType === 'horizontal' ? (
               <BarChart data={horizontalData} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
@@ -565,7 +653,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={60} tick={{ fill: '#94A3B8', fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [formatFullNumber(v), 'الزوار']} />
+                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [formatFullNumber(v), activeMetric.label]} />
                 <Bar dataKey="value" fill="url(#hbarGradient)" radius={[0, 4, 4, 0]} barSize={18} />
               </BarChart>
             ) : visitorChartType === 'vertical' ? (
@@ -575,7 +663,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                {officesForChart.map((o: Office, i: number) => (
                   <Bar key={o.code} dataKey={o.code} fill={GOVERNORATE_COLORS[i]} stroke={GOVERNORATE_COLORS[i]} radius={[3, 3, 0, 0]} name={o.nameAr.replace('مكتب ', '')} />
                 ))}
               </BarChart>
@@ -586,14 +674,14 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                {officesForChart.map((o: Office, i: number) => (
                   <Line key={o.code} type="monotone" dataKey={o.code} stroke={GOVERNORATE_COLORS[i]} strokeWidth={2} dot={{ r: 2, fill: GOVERNORATE_COLORS[i] }} name={o.nameAr.replace('مكتب ', '')} />
                 ))}
               </LineChart>
             ) : (
               <AreaChart data={areaData}>
                 <defs>
-                  {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                  {officesForChart.map((o: Office, i: number) => (
                     <linearGradient key={o.code} id={`g-${o.code}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.6} />
                       <stop offset="100%" stopColor={GOVERNORATE_COLORS[i]} stopOpacity={0.02} />
@@ -609,7 +697,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
                 <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E293B', borderRadius: 8, fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5).map((o: Office, i: number) => (
+                {officesForChart.map((o: Office, i: number) => (
                   <Area key={o.code} type="monotone" dataKey={o.code} stroke={GOVERNORATE_COLORS[i]} fill={`url(#g-${o.code})`} strokeWidth={2} name={o.nameAr.replace('مكتب ', '')} />
                 ))}
               </AreaChart>
