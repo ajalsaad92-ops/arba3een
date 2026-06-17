@@ -11,9 +11,9 @@ import { getEffectiveKpiCatalog } from '../lib/kpiCatalog';
 import { buildInsights } from '../lib/insights';
 import {
   Users, Truck, AlertOctagon, BarChart3, Map, Activity,
-  Award, Check, Clock, X, Timer, Search, Download, Plus, TrendingUp, TrendingDown, Star, Info, ZapOff, Package
+  Award, Check, Clock, X, Timer, Search, Download, Plus, TrendingUp, TrendingDown, Star, Info, ZapOff, Package, BarChart2
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, Legend, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { formatNumber, formatFullNumber, relativeTime } from '../lib/utils';
 import type { Office } from '../data/offices';
 import { getHeatColor, toIntensity } from '../components/Heatmap';
