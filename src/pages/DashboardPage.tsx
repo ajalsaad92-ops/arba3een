@@ -449,11 +449,6 @@ function OpsView({ agg, effectiveFilter, selectedOffice, setSelectedOffice, acti
 function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice, setSelectedOffice }: any) {
   const { state } = useOps();
 
-  type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
-  const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
-
-  const hasAnyData =
-    state.todayReports.length > 0 || state.historicalReports.length > 0;
 
   type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
   const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
