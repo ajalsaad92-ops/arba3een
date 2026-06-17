@@ -433,7 +433,7 @@ function OpsView({ agg, effectiveFilter, selectedOffice, setSelectedOffice, acti
 // ════════════════════════════════════════════════════════════════
 // VIEW 3: Analytics Mode
 // ════════════════════════════════════════════════════════════════
-function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter }: any) {
+function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice, setSelectedOffice }: any) {
   const { state } = useOps();
 
   type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
