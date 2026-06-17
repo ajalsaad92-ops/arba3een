@@ -555,7 +555,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
         <div className="lg:col-span-3 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <div className="text-sm font-bold text-slate-200">حركة الزوار — آخر 14 يوم</div>
+            <div className="text-sm font-bold text-slate-200">{activeMetric.label} — آخر 14 يوم</div>
             <div className="flex items-center gap-1">
               {[
                 { id: 'area', label: 'مساحة', icon: Activity },
@@ -581,6 +581,65 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
               })}
             </div>
           </div>
+
+          {/* Filters: category (metric) + governorates */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-500 font-bold">الفئة:</span>
+              <select
+                value={chartMetric}
+                onChange={(e) => setChartMetric(e.target.value)}
+                className="bg-[#0B0F19] border border-[#1E293B] text-slate-200 text-[11px] font-bold rounded-md px-2 py-1 focus:outline-none focus:border-amber-500"
+              >
+                {CHART_METRICS.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setOfficeMenuOpen((v) => !v)}
+                className="flex items-center gap-1.5 bg-[#0B0F19] border border-[#1E293B] text-slate-200 text-[11px] font-bold rounded-md px-2 py-1 hover:border-amber-500 transition-colors"
+              >
+                <Map className="w-3 h-3 text-amber-400" />
+                <span>المحافظات ({selectedChartOffices.length})</span>
+              </button>
+              {officeMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setOfficeMenuOpen(false)} />
+                  <div className="absolute z-20 mt-1 right-0 w-56 max-h-64 overflow-y-auto bg-[#111827] border border-[#1E293B] rounded-lg shadow-xl p-2 space-y-0.5">
+                    <div className="flex items-center justify-between px-1 pb-1 mb-1 border-b border-[#1E293B]">
+                      <button
+                        onClick={() => setSelectedChartOffices(availableOffices.map((o: Office) => o.id))}
+                        className="text-[10px] text-amber-400 font-bold hover:underline"
+                      >تحديد الكل</button>
+                      <button
+                        onClick={() => setSelectedChartOffices([])}
+                        className="text-[10px] text-slate-400 font-bold hover:underline"
+                      >مسح الكل</button>
+                    </div>
+                    {availableOffices.map((o: Office) => {
+                      const checked = selectedChartOffices.includes(o.id);
+                      return (
+                        <button
+                          key={o.id}
+                          onClick={() => toggleChartOffice(o.id)}
+                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#0B0F19] text-right transition-colors"
+                        >
+                          <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${checked ? 'bg-amber-500 border-amber-500' : 'border-[#334155]'}`}>
+                            {checked && <Check className="w-3 h-3 text-black" />}
+                          </span>
+                          <span className="text-[11px] text-slate-200 flex-1">{o.nameAr.replace('مكتب ', '')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           <ResponsiveContainer width="100%" height={240}>
             {visitorChartType === 'horizontal' ? (
               <BarChart data={horizontalData} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
