@@ -455,6 +455,29 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
   const hasAnyData =
     state.todayReports.length > 0 || state.historicalReports.length > 0;
 
+  type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
+  const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
+  const [chartMetric, setChartMetric] = useState<string>('visitors');
+  const [officeMenuOpen, setOfficeMenuOpen] = useState(false);
+  // Offices available for this user, and which are selected for the chart (max recommended 5 shown).
+  const availableOffices = useMemo(() => OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)), [effectiveFilter]);
+  const [selectedChartOffices, setSelectedChartOffices] = useState<string[]>(() => availableOffices.slice(0, 5).map((o: Office) => o.id));
+
+  const activeMetric = CHART_METRICS.find((m) => m.id === chartMetric) || CHART_METRICS[0];
+  const officesForChart = useMemo(
+    () => availableOffices.filter((o: Office) => selectedChartOffices.includes(o.id)).slice(0, 8),
+    [availableOffices, selectedChartOffices]
+  );
+
+  const toggleChartOffice = (id: string) => {
+    setSelectedChartOffices((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const hasAnyData =
+    state.todayReports.length > 0 || state.historicalReports.length > 0;
+
   const sparklineFor = (key: keyof typeof agg) => {
     const days: number[] = [];
     for (let d = 13; d >= 0; d--) {
@@ -474,20 +497,18 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
       const dsStr = date.toISOString().slice(0, 10);
       const obj: any = { date: dsStr.slice(5) };
       const dayReports = state.historicalReports.filter(r => r.reportDate === dsStr);
-      const officesForChart = OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5);
       officesForChart.forEach((officeForChart: Office) => {
         const r = d === 0
           ? state.todayReports.find(x => x.officeId === officeForChart.id)
           : dayReports.find(x => x.officeId === officeForChart.id);
-        obj[officeForChart.code] = r ? r.visitorsIn + r.visitorsOut : 0;
+        obj[officeForChart.code] = r ? activeMetric.get(r) : 0;
       });
       days.push(obj);
     }
     return days;
-  }, [state.historicalReports, state.todayReports, effectiveFilter]);
+  }, [state.historicalReports, state.todayReports, officesForChart, activeMetric]);
 
   const horizontalData = useMemo(() => {
-    const officesForChart = OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).slice(0, 5);
     return officesForChart.map((o: Office) => {
       let total = 0;
       for (let d = 13; d >= 0; d--) {
@@ -496,11 +517,11 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
         const r = d === 0
           ? state.todayReports.find(x => x.officeId === o.id)
           : state.historicalReports.find(x => x.officeId === o.id && x.reportDate === dsStr);
-        if (r) total += r.visitorsIn + r.visitorsOut;
+        if (r) total += activeMetric.get(r);
       }
       return { name: o.nameAr.replace('مكتب ', '').slice(0, 10), value: total, officeId: o.id };
     }).sort((a, b) => b.value - a.value);
-  }, [state.historicalReports, state.todayReports, effectiveFilter]);
+  }, [state.historicalReports, state.todayReports, officesForChart, activeMetric]);
 
   const incidentsRanked = useMemo(() => {
     return state.todayReports
