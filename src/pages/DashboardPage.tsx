@@ -196,7 +196,7 @@ export default function DashboardPage() {
       <div className="flex-1 overflow-hidden">
         {view === 'command' && <CommandView agg={aggToday} trend={trend} aggYesterday={aggYesterday} effectiveFilter={effectiveFilter} selectedOffice={selectedOffice} setSelectedOffice={setSelectedOffice} activeEmergencies={activeEmergencies} />}
         {view === 'ops' && <OpsView agg={aggToday} trend={trend} aggYesterday={aggYesterday} effectiveFilter={effectiveFilter} selectedOffice={selectedOffice} setSelectedOffice={setSelectedOffice} activeEmergencies={activeEmergencies} />}
-        {view === 'analytics' && <AnalyticsView agg={aggToday} trend={trend} aggYesterday={aggYesterday} effectiveFilter={effectiveFilter} />}
+        {view === 'analytics' && <AnalyticsView agg={aggToday} trend={trend} aggYesterday={aggYesterday} effectiveFilter={effectiveFilter} selectedOffice={selectedOffice} setSelectedOffice={setSelectedOffice} />}
       </div>
 
       {/* Drill-down panel */}
