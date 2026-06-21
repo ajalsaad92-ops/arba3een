@@ -88,9 +88,10 @@ export default function SupervisorPanelPage() {
     }
   };
   const handleResolve = async (id: string) => {
+    const uid = state.currentUser?.id;
     try {
-      await actions.resolveEmergency(id);
-      dispatch({ type: 'RESOLVE_EMERGENCY', id });
+      await actions.resolveEmergency(id, uid);
+      dispatch({ type: 'RESOLVE_EMERGENCY', id, userId: uid });
       toast.success('✔ تم الحل');
     } catch (e: any) {
       toast.error('تعذر حل الحالة: ' + (e?.message ?? 'خطأ'));
