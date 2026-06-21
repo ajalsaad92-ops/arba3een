@@ -244,6 +244,9 @@ export default function AppShell() {
                         <div className="p-6 text-center text-xs text-slate-500">لا توجد إشعارات جديدة</div>
                       )}
                     </div>
+                    <div className="p-2 border-t border-[#1E293B]">
+                      <PushNotificationToggle />
+                    </div>
                   </div>
                 </>
               )}
