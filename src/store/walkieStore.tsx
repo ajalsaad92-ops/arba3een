@@ -77,6 +77,9 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+export type OnlineUser = { id: string; name: string; role: Role };
+export type Listener = { id: string; name: string; role: Role; at: number };
+
 interface WalkieCtx {
   connected: boolean;
   transmitting: boolean;
@@ -90,6 +93,10 @@ interface WalkieCtx {
   isDirector: boolean;
   startTalking: () => void;
   stopTalking: () => void;
+  /** Other users currently connected to the walkie channel (excludes me). */
+  onlineUsers: OnlineUser[];
+  /** Who actually heard my most recent transmission (director/all can review). */
+  recentListeners: Listener[];
 }
 
 const Ctx = createContext<WalkieCtx | null>(null);
