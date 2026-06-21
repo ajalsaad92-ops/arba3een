@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { ToastPermissions } from './components/ToastPermissions';
 import type { Role } from './data/types';
 import { unlockAudio } from './lib/notify';
+import { syncPushSubscriptionState } from './lib/pushSubscription';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: Role[] }) {
   const { state } = useOps();
