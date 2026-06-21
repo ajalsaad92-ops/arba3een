@@ -139,6 +139,7 @@ export default function ReportPage() {
 
   // ─── Submit ────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (submitting) return; // guard against double-tap
     if (!canSubmit && !extensionActive) { setShowExtension(true); return; }
     if (!office) return;
     if (!mgrs && (reporterLat == null || reporterLng == null)) {
@@ -187,6 +188,7 @@ export default function ReportPage() {
     const str = (k: string) => form[k] ?? '';
 
     const t = toast.loading('جاري إرسال التقرير...');
+    setSubmitting(true);
     try {
       await actions.submitReport({
         id: `r-new-${Date.now()}`,
@@ -236,9 +238,12 @@ export default function ReportPage() {
       if (extensionActive && status !== 'open') {
         actions.updateExtension(extensionActive.id, { consumedAt: new Date().toISOString() }).catch(() => {});
       }
-      setForm({}); setLocations({}); setRoutes({});
+      setForm({}); setLocations({}); setRoutes({}); setMgrs('');
+      discardDraft(); // clear saved draft after a successful send
     } catch (e: any) {
       toast.error(e?.message || 'فشل إرسال التقرير', { id: t });
+    } finally {
+      setSubmitting(false);
     }
   };
 
