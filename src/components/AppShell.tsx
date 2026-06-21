@@ -4,6 +4,7 @@ import { useOps } from '../store/opsStore';
 import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal } from 'lucide-react';
 import TimeLockBar from './TimeLockBar';
 import EmergencyBanner from './EmergencyBanner';
+import PushNotificationToggle from './PushNotificationToggle';
 import { OFFICES } from '../data/offices';
 import { toast } from 'sonner';
 import { useLocationTracker } from '../lib/useLocationTracker';
@@ -242,6 +243,9 @@ export default function AppShell() {
                       {state.lastActivity.filter(a => !(isViewer && a.type === 'emergency')).length === 0 && (
                         <div className="p-6 text-center text-xs text-slate-500">لا توجد إشعارات جديدة</div>
                       )}
+                    </div>
+                    <div className="p-2 border-t border-[#1E293B]">
+                      <PushNotificationToggle />
                     </div>
                   </div>
                 </>
