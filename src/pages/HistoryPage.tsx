@@ -221,7 +221,7 @@ export default function HistoryPage() {
               <button onClick={() => { setPage(0); toast.info(`تم تطبيق الفلتر: ${filtered.length} تقرير`); }} className="flex-1 bg-gradient-to-l from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black text-xs font-bold py-1.5 rounded-md">
                 تطبيق الفلتر
               </button>
-              <button onClick={() => { setFromDate(operationalDateDaysAgo(14)); setToDate(operationalDate()); setSelectedOffices([]); setStatusFilter('all'); setPage(0); toast.info('تم إعادة تعيين الفلاتر'); }} className="px-3 bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-xs font-bold py-1.5 rounded-md">macro
+              <button onClick={() => { setFromDate(operationalDateDaysAgo(14)); setToDate(operationalDate()); setSelectedOffices([]); setStatusFilter('all'); setPage(0); toast.info('تم إعادة تعيين الفلاتر'); }} className="px-3 bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-xs font-bold py-1.5 rounded-md">
                 إعادة تعيين
               </button>
             </div>
