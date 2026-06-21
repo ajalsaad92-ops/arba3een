@@ -114,9 +114,10 @@ export default function EmergencyPage() {
     }
   };
   const handleResolve = async (id: string) => {
-    dispatch({ type: 'RESOLVE_EMERGENCY', id });
+    const uid = state.currentUser?.id;
+    dispatch({ type: 'RESOLVE_EMERGENCY', id, userId: uid });
     try {
-      await actions.resolveEmergency(id);
+      await actions.resolveEmergency(id, uid);
       toast.success('✔ تم وضع الحالة كمنجزة');
     } catch (e) {
       toast.error('فشل وضع الحالة كمنجزة');

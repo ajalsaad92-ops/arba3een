@@ -60,9 +60,11 @@ type Action =
   | { type: 'FORCE_OPEN_WINDOW' }
   | { type: 'FORCE_CLOSE_WINDOW' }
   | { type: 'ADD_REPORT'; report: DailyReport }
+  | { type: 'REMOVE_REPORT'; id: string }
   | { type: 'ADD_EMERGENCY'; emergency: Emergency; silent?: boolean }
   | { type: 'ACK_EMERGENCY'; id: string; userId: string }
-  | { type: 'RESOLVE_EMERGENCY'; id: string }
+  | { type: 'RESOLVE_EMERGENCY'; id: string; userId?: string }
+  | { type: 'REMOVE_EMERGENCY'; id: string }
   | { type: 'ADD_EXTENSION'; extension: ExtensionRequest }
   | { type: 'UPDATE_EXTENSION'; id: string; patch: Partial<ExtensionRequest> }
   | { type: 'UPDATE_AGENT_LOCATION'; location: AgentLocation }
@@ -208,8 +210,10 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'ADD_REPORT': {
       const todayReports = state.todayReports.filter(r => r.officeId !== action.report.officeId);
       const newAct = { id: `a-${Date.now()}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد مُرسل`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
-      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
+      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
+    case 'REMOVE_REPORT':
+      return { ...state, todayReports: state.todayReports.filter(r => r.id !== action.id) };
     case 'ADD_EMERGENCY': {
       const newAct = { id: `a-${Date.now()}`, type: 'emergency' as const, text: `حالة طارئة: ${action.emergency.emergencyType}`, officeId: action.emergency.officeId, createdAt: action.emergency.createdAt };
       // Viewers must not receive critical/emergency notifications, so skip the
@@ -217,7 +221,7 @@ function reducer(state: OpsState, action: Action): OpsState {
       if (action.silent) {
         return { ...state, emergencies: [action.emergency, ...state.emergencies] };
       }
-      return { ...state, emergencies: [action.emergency, ...state.emergencies], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
+      return { ...state, emergencies: [action.emergency, ...state.emergencies], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
     case 'ACK_EMERGENCY':
       return {
@@ -230,12 +234,14 @@ function reducer(state: OpsState, action: Action): OpsState {
       return {
         ...state,
         emergencies: state.emergencies.map(e =>
-          e.id === action.id ? { ...e, status: 'resolved', resolvedAt: new Date().toISOString() } : e
+          e.id === action.id ? { ...e, status: 'resolved', resolvedById: action.userId ?? e.resolvedById, resolvedAt: new Date().toISOString() } : e
         ),
       };
+    case 'REMOVE_EMERGENCY':
+      return { ...state, emergencies: state.emergencies.filter(e => e.id !== action.id) };
     case 'ADD_EXTENSION': {
       const newAct = { id: `a-${Date.now()}`, type: 'extension' as const, text: `طلب تمديد من ${action.extension.requestedByName}`, officeId: action.extension.officeId, createdAt: action.extension.requestTime };
-      return { ...state, extensions: [action.extension, ...state.extensions], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
+      return { ...state, extensions: [action.extension, ...state.extensions], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
     case 'UPDATE_EXTENSION':
       return {
@@ -294,7 +300,7 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'ADD_BORDER_CROSSING':
       return { ...state, borderCrossings: [...state.borderCrossings, action.crossing] };
     case 'ADD_ACTIVITY':
-      return { ...state, lastActivity: [action.activity, ...state.lastActivity.slice(0, 11)] };
+      return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50) };
     case 'CLEAR_UNREAD':
       return { ...state, unreadNotifications: 0 };
     case 'MARK_NOTIFICATION_READ':
@@ -334,8 +340,8 @@ const actions = {
   async ackEmergency(id: string, userId: string) {
     await api.updateEmergency(id, { status: 'acknowledged', acknowledgedById: userId, acknowledgedAt: new Date().toISOString() });
   },
-  async resolveEmergency(id: string) {
-    await api.updateEmergency(id, { status: 'resolved', resolvedAt: new Date().toISOString() });
+  async resolveEmergency(id: string, userId?: string) {
+    await api.updateEmergency(id, { status: 'resolved', resolvedById: userId, resolvedAt: new Date().toISOString() });
   },
   async submitExtension(ex: ExtensionRequest) {
     await api.insertExtension(ex);
@@ -386,6 +392,11 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   // set up once) can read the latest role/id without re-subscribing.
   const currentUserRef = useRef(state.currentUser);
   useEffect(() => { currentUserRef.current = state.currentUser; }, [state.currentUser]);
+
+  // Keep a live ref to the full state so realtime callbacks can resolve names
+  // (e.g. who resolved an emergency) without re-subscribing.
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
 
   // Reusable loader for all dashboard data (used on first load and whenever
   // the auth session becomes available/refreshes).
@@ -506,6 +517,17 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
 
       unsub = api.subscribe((event) => {
+      // Viewers must never hear any sound or receive any alert. Route every
+      // alert through this helper so a single role check silences them entirely.
+      const alert = (kind: Parameters<typeof fireAlert>[0], title: string, body: string) => {
+        if (currentUserRef.current?.role === 'viewer') return;
+        fireAlert(kind, title, body);
+      };
+      // Resolve a user id → Arabic name from the loaded users list.
+      const nameOf = (id?: string) => {
+        if (!id) return '';
+        return stateRef.current.users.find(u => u.id === id)?.fullNameAr ?? '';
+      };
       if (event.table === '*') {
         // Full refresh signal
         (async () => {
@@ -518,15 +540,21 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         })();
         return;
       }
-      if (event.table === 'daily_reports' && event.payload?.new) {
-        dispatch({ type: 'ADD_REPORT', report: event.payload.new });
-        const r = event.payload.new;
-        // The author of the report shouldn't be alerted about their own submit.
-        if (currentUserRef.current?.id !== r.submittedBy) {
-          fireAlert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
+      if (event.table === 'daily_reports') {
+        if (event.type === 'DELETE' && event.payload?.old?.id) {
+          dispatch({ type: 'REMOVE_REPORT', id: event.payload.old.id });
+        } else if (event.payload?.new) {
+          dispatch({ type: 'ADD_REPORT', report: event.payload.new });
+          const r = event.payload.new;
+          // The author of the report shouldn't be alerted about their own submit.
+          if (currentUserRef.current?.id !== r.submittedBy) {
+            alert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
+          }
         }
       } else if (event.table === 'emergencies') {
-        if (event.type === 'INSERT' && event.payload?.new) {
+        if (event.type === 'DELETE' && event.payload?.old?.id) {
+          dispatch({ type: 'REMOVE_EMERGENCY', id: event.payload.old.id });
+        } else if (event.type === 'INSERT' && event.payload?.new) {
           const e = event.payload.new;
           const me = currentUserRef.current;
           const isViewer = me?.role === 'viewer';
@@ -536,20 +564,23 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           const isOwn = !!me && e.reportedById === me.id;
           dispatch({ type: 'ADD_EMERGENCY', emergency: e, silent: isViewer || isOwn });
           if (!isViewer && !isOwn) {
-            fireAlert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
+            alert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
           }
         }
         else if (event.type === 'UPDATE' && event.payload?.new) {
           const e = event.payload.new;
-          if (e.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: e.id });
+          if (e.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: e.id, userId: e.resolvedById });
           else if (e.status === 'acknowledged') dispatch({ type: 'ACK_EMERGENCY', id: e.id, userId: e.acknowledgedById || '' });
-          // Notify the person who created the emergency when it's acknowledged/resolved.
+          // Notify the person who created the emergency when it's acknowledged/resolved,
+          // naming who handled it.
           const me = currentUserRef.current;
-          if (me && e.reportedById === me.id && me.id !== e.acknowledgedById) {
-            if (e.status === 'acknowledged') {
-              fireAlert('extension', '✅ تم استلام حالتك الطارئة', `${e.emergencyType} — تم تأكيد الاستلام من القيادة`);
-            } else if (e.status === 'resolved') {
-              fireAlert('report', '✔ تم حل حالتك الطارئة', `${e.emergencyType} — تم وضع الحالة كمنجزة`);
+          if (me && e.reportedById === me.id) {
+            if (e.status === 'acknowledged' && me.id !== e.acknowledgedById) {
+              const who = nameOf(e.acknowledgedById);
+              alert('extension', '✅ تم استلام حالتك الطارئة', `${e.emergencyType} — تم تأكيد الاستلام${who ? ` من ${who}` : ' من القيادة'}`);
+            } else if (e.status === 'resolved' && me.id !== e.resolvedById) {
+              const who = nameOf(e.resolvedById);
+              alert('report', '✔ تم حل حالتك الطارئة', `${e.emergencyType} — تم حل الحالة${who ? ` بواسطة ${who}` : ''}`);
             }
           }
         }
@@ -558,7 +589,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           dispatch({ type: 'ADD_EXTENSION', extension: event.payload.new });
           const x = event.payload.new;
           if (currentUserRef.current?.id !== x.requestedById) {
-            fireAlert('extension', 'طلب تمديد جديد', `${x.requestedByName || x.officeId} يطلب تمديد الوقت`);
+            alert('extension', 'طلب تمديد جديد', `${x.requestedByName || x.officeId} يطلب تمديد الوقت`);
           }
         }
         else if (event.type === 'UPDATE' && event.payload?.new) {
@@ -567,8 +598,8 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           // Tell the requester when their extension is approved/rejected.
           const me = currentUserRef.current;
           if (me && x.requestedById === me.id) {
-            if (x.status === 'approved') fireAlert('extension', '✅ تمت الموافقة على التمديد', 'تم فتح نافذة إضافية للإرسال');
-            else if (x.status === 'rejected') fireAlert('system', '❌ تم رفض طلب التمديد', 'لم تتم الموافقة على طلبك');
+            if (x.status === 'approved') alert('extension', '✅ تمت الموافقة على التمديد', 'تم فتح نافذة إضافية للإرسال');
+            else if (x.status === 'rejected') alert('system', '❌ تم رفض طلب التمديد', 'لم تتم الموافقة على طلبك');
           }
         }
       } else if (event.table === 'time_windows' && event.payload?.new) {

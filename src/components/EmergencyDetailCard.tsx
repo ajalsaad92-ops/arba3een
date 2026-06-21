@@ -35,6 +35,7 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
   const meta = STATUS_META[em.status];
   const nameById = (id?: string) => (id ? users.find(u => u.id === id)?.fullNameAr : undefined);
   const ackBy = nameById(em.acknowledgedById);
+  const resolvedBy = nameById(em.resolvedById);
   const hasCoords = typeof em.lat === 'number' && typeof em.lng === 'number';
 
   return createPortal(
@@ -96,7 +97,7 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
             <Row icon={<ShieldCheck className="w-4 h-4" />} label="تم الاستلام" value={`${fmt(em.acknowledgedAt)}${ackBy ? ` — ${ackBy}` : ''}`} />
           )}
           {em.resolvedAt && (
-            <Row icon={<CheckCircle2 className="w-4 h-4" />} label="تم الحل" value={fmt(em.resolvedAt)} />
+            <Row icon={<CheckCircle2 className="w-4 h-4" />} label="تم الحل" value={`${fmt(em.resolvedAt)}${resolvedBy ? ` — ${resolvedBy}` : ''}`} />
           )}
         </div>
       </div>

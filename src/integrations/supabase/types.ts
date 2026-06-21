@@ -250,6 +250,7 @@ export type Database = {
           reported_by: string
           reported_by_name: string
           resolved_at: string | null
+          resolved_by: string | null
           status: string
         }
         Insert: {
@@ -267,6 +268,7 @@ export type Database = {
           reported_by: string
           reported_by_name?: string
           resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
         }
         Update: {
@@ -284,6 +286,7 @@ export type Database = {
           reported_by?: string
           reported_by_name?: string
           resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
         }
         Relationships: [

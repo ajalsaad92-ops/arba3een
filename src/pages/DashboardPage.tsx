@@ -251,7 +251,7 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
   const [detailEm, setDetailEm] = useState<any>(null);
 
   const handleAck = async (id: string) => { await actions.ackEmergency(id, user.id); };
-  const handleResolve = async (id: string) => { await actions.resolveEmergency(id); };
+  const handleResolve = async (id: string) => { await actions.resolveEmergency(id, user.id); };
 
   const governorateData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -270,9 +270,10 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
   }, [state.todayReports, effectiveFilter]);
 
   return (
-    <div className="h-full flex flex-col lg:flex-row gap-3 p-3 overflow-hidden">
+    <div className="h-full flex flex-col lg:flex-row gap-3 p-3 overflow-y-auto lg:overflow-hidden">
       {/* Left 45% */}
-      <div className="lg:w-[45%] flex flex-col gap-3 overflow-y-auto">
+      <div className="lg:w-[45%] flex flex-col gap-3 lg:overflow-y-auto">
+
         {/* Top KPIs — driven by customKpis */}
         <CustomKpiGrid agg={agg} aggYesterday={aggYesterday} trend={trend} activeEmergencies={activeEmergencies} cols={3} />
 
@@ -410,7 +411,8 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
       </div>
 
       {/* Right 55% - map */}
-      <div className="lg:w-[55%] bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden relative min-h-[400px]">
+      <div className="lg:w-[55%] shrink-0 bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden relative h-[55vh] lg:h-auto lg:min-h-[400px]">
+
         <MapLayerControl position="right" variant="vertical" />
         <IraqMap
           onSelectOffice={setSelectedOffice}

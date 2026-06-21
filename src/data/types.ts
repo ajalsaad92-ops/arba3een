@@ -90,6 +90,7 @@ export interface Emergency {
   status: 'active' | 'acknowledged' | 'resolved';
   acknowledgedById?: string;
   acknowledgedAt?: string;
+  resolvedById?: string;
   resolvedAt?: string;
   createdAt: string;
 }
