@@ -76,9 +76,6 @@ export default function ReportPage() {
   }, [DRAFT_KEY]);
   // Persist the in-progress form to localStorage whenever it changes.
   useEffect(() => {
-    if (!draftRestoredRef.current && !draftAvailable) {
-      // Don't overwrite an un-restored saved draft with the empty initial form.
-    }
     const empty = Object.keys(form).length === 0 && Object.keys(locations).length === 0 &&
       Object.keys(routes).length === 0 && !mgrs;
     if (empty) return;
