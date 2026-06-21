@@ -311,7 +311,19 @@ export default function ReportPage() {
               <Check className="w-3.5 h-3.5" /> تم إرسال تقرير اليوم — {new Date(reportExists.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
             </div>
           )}
+          {draftAvailable && (
+            <div className="mt-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/30 text-xs text-blue-200">
+              <div className="flex items-center gap-2 mb-2 font-bold">
+                <History className="w-3.5 h-3.5" /> لديك مسودة غير مُرسلة لهذا اليوم
+              </div>
+              <div className="flex gap-2">
+                <button onClick={restoreDraft} className="flex-1 py-1.5 rounded-md bg-blue-500 hover:bg-blue-400 text-black font-bold">استئناف المسودة</button>
+                <button onClick={discardDraft} className="px-3 py-1.5 rounded-md bg-[#1E293B] hover:bg-[#263244] text-slate-300 font-bold">تجاهل</button>
+              </div>
+            </div>
+          )}
         </div>
+
 
         {/* Form groups */}
         {plan.length === 0 ? (
@@ -419,8 +431,8 @@ export default function ReportPage() {
 
           <button
             onClick={handleSubmit}
-            disabled={status === 'locked' && !extensionActive}
-            className={`w-full py-3.5 rounded-lg font-display font-black text-base transition-all ${
+            disabled={submitting || (status === 'locked' && !extensionActive)}
+            className={`w-full py-3.5 rounded-lg font-display font-black text-base transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
               status === 'locked' && !extensionActive
                 ? 'bg-red-600/80 hover:bg-red-500 text-white'
                 : extensionActive
@@ -428,7 +440,11 @@ export default function ReportPage() {
                 : 'bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/30'
             }`}
           >
-            {status === 'locked' && !extensionActive ? (
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> جاري الإرسال...
+              </span>
+            ) : status === 'locked' && !extensionActive ? (
               <span className="flex items-center justify-center gap-2"><Lock className="w-4 h-4" /> انتهى وقت الإرسال — طلب تمديد</span>
             ) : extensionActive ? (
               <span className="flex items-center justify-center gap-2"><Timer className="w-4 h-4" /> إرسال التقرير (تمديد نشط)</span>
@@ -437,6 +453,7 @@ export default function ReportPage() {
             )}
           </button>
         </div>
+
 
         {/* Past reports — visible only to office manager / supervisor / director */}
         {user.role !== 'agent' && (
