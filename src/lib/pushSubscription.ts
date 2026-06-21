@@ -107,7 +107,7 @@ export async function subscribeToPush(): Promise<boolean> {
   try {
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
     });
     await savePushSubscription(sub);
     toast.success('تم تفعيل الإشعارات — ستصلك حتى عند إغلاق التطبيق عند ربط الخادم.');
