@@ -81,6 +81,36 @@ type Action =
   | { type: 'MARK_NOTIFICATION_READ'; id: string }
   | { type: 'MARK_ALL_NOTIFICATIONS_READ' };
 
+// ─── User UI preferences persistence (per-browser session) ─────────
+const PREFS_KEY = 'ops:uiPrefs';
+interface UiPrefs {
+  activeMapLayers?: string[];
+  officeFilter?: string[];
+  visibleProvinces?: string[];
+  dateRange?: { from: string; to: string } | null;
+  selectedOfficeId?: string | null;
+}
+function loadPrefs(): UiPrefs {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(PREFS_KEY) : null;
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function savePrefs(state: OpsState) {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const prefs: UiPrefs = {
+      activeMapLayers: Array.from(state.activeMapLayers),
+      officeFilter: state.officeFilter,
+      visibleProvinces: Array.from(state.visibleProvinces),
+      dateRange: state.dateRange,
+      selectedOfficeId: state.selectedOfficeId,
+    };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch { /* ignore */ }
+}
+const _prefs = loadPrefs();
+
 const initialState: OpsState = {
   currentUser: null,
   authLoading: true,
@@ -97,17 +127,17 @@ const initialState: OpsState = {
   borderCrossings: [],
   fieldGroups: [],
   fieldDefinitions: [],
-  selectedOfficeId: null,
-  activeMapLayers: new Set(['offices', 'borderCrossings', 'agentGPS']),
-  officeFilter: [],
-  visibleProvinces: new Set(),
+  selectedOfficeId: _prefs.selectedOfficeId ?? null,
+  activeMapLayers: new Set(_prefs.activeMapLayers ?? ['offices', 'borderCrossings', 'agentGPS']),
+  officeFilter: _prefs.officeFilter ?? [],
+  visibleProvinces: new Set(_prefs.visibleProvinces ?? []),
   customKpis: (() => {
     try {
       const v = typeof localStorage !== 'undefined' ? localStorage.getItem('ops:customKpis') : null;
       return v ? JSON.parse(v) : ['visitors', 'vehicles', 'processions', 'emergencies'];
     } catch { return ['visitors', 'vehicles', 'processions', 'emergencies']; }
   })(),
-  dateRange: null,
+  dateRange: _prefs.dateRange ?? null,
   unreadNotifications: 0,
   lastActivity: [],
   loadingFlags: {},
@@ -217,30 +247,46 @@ function reducer(state: OpsState, action: Action): OpsState {
       const updated = exists ? state.agentLocations.map(a => a.agentId === action.location.agentId ? action.location : a) : [...state.agentLocations, action.location];
       return { ...state, agentLocations: updated };
     }
-    case 'SELECT_OFFICE':
-      return { ...state, selectedOfficeId: action.id };
+    case 'SELECT_OFFICE': {
+      const next = { ...state, selectedOfficeId: action.id };
+      savePrefs(next);
+      return next;
+    }
     case 'TOGGLE_LAYER': {
-      const next = new Set(state.activeMapLayers);
-      if (next.has(action.layer)) next.delete(action.layer);
-      else next.add(action.layer);
-      return { ...state, activeMapLayers: next };
+      const layers = new Set(state.activeMapLayers);
+      if (layers.has(action.layer)) layers.delete(action.layer);
+      else layers.add(action.layer);
+      const next = { ...state, activeMapLayers: layers };
+      savePrefs(next);
+      return next;
     }
-    case 'SET_OFFICE_FILTER':
-      return { ...state, officeFilter: action.ids };
+    case 'SET_OFFICE_FILTER': {
+      const next = { ...state, officeFilter: action.ids };
+      savePrefs(next);
+      return next;
+    }
     case 'TOGGLE_PROVINCE': {
-      const next = new Set(state.visibleProvinces);
-      if (next.has(action.code)) next.delete(action.code);
-      else next.add(action.code);
-      return { ...state, visibleProvinces: next };
+      const provinces = new Set(state.visibleProvinces);
+      if (provinces.has(action.code)) provinces.delete(action.code);
+      else provinces.add(action.code);
+      const next = { ...state, visibleProvinces: provinces };
+      savePrefs(next);
+      return next;
     }
-    case 'SET_PROVINCES':
-      return { ...state, visibleProvinces: new Set(action.codes) };
+    case 'SET_PROVINCES': {
+      const next = { ...state, visibleProvinces: new Set(action.codes) };
+      savePrefs(next);
+      return next;
+    }
     case 'SET_CUSTOM_KPIS': {
       try { localStorage.setItem('ops:customKpis', JSON.stringify(action.ids)); } catch {}
       return { ...state, customKpis: action.ids };
     }
-    case 'SET_DATE_RANGE':
-      return { ...state, dateRange: action.range };
+    case 'SET_DATE_RANGE': {
+      const next = { ...state, dateRange: action.range };
+      savePrefs(next);
+      return next;
+    }
     case 'ADD_USER':
       return { ...state, users: [...state.users, action.user] };
     case 'UPDATE_USER':

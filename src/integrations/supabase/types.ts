@@ -692,6 +692,7 @@ export type Database = {
         | "route"
         | "date"
         | "time"
+        | "select"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -829,6 +830,7 @@ export const Constants = {
         "route",
         "date",
         "time",
+        "select",
       ],
     },
   },

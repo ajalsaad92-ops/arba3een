@@ -1,4 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+
+// Persisted state hook — remembers the user's last choice across sessions.
+function usePersistedState<T>(key: string, initial: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+      return raw != null ? (JSON.parse(raw) as T) : initial;
+    } catch { return initial; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+  }, [key, value]);
+  return [value, setValue];
+}
 import { useNavigate } from 'react-router-dom';
 import { useOps } from '../store/opsStore';
 import { OFFICES, officeById } from '../data/offices';
@@ -67,7 +81,7 @@ function computeAggregates(reports: any[], officeIds: string[], extraKeys: strin
 
 export default function DashboardPage() {
   const { state, dispatch } = useOps();
-  const [view, setView] = useState<ViewMode>('command');
+  const [view, setView] = usePersistedState<ViewMode>('dash:view', 'command');
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [search, setSearch] = useState('');
@@ -456,14 +470,14 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
 
 
   type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
-  const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
-  const [chartMetric, setChartMetric] = useState<string>('visitorsIn');
+  const [visitorChartType, setVisitorChartType] = usePersistedState<VisitorChartType>('dash:visitorChartType', 'area');
+  const [chartMetric, setChartMetric] = usePersistedState<string>('dash:chartMetric', 'visitorsIn');
   // Visitors KPI shows arrivals OR departures — never their sum (they are distinct flows).
-  const [visitorFlow, setVisitorFlow] = useState<'in' | 'out'>('in');
+  const [visitorFlow, setVisitorFlow] = usePersistedState<'in' | 'out'>('dash:visitorFlow', 'in');
   const [officeMenuOpen, setOfficeMenuOpen] = useState(false);
   // Offices available for this user, and which are selected for the chart (max recommended 5 shown).
   const availableOffices = useMemo(() => OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)), [effectiveFilter]);
-  const [selectedChartOffices, setSelectedChartOffices] = useState<string[]>(() => availableOffices.slice(0, 5).map((o: Office) => o.id));
+  const [selectedChartOffices, setSelectedChartOffices] = usePersistedState<string[]>('dash:selectedChartOffices', availableOffices.slice(0, 5).map((o: Office) => o.id));
 
   const activeMetric = CHART_METRICS.find((m) => m.id === chartMetric) || CHART_METRICS[0];
   const officesForChart = useMemo(
