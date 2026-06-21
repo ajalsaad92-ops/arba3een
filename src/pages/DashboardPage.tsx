@@ -251,7 +251,7 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
   const [detailEm, setDetailEm] = useState<any>(null);
 
   const handleAck = async (id: string) => { await actions.ackEmergency(id, user.id); };
-  const handleResolve = async (id: string) => { await actions.resolveEmergency(id); };
+  const handleResolve = async (id: string) => { await actions.resolveEmergency(id, user.id); };
 
   const governorateData = useMemo(() => {
     const map: Record<string, number> = {};
