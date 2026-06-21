@@ -81,7 +81,7 @@ function computeAggregates(reports: any[], officeIds: string[], extraKeys: strin
 
 export default function DashboardPage() {
   const { state, dispatch } = useOps();
-  const [view, setView] = useState<ViewMode>('command');
+  const [view, setView] = usePersistedState<ViewMode>('dash:view', 'command');
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [search, setSearch] = useState('');
