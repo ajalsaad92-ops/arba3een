@@ -51,7 +51,7 @@ function CenterOnUser({ pos }: { pos: Pt | null }) {
   const [done, setDone] = useState(false);
   useEffect(() => {
     if (!pos || done) return;
-    map.setView([pos.lat, pos.lng], 17, { animate: true });
+    map.setView([pos.lat, pos.lng], 16, { animate: true });
     setDone(true);
   }, [pos, done, map]);
   return null;
