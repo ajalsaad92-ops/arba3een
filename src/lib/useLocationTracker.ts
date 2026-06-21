@@ -64,18 +64,15 @@ export function useLocationTracker() {
 
       const now = Date.now();
       const interval = emergencyActiveRef.current ? EMERGENCY_INTERVAL_MS : IDLE_INTERVAL_MS;
-      const moved = lastPosRef.current
-        ? distanceMeters(lastPosRef.current.lat, lastPosRef.current.lng, lat, lng)
-        : Infinity;
-
-      // Skip the write when the user is essentially stationary AND the time
-      // throttle hasn't elapsed. The first fix (moved = Infinity) always sends.
+      const isFirst = lastPosRef.current === null;
+      const moved = isFirst
+        ? Infinity
+        : distanceMeters(lastPosRef.current!.lat, lastPosRef.current!.lng, lat, lng);
       const timeElapsed = now - lastSentRef.current >= interval;
-      if (moved < MIN_DISTANCE_M && !timeElapsed) return;
-      if (!timeElapsed && moved < MIN_DISTANCE_M) return;
-      // Require either real movement or the throttle window to have passed.
-      if (moved < MIN_DISTANCE_M && !timeElapsed) return;
-      if (!timeElapsed) return;
+
+      // First fix always sends (shows presence). Afterwards, only write when the
+      // throttle window has elapsed AND the user actually moved ≥ 50 m.
+      if (!isFirst && (!timeElapsed || moved < MIN_DISTANCE_M)) return;
 
       lastSentRef.current = now;
       lastPosRef.current = { lat, lng };
