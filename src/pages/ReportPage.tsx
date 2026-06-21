@@ -116,6 +116,11 @@ export default function ReportPage() {
         } else if (f.fieldType === 'number') {
           const v = form[f.fieldKey];
           if (v !== undefined && v !== '') extraFields[f.fieldKey] = Number(v) || 0;
+        } else if (f.fieldType === 'select' && f.withQuantity) {
+          const arr = Array.isArray(form[f.fieldKey]) ? form[f.fieldKey] : [];
+          const clean = arr.filter((r: any) => r && String(r.item).trim() !== '' && Number(r.qty) > 0)
+            .map((r: any) => ({ item: String(r.item).trim(), qty: Number(r.qty) }));
+          if (clean.length > 0) extraFields[f.fieldKey] = clean;
         } else {
           if (form[f.fieldKey] !== undefined && form[f.fieldKey] !== '') {
             extraFields[f.fieldKey] = form[f.fieldKey];
