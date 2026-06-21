@@ -457,7 +457,9 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
 
   type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
   const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
-  const [chartMetric, setChartMetric] = useState<string>('visitors');
+  const [chartMetric, setChartMetric] = useState<string>('visitorsIn');
+  // Visitors KPI shows arrivals OR departures — never their sum (they are distinct flows).
+  const [visitorFlow, setVisitorFlow] = useState<'in' | 'out'>('in');
   const [officeMenuOpen, setOfficeMenuOpen] = useState(false);
   // Offices available for this user, and which are selected for the chart (max recommended 5 shown).
   const availableOffices = useMemo(() => OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)), [effectiveFilter]);
