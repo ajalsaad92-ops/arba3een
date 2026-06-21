@@ -81,6 +81,36 @@ type Action =
   | { type: 'MARK_NOTIFICATION_READ'; id: string }
   | { type: 'MARK_ALL_NOTIFICATIONS_READ' };
 
+// ─── User UI preferences persistence (per-browser session) ─────────
+const PREFS_KEY = 'ops:uiPrefs';
+interface UiPrefs {
+  activeMapLayers?: string[];
+  officeFilter?: string[];
+  visibleProvinces?: string[];
+  dateRange?: { from: string; to: string } | null;
+  selectedOfficeId?: string | null;
+}
+function loadPrefs(): UiPrefs {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(PREFS_KEY) : null;
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function savePrefs(state: OpsState) {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const prefs: UiPrefs = {
+      activeMapLayers: Array.from(state.activeMapLayers),
+      officeFilter: state.officeFilter,
+      visibleProvinces: Array.from(state.visibleProvinces),
+      dateRange: state.dateRange,
+      selectedOfficeId: state.selectedOfficeId,
+    };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch { /* ignore */ }
+}
+const _prefs = loadPrefs();
+
 const initialState: OpsState = {
   currentUser: null,
   authLoading: true,
@@ -97,17 +127,17 @@ const initialState: OpsState = {
   borderCrossings: [],
   fieldGroups: [],
   fieldDefinitions: [],
-  selectedOfficeId: null,
-  activeMapLayers: new Set(['offices', 'borderCrossings', 'agentGPS']),
-  officeFilter: [],
-  visibleProvinces: new Set(),
+  selectedOfficeId: _prefs.selectedOfficeId ?? null,
+  activeMapLayers: new Set(_prefs.activeMapLayers ?? ['offices', 'borderCrossings', 'agentGPS']),
+  officeFilter: _prefs.officeFilter ?? [],
+  visibleProvinces: new Set(_prefs.visibleProvinces ?? []),
   customKpis: (() => {
     try {
       const v = typeof localStorage !== 'undefined' ? localStorage.getItem('ops:customKpis') : null;
       return v ? JSON.parse(v) : ['visitors', 'vehicles', 'processions', 'emergencies'];
     } catch { return ['visitors', 'vehicles', 'processions', 'emergencies']; }
   })(),
-  dateRange: null,
+  dateRange: _prefs.dateRange ?? null,
   unreadNotifications: 0,
   lastActivity: [],
   loadingFlags: {},
