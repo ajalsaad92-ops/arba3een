@@ -411,7 +411,8 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
       </div>
 
       {/* Right 55% - map */}
-      <div className="lg:w-[55%] bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden relative min-h-[400px]">
+      <div className="lg:w-[55%] shrink-0 bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden relative h-[55vh] lg:h-auto lg:min-h-[400px]">
+
         <MapLayerControl position="right" variant="vertical" />
         <IraqMap
           onSelectOffice={setSelectedOffice}
