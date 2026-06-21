@@ -257,6 +257,9 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
   const [maxLength, setMaxLength]     = useState<string>(initial?.maxLength ? String(initial.maxLength) : '');
   const [allowedUserIds, setAllowed]  = useState<string[]>(initial?.allowedUserIds ?? []);
   const [hidden, setHidden]           = useState<boolean>(!!initial?.isHidden);
+  const [optionsText, setOptionsText] = useState<string>((initial?.options ?? []).join('\n'));
+  const [withQuantity, setWithQty]    = useState<boolean>(!!initial?.withQuantity);
+  const [allowFreeText, setFreeText]  = useState<boolean>(!!initial?.allowFreeText);
   // field_key: editable only when creating a new (non-built-in) field
   const [fieldKey, setFieldKey]       = useState<string>(initial?.fieldKey ?? '');
   const isNew = !initial;
@@ -287,6 +290,11 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
         countInStats: fieldType === 'number' ? countInStats : false,
         statLabelAr: countInStats ? (statLabelAr?.trim() || labelAr.trim()) : null,
         allowedUserIds,
+        options: fieldType === 'select'
+          ? optionsText.split('\n').map(s => s.trim()).filter(Boolean)
+          : [],
+        withQuantity: fieldType === 'select' ? withQuantity : false,
+        allowFreeText: fieldType === 'select' ? allowFreeText : false,
       });
       toast.success(isNew ? 'تم إنشاء الحقل' : 'تم الحفظ');
       onSaved();
