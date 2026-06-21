@@ -1088,20 +1088,26 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
       case 'star': return <Star className="w-3.5 h-3.5 text-amber-400" />;
       case 'service': return <Package className="w-3.5 h-3.5 text-emerald-400" />;
       case 'idle': return <ZapOff className="w-3.5 h-3.5 text-amber-400" />;
+      case 'news': return <Activity className="w-3.5 h-3.5 text-amber-400" />;
       default: return <Info className="w-3.5 h-3.5 text-blue-400" />;
     }
   };
   const toneCls = (tone: string) => tone === 'positive' ? 'text-emerald-300' : tone === 'negative' ? 'text-red-300' : tone === 'warning' ? 'text-amber-300' : 'text-slate-200';
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#0B0F19]/95 backdrop-blur-md border-t border-[#1E293B] h-12 flex items-center overflow-hidden">
-      <div className="shrink-0 px-3 text-[10px] font-bold text-amber-400 border-l border-[#1E293B] h-full flex items-center gap-1.5">
+    <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#0B0F19]/95 backdrop-blur-md border-t border-[#1E293B] h-12 flex items-center overflow-hidden" dir="rtl">
+      <div className="shrink-0 px-3 text-[10px] font-bold text-black bg-amber-400 h-full flex items-center gap-1.5">
         <Activity className="w-3 h-3 animate-pulse" />
         رؤى لحظية
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <div className="flex items-center gap-10 px-4 animate-ticker whitespace-nowrap text-xs">
-          {[...insights, ...insights].map((ins, i) => (
+        <div className="flex items-center gap-10 px-4 animate-ticker-rtl whitespace-nowrap text-xs">
+          {[...insights, ...insights, ...insights].map((ins, i) => (
             <div key={`${ins.id}-${i}`} className="flex items-center gap-2">
+              {ins.source && (
+                <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black shrink-0">
+                  {ins.source}
+                </span>
+              )}
               {iconFor(ins.icon)}
               <span className={`font-semibold ${toneCls(ins.tone)}`}>{ins.text}</span>
             </div>
