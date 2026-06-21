@@ -40,9 +40,11 @@ const CHART_METRICS: { id: string; label: string; get: (r: any) => number }[] = 
 
 function computeAggregates(reports: any[], officeIds: string[], extraKeys: string[] = []): Record<string, number> {
   const filt = officeIds.length === 0 ? reports : reports.filter(r => officeIds.includes(r.officeId));
-  const base: Record<string, number> = { visitors: 0, vehicles: 0, processions: 0, deaths: 0, violations: 0, events: 0, incidents: 0, resources: 0, deployment: 0 };
+  const base: Record<string, number> = { visitors: 0, visitorsIn: 0, visitorsOut: 0, vehicles: 0, processions: 0, deaths: 0, violations: 0, events: 0, incidents: 0, resources: 0, deployment: 0 };
   for (const k of extraKeys) base[`x:${k}`] = 0;
   for (const r of filt) {
+    base.visitorsIn  += r.visitorsIn || 0;
+    base.visitorsOut += r.visitorsOut || 0;
     base.visitors    += (r.visitorsIn || 0) + (r.visitorsOut || 0);
     base.vehicles    += r.vehiclesCount || 0;
     base.processions += r.processionsCount || 0;
