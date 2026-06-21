@@ -23,8 +23,11 @@ type ViewMode = 'command' | 'ops' | 'analytics';
 const GOVERNORATE_COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#EC4899', '#84CC16', '#FBBF24', '#A78BFA', '#34D399', '#F87171', '#FB923C', '#FB7185'];
 
 // Selectable metrics (categories) for the visitor-movement chart.
+// Arrivals (وافدون) and departures (مغادرون) are intentionally separate —
+// they must never be summed together into one cumulative number.
 const CHART_METRICS: { id: string; label: string; get: (r: any) => number }[] = [
-  { id: 'visitors', label: 'حركة الزوار', get: (r) => (r.visitorsIn || 0) + (r.visitorsOut || 0) },
+  { id: 'visitorsIn', label: 'الوافدون', get: (r) => r.visitorsIn || 0 },
+  { id: 'visitorsOut', label: 'المغادرون', get: (r) => r.visitorsOut || 0 },
   { id: 'vehicles', label: 'حركة العجلات', get: (r) => r.vehiclesCount || 0 },
   { id: 'processions', label: 'أعداد المواكب', get: (r) => r.processionsCount || 0 },
   { id: 'deaths', label: 'الوفيات', get: (r) => r.deathsCount || 0 },
@@ -37,9 +40,11 @@ const CHART_METRICS: { id: string; label: string; get: (r: any) => number }[] = 
 
 function computeAggregates(reports: any[], officeIds: string[], extraKeys: string[] = []): Record<string, number> {
   const filt = officeIds.length === 0 ? reports : reports.filter(r => officeIds.includes(r.officeId));
-  const base: Record<string, number> = { visitors: 0, vehicles: 0, processions: 0, deaths: 0, violations: 0, events: 0, incidents: 0, resources: 0, deployment: 0 };
+  const base: Record<string, number> = { visitors: 0, visitorsIn: 0, visitorsOut: 0, vehicles: 0, processions: 0, deaths: 0, violations: 0, events: 0, incidents: 0, resources: 0, deployment: 0 };
   for (const k of extraKeys) base[`x:${k}`] = 0;
   for (const r of filt) {
+    base.visitorsIn  += r.visitorsIn || 0;
+    base.visitorsOut += r.visitorsOut || 0;
     base.visitors    += (r.visitorsIn || 0) + (r.visitorsOut || 0);
     base.vehicles    += r.vehiclesCount || 0;
     base.processions += r.processionsCount || 0;
@@ -452,7 +457,9 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
 
   type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
   const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
-  const [chartMetric, setChartMetric] = useState<string>('visitors');
+  const [chartMetric, setChartMetric] = useState<string>('visitorsIn');
+  // Visitors KPI shows arrivals OR departures — never their sum (they are distinct flows).
+  const [visitorFlow, setVisitorFlow] = useState<'in' | 'out'>('in');
   const [officeMenuOpen, setOfficeMenuOpen] = useState(false);
   // Offices available for this user, and which are selected for the chart (max recommended 5 shown).
   const availableOffices = useMemo(() => OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)), [effectiveFilter]);
@@ -544,7 +551,29 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
 
       {/* Row 1: Hero KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <KpiCard label="الزوار التراكمي" value={agg.visitors} icon={Users} size="lg" trend={trend(agg.visitors, aggYesterday.visitors)} sparklineData={sparklineFor('visitors')} borderGlow tone="amber" />
+        <div className="relative">
+          <KpiCard
+            label={visitorFlow === 'in' ? 'الوافدون (تراكمي)' : 'المغادرون (تراكمي)'}
+            value={visitorFlow === 'in' ? agg.visitorsIn : agg.visitorsOut}
+            icon={Users} size="lg"
+            trend={trend(
+              visitorFlow === 'in' ? agg.visitorsIn : agg.visitorsOut,
+              visitorFlow === 'in' ? aggYesterday.visitorsIn : aggYesterday.visitorsOut,
+            )}
+            sparklineData={sparklineFor(visitorFlow === 'in' ? 'visitorsIn' : 'visitorsOut')}
+            borderGlow tone="amber"
+          />
+          <div className="absolute top-2 left-2 z-10 flex rounded-md overflow-hidden border border-amber-500/30 text-[10px] font-bold">
+            <button
+              onClick={() => setVisitorFlow('in')}
+              className={visitorFlow === 'in' ? 'px-2 py-0.5 bg-amber-500 text-black' : 'px-2 py-0.5 bg-[#0B0F19] text-amber-300'}
+            >وافدون</button>
+            <button
+              onClick={() => setVisitorFlow('out')}
+              className={visitorFlow === 'out' ? 'px-2 py-0.5 bg-amber-500 text-black' : 'px-2 py-0.5 bg-[#0B0F19] text-amber-300'}
+            >مغادرون</button>
+          </div>
+        </div>
         <KpiCard label="الوفيات التراكمية" value={agg.deaths} icon={AlertOctagon} size="lg" trend={trend(agg.deaths, aggYesterday.deaths)} sparklineData={sparklineFor('deaths')} tone="red" />
         <KpiCard label="الخروقات الأمنية" value={agg.violations} icon={X} size="lg" trend={trend(agg.violations, aggYesterday.violations)} sparklineData={sparklineFor('violations')} tone="orange" />
         <KpiCard label="الفعاليات" value={agg.events} icon={Activity} size="lg" trend={trend(agg.events, aggYesterday.events)} sparklineData={sparklineFor('events')} tone="purple" />
@@ -1088,20 +1117,26 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
       case 'star': return <Star className="w-3.5 h-3.5 text-amber-400" />;
       case 'service': return <Package className="w-3.5 h-3.5 text-emerald-400" />;
       case 'idle': return <ZapOff className="w-3.5 h-3.5 text-amber-400" />;
+      case 'news': return <Activity className="w-3.5 h-3.5 text-amber-400" />;
       default: return <Info className="w-3.5 h-3.5 text-blue-400" />;
     }
   };
   const toneCls = (tone: string) => tone === 'positive' ? 'text-emerald-300' : tone === 'negative' ? 'text-red-300' : tone === 'warning' ? 'text-amber-300' : 'text-slate-200';
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#0B0F19]/95 backdrop-blur-md border-t border-[#1E293B] h-12 flex items-center overflow-hidden">
-      <div className="shrink-0 px-3 text-[10px] font-bold text-amber-400 border-l border-[#1E293B] h-full flex items-center gap-1.5">
+    <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#0B0F19]/95 backdrop-blur-md border-t border-[#1E293B] h-12 flex items-center overflow-hidden" dir="rtl">
+      <div className="shrink-0 px-3 text-[10px] font-bold text-black bg-amber-400 h-full flex items-center gap-1.5">
         <Activity className="w-3 h-3 animate-pulse" />
         رؤى لحظية
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <div className="flex items-center gap-10 px-4 animate-ticker whitespace-nowrap text-xs">
-          {[...insights, ...insights].map((ins, i) => (
+        <div className="flex items-center gap-10 px-4 animate-ticker-rtl whitespace-nowrap text-xs">
+          {[...insights, ...insights, ...insights].map((ins, i) => (
             <div key={`${ins.id}-${i}`} className="flex items-center gap-2">
+              {ins.source && (
+                <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black shrink-0">
+                  {ins.source}
+                </span>
+              )}
               {iconFor(ins.icon)}
               <span className={`font-semibold ${toneCls(ins.tone)}`}>{ins.text}</span>
             </div>

@@ -77,6 +77,9 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+export type OnlineUser = { id: string; name: string; role: Role };
+export type Listener = { id: string; name: string; role: Role; at: number };
+
 interface WalkieCtx {
   connected: boolean;
   transmitting: boolean;
@@ -90,6 +93,10 @@ interface WalkieCtx {
   isDirector: boolean;
   startTalking: () => void;
   stopTalking: () => void;
+  /** Other users currently connected to the walkie channel (excludes me). */
+  onlineUsers: OnlineUser[];
+  /** Who actually heard my most recent transmission (director/all can review). */
+  recentListeners: Listener[];
 }
 
 const Ctx = createContext<WalkieCtx | null>(null);
@@ -106,6 +113,8 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
   // Background mode + director-listen default to ON, and persist across sessions.
   const [bgEnabled, setBgEnabled] = useState(() => loadBool(LS_BG, true));
   const [directorListening, setDirectorListeningState] = useState(() => loadBool(LS_DIRLISTEN, true));
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [recentListeners, setRecentListeners] = useState<Listener[]>([]);
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -173,10 +182,26 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
   // Single global subscription — runs everywhere the user is logged in, so the
   // walkie-talkie keeps receiving in the background regardless of the page.
   useEffect(() => {
-    if (!me) { setConnected(false); return; }
+    if (!me) { setConnected(false); setOnlineUsers([]); return; }
     const channel = supabase.channel('walkie-talkie', {
-      config: { broadcast: { self: false } },
+      config: { broadcast: { self: false }, presence: { key: me.id } },
     });
+
+    // Presence → who is actually connected right now (excluding me).
+    const syncPresence = () => {
+      const stateMap = channel.presenceState() as Record<string, any[]>;
+      const seen = new Map<string, OnlineUser>();
+      Object.values(stateMap).forEach((metas) => {
+        metas.forEach((m: any) => {
+          if (m?.id && m.id !== me.id) seen.set(m.id, { id: m.id, name: m.name, role: m.role });
+        });
+      });
+      setOnlineUsers([...seen.values()]);
+    };
+    channel.on('presence', { event: 'sync' }, syncPresence);
+    channel.on('presence', { event: 'join' }, syncPresence);
+    channel.on('presence', { event: 'leave' }, syncPresence);
+
     channel.on('broadcast', { event: 'voice' }, ({ payload }) => {
       const p = payload as VoicePayload;
       if (!isForMe(p)) return;
@@ -193,10 +218,30 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
         queueRef.current.push(url);
         setIncoming(`${p.senderName} • ${ROLE_LABELS[p.senderRole]}`);
         playNext();
+        // Acknowledge back to the sender that this device actually heard the call.
+        channel.send({
+          type: 'broadcast',
+          event: 'ack',
+          payload: { senderId: p.senderId, id: me.id, name: me.fullNameAr, role: me.role },
+        });
       } catch { /* ignore malformed */ }
     });
+
+    // Receive acks → record who heard MY transmission.
+    channel.on('broadcast', { event: 'ack' }, ({ payload }) => {
+      const a = payload as { senderId: string; id: string; name: string; role: Role };
+      if (a.senderId !== me.id) return;
+      setRecentListeners((prev) => {
+        const others = prev.filter((l) => l.id !== a.id);
+        return [...others, { id: a.id, name: a.name, role: a.role, at: Date.now() }];
+      });
+    });
+
     channel.subscribe((status) => {
       setConnected(status === 'SUBSCRIBED');
+      if (status === 'SUBSCRIBED') {
+        channel.track({ id: me.id, name: me.fullNameAr, role: me.role });
+      }
     });
     channelRef.current = channel;
     return () => {
@@ -249,6 +294,8 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
 
   const startTalking = useCallback(async () => {
     if (transmitting || !me) return;
+    // New transmission → clear the "who heard me" list so it reflects this call.
+    setRecentListeners([]);
     if (!navigator.mediaDevices?.getUserMedia) {
       toast.error('المتصفح لا يدعم الميكروفون على هذا الجهاز');
       return;
@@ -342,6 +389,7 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
       directorListening, setDirectorListening,
       isDirector,
       startTalking, stopTalking,
+      onlineUsers, recentListeners,
     }}>
       {children}
     </Ctx.Provider>

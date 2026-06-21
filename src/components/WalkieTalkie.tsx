@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { useWalkie, ROLE_LABELS, type Target } from '../store/walkieStore';
-import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2, Headphones, HeadphoneOff } from 'lucide-react';
+import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2, Headphones, HeadphoneOff, CheckCheck, Circle } from 'lucide-react';
 import type { Role } from '../data/types';
 
 export default function WalkieTalkie() {
@@ -14,6 +14,7 @@ export default function WalkieTalkie() {
     directorListening, setDirectorListening,
     isDirector,
     startTalking, stopTalking,
+    onlineUsers, recentListeners,
   } = useWalkie();
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -25,27 +26,30 @@ export default function WalkieTalkie() {
     return u ? u.fullNameAr : 'شخص محدد';
   })();
 
-  // Everyone who can be called (the director can never be a recipient).
+  // Everyone who can be picked as a recipient (the director is never a target).
   const callableUsers = useMemo(
     () => state.users.filter((u) => u.id !== me?.id && u.role !== 'director'),
     [state.users, me?.id],
   );
   const callableRoles = (Object.keys(ROLE_LABELS) as Role[]).filter((r) => r !== 'director');
 
-  // How many people will actually hear this call, broken down by category.
+  // How many people are ACTUALLY online and will hear this call right now.
+  // Based on live presence — never counts me, and never counts the director.
   const recipients = useMemo(() => {
-    let list = callableUsers;
-    if (target.mode === 'role') list = callableUsers.filter((u) => u.role === target.value);
-    else if (target.mode === 'user') list = callableUsers.filter((u) => u.id === target.value);
+    let list = onlineUsers.filter((u) => u.role !== 'director');
+    if (target.mode === 'role') list = list.filter((u) => u.role === target.value);
+    else if (target.mode === 'user') list = list.filter((u) => u.id === target.value);
     const count = (r: Role) => list.filter((u) => u.role === r).length;
     return {
+      list,
       supervisor: count('supervisor'),
       manager: count('manager'),
       agent: count('agent'),
       other: list.filter((u) => !['supervisor', 'manager', 'agent'].includes(u.role)).length,
       total: list.length,
     };
-  }, [callableUsers, target]);
+  }, [onlineUsers, target]);
+
 
   const pick = (t: Target) => { setTarget(t); setPickerOpen(false); };
 
@@ -116,29 +120,85 @@ export default function WalkieTalkie() {
         )}
       </div>
 
-      {/* Who will hear this call (recipient breakdown) */}
+      {/* Who will hear this call — based on LIVE presence (real connected users) */}
       <div className="mb-4 rounded-lg bg-[#0B0F19] border border-[#1E293B] p-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] text-slate-400 font-bold">عدد من سيسمع النداء</span>
+          <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1.5">
+            <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400" /> من سيسمع نداءك الآن (متصلون فعلياً)
+          </span>
           <span className="text-xs font-black text-indigo-300">{recipients.total} شخص</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { label: 'مشرفون', value: recipients.supervisor },
-            { label: 'مدراء مكاتب', value: recipients.manager },
-            { label: 'مدخلو البيانات', value: recipients.agent },
-            { label: 'غيرهم', value: recipients.other },
-          ].map((c) => (
-            <div key={c.label} className="rounded-md bg-[#111827] border border-[#1E293B] px-2 py-1.5 text-center">
-              <div className="text-base font-black text-slate-100">{c.value}</div>
-              <div className="text-[10px] text-slate-500">{c.label}</div>
+        {recipients.total === 0 ? (
+          <div className="text-[11px] text-amber-300/80 bg-amber-500/5 border border-amber-500/20 rounded-md px-2 py-2 text-center">
+            لا يوجد أحد متصل حالياً ضمن المستلمين — لن يسمع نداءك أحد الآن.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: 'مشرفون', value: recipients.supervisor },
+                { label: 'مدراء مكاتب', value: recipients.manager },
+                { label: 'مدخلو البيانات', value: recipients.agent },
+                { label: 'غيرهم', value: recipients.other },
+              ].map((c) => (
+                <div key={c.label} className="rounded-md bg-[#111827] border border-[#1E293B] px-2 py-1.5 text-center">
+                  <div className="text-base font-black text-slate-100">{c.value}</div>
+                  <div className="text-[10px] text-slate-500">{c.label}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {recipients.list.map((u) => (
+                <span key={u.id} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                  {u.name}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
         <p className="text-[10px] text-slate-500 mt-2">
-          لا يمكن توجيه النداء للمدير العام؛ المدير العام يستمع فقط عند تفعيل زر الاستماع لديه.
+          العدد لا يحتسبك أنت، بل يحتسب من سيسمعك فقط. المدير العام يستمع فقط عند تفعيل زر الاستماع لديه.
         </p>
       </div>
+
+      {/* Director-only: live online list + who actually heard the last call */}
+      {isDirector && (
+        <div className="mb-4 rounded-lg bg-[#0B0F19] border border-indigo-500/20 p-3 space-y-3">
+          <div>
+            <div className="text-[11px] text-slate-400 font-bold mb-1.5 flex items-center gap-1.5">
+              <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400" /> المتصلون الآن ({onlineUsers.length})
+            </div>
+            {onlineUsers.length === 0 ? (
+              <div className="text-[10px] text-slate-500">لا يوجد أحد متصل حالياً غيرك.</div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {onlineUsers.map((u) => (
+                  <span key={u.id} className="text-[10px] px-2 py-0.5 rounded-full bg-[#111827] border border-[#1E293B] text-slate-300">
+                    {u.name} <span className="text-slate-500">· {ROLE_LABELS[u.role]}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="text-[11px] text-slate-400 font-bold mb-1.5 flex items-center gap-1.5">
+              <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> من استمع لآخر نداء لك ({recentListeners.length})
+            </div>
+            {recentListeners.length === 0 ? (
+              <div className="text-[10px] text-slate-500">لم يُسجَّل استماع بعد — سيظهر هنا فور استماع أحدهم لندائك.</div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {recentListeners.map((u) => (
+                  <span key={u.id} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                    {u.name} <span className="text-emerald-500/70">· {ROLE_LABELS[u.role]}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
 
       {/* Director-only listen toggle */}
       {isDirector && (

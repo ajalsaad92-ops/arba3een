@@ -115,6 +115,33 @@ function vibrate(kind: AlertKind) {
 function showSystemNotification(title: string, body: string, kind: AlertKind) {
   if (typeof Notification === 'undefined') return;
   if (Notification.permission !== 'granted') return;
+
+  // Prefer the service worker: registration.showNotification() keeps working
+  // when the tab is backgrounded / the screen is off, supports vibration and
+  // persistence, and is the only supported path on Android Chrome.
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then((reg) => {
+      if (reg.active) {
+        reg.active.postMessage({
+          type: 'notify',
+          title, body, kind,
+          tag: `ops-${kind}-${Date.now()}`,
+          url: '/',
+        });
+      } else {
+        reg.showNotification(title, {
+          body, icon: '/favicon.ico', tag: `ops-${kind}-${Date.now()}`,
+          // @ts-ignore - vibrate is valid on Android
+          vibrate: kind === 'emergency' ? [300, 100, 300, 100, 600] : [150, 80, 150],
+        });
+      }
+    }).catch(() => fallbackNotification(title, body, kind));
+    return;
+  }
+  fallbackNotification(title, body, kind);
+}
+
+function fallbackNotification(title: string, body: string, kind: AlertKind) {
   try {
     const n = new Notification(title, {
       body,
@@ -122,7 +149,6 @@ function showSystemNotification(title: string, body: string, kind: AlertKind) {
       tag: `ops-${kind}-${Date.now()}`,
       silent: false,
     } as any);
-    // Auto-close after 8s (mobile browsers may ignore)
     setTimeout(() => { try { n.close(); } catch {} }, 8000);
   } catch {}
 }

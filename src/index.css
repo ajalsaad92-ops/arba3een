@@ -122,6 +122,15 @@ input::placeholder, textarea::placeholder {
 .animate-ticker {
   animation: ticker 40s linear infinite;
 }
+/* RTL news ticker: content enters from the left and flows to the right,
+   matching the natural Arabic right-to-left reading flow. */
+@keyframes ticker-rtl {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-ticker-rtl {
+  animation: ticker-rtl 45s linear infinite;
+}
 
 @keyframes flowDash {
   to { stroke-dashoffset: -40; }

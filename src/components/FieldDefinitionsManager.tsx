@@ -5,13 +5,14 @@ import { toast } from 'sonner';
 import {
   Plus, Eye, EyeOff, Trash2, Save, X, Type, Hash, AlignLeft,
   MapPin, MapPinned, Route, Calendar, Clock, Users as UsersIcon, Edit2, Info,
-  ChevronDown,
+  ChevronDown, List,
 } from 'lucide-react';
 
 const TYPE_META: Record<ReportFieldType, { icon: any; label: string }> = {
   number:         { icon: Hash,      label: 'رقم' },
   text:           { icon: Type,      label: 'نص قصير' },
   textarea:       { icon: AlignLeft, label: 'نص طويل' },
+  select:         { icon: List,      label: 'قائمة منسدلة' },
   location:       { icon: MapPin,    label: 'موقع واحد' },
   multi_location: { icon: MapPinned, label: 'مواقع متعددة' },
   route:          { icon: Route,     label: 'مسار على الخريطة' },
@@ -256,6 +257,9 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
   const [maxLength, setMaxLength]     = useState<string>(initial?.maxLength ? String(initial.maxLength) : '');
   const [allowedUserIds, setAllowed]  = useState<string[]>(initial?.allowedUserIds ?? []);
   const [hidden, setHidden]           = useState<boolean>(!!initial?.isHidden);
+  const [optionsText, setOptionsText] = useState<string>((initial?.options ?? []).join('\n'));
+  const [withQuantity, setWithQty]    = useState<boolean>(!!initial?.withQuantity);
+  const [allowFreeText, setFreeText]  = useState<boolean>(!!initial?.allowFreeText);
   // field_key: editable only when creating a new (non-built-in) field
   const [fieldKey, setFieldKey]       = useState<string>(initial?.fieldKey ?? '');
   const isNew = !initial;
@@ -286,6 +290,11 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
         countInStats: fieldType === 'number' ? countInStats : false,
         statLabelAr: countInStats ? (statLabelAr?.trim() || labelAr.trim()) : null,
         allowedUserIds,
+        options: fieldType === 'select'
+          ? optionsText.split('\n').map(s => s.trim()).filter(Boolean)
+          : [],
+        withQuantity: fieldType === 'select' ? withQuantity : false,
+        allowFreeText: fieldType === 'select' ? allowFreeText : false,
       });
       toast.success(isNew ? 'تم إنشاء الحقل' : 'تم الحفظ');
       onSaved();
@@ -354,6 +363,30 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
           )}
         </>
       )}
+
+      {fieldType === 'select' && (
+        <div className="mt-2 rounded-lg bg-[#0B0F19] border border-[#1E293B] p-3 space-y-2">
+          <FieldRow label="خيارات القائمة (خيار واحد في كل سطر)">
+            <textarea
+              value={optionsText}
+              onChange={e => setOptionsText(e.target.value)}
+              rows={5}
+              className={inputCls + ' resize-none font-mono'}
+              placeholder={'مثال:\nماء\nطعام\nأدوية\nبطانيات'}
+            />
+          </FieldRow>
+          <label className="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" checked={allowFreeText} onChange={e => setFreeText(e.target.checked)} className="accent-amber-500" />
+            إضافة خيار «أخرى» للكتابة المباشرة (إدخال نص خارج القائمة)
+          </label>
+          <label className="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" checked={withQuantity} onChange={e => setWithQty(e.target.checked)} className="accent-amber-500" />
+            تفعيل إدخال الكمية وإمكانية إضافة مواد متعددة (زر «إضافة مادة أخرى»)
+          </label>
+        </div>
+      )}
+
+
 
       <label className="flex items-center gap-2 text-xs text-slate-300 mt-2">
         <input type="checkbox" checked={hidden} onChange={e => setHidden(e.target.checked)} className="accent-amber-500" />

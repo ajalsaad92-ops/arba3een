@@ -130,7 +130,7 @@ export type TimeWindowStatus = 'closed' | 'open' | 'pre_warning' | 'locked';
 export type ReportFieldType =
   | 'number' | 'text' | 'textarea'
   | 'location' | 'multi_location' | 'route'
-  | 'date' | 'time';
+  | 'date' | 'time' | 'select';
 
 export interface ReportFieldGroup {
   id: string;
@@ -154,4 +154,16 @@ export interface ReportFieldDefinition {
   countInStats: boolean;
   statLabelAr?: string | null;
   allowedUserIds: string[]; // empty = visible to all
+  /** For `select` fields: the allowed options the data-entry user can pick. */
+  options: string[];
+  /** For `select` fields: show a quantity input + allow adding multiple items. */
+  withQuantity: boolean;
+  /** For `select` fields: add an "أخرى" option that lets the user type freely. */
+  allowFreeText: boolean;
+}
+
+/** A single picked item for a `select`+quantity field. */
+export interface SelectQtyItem {
+  item: string;
+  qty: number;
 }
