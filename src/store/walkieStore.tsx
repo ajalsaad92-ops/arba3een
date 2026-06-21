@@ -387,6 +387,7 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
       directorListening, setDirectorListening,
       isDirector,
       startTalking, stopTalking,
+      onlineUsers, recentListeners,
     }}>
       {children}
     </Ctx.Provider>
