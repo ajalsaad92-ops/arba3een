@@ -116,8 +116,10 @@ interface Props {
  */
 export default function MapPicker({
   mode, title, subtitle, initialSingle, initialMulti,
-  userLocation, onCancel, onConfirmSingle, onConfirmMulti,
+  userLocation, focusPoint, onCancel, onConfirmSingle, onConfirmMulti,
 }: Props) {
+  // Where the map opens: GPS → existing pick → office focus point → Iraq overview.
+  const openCenter: Pt | null = userLocation ?? initialSingle ?? (initialMulti && initialMulti[0]) ?? focusPoint ?? null;
   const [single, setSingle] = useState<Pt | null>(initialSingle ?? null);
   const [pts, setPts] = useState<Pt[]>(initialMulti ?? []);
   const [snapped, setSnapped] = useState<Pt[] | null>(null);
