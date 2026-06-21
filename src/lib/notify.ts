@@ -33,6 +33,41 @@ export function unlockAudio() {
   }
 }
 
+/**
+ * Decode and play an encoded audio segment through the SHARED, unlocked
+ * AudioContext. This is the only reliable way to play received walkie-talkie
+ * voice on iOS Safari — HTML <audio>.play() is blocked from "autoplaying"
+ * outside a user gesture, but a WebAudio buffer source plays fine once the
+ * context has been unlocked by any earlier tap (see unlockAudio()).
+ * Resolves when playback finishes (or immediately on failure) so callers can
+ * chain segments sequentially.
+ */
+export function playEncodedAudio(bytes: Uint8Array): Promise<void> {
+  return new Promise((resolve) => {
+    const ctx = getCtx();
+    if (!ctx) return resolve();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    // decodeAudioData needs its own ArrayBuffer copy.
+    const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    const done = () => resolve();
+    try {
+      ctx.decodeAudioData(
+        ab as ArrayBuffer,
+        (buffer) => {
+          try {
+            const src = ctx.createBufferSource();
+            src.buffer = buffer;
+            src.connect(ctx.destination);
+            src.onended = done;
+            src.start();
+          } catch { done(); }
+        },
+        () => done(),
+      );
+    } catch { done(); }
+  });
+}
+
 /** Short white-noise "shhh" static burst, used to frame walkie-talkie calls. */
 export function playStatic(duration = 0.32, volume = 0.12) {
   const ctx = getCtx();

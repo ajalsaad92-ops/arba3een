@@ -4,7 +4,7 @@ import {
 } from 'react';
 import { useOps } from './opsStore';
 import { supabase } from '../lib/supabase';
-import { playStatic } from '../lib/notify';
+import { playStatic, playEncodedAudio } from '../lib/notify';
 import { toast } from 'sonner';
 import type { Role } from '../data/types';
 
@@ -139,14 +139,16 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
     saveBool(LS_DIRLISTEN, v);
   }, []);
 
-  // Sequential playback queue for received segments
-  const queueRef = useRef<string[]>([]);
+  // Sequential playback queue for received segments (raw encoded bytes).
+  // We decode + play through the shared WebAudio context (notify.playEncodedAudio)
+  // because HTML <audio>.play() is blocked from autoplaying on iOS Safari.
+  const queueRef = useRef<Uint8Array[]>([]);
   const playingRef = useRef(false);
 
   const playNext = useCallback(() => {
     if (playingRef.current) return;
-    const url = queueRef.current.shift();
-    if (!url) {
+    const bytes = queueRef.current.shift();
+    if (!bytes) {
       if (receivingRef.current) {
         receivingRef.current = false;
         playStatic();
@@ -155,13 +157,7 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
       return;
     }
     playingRef.current = true;
-    const audio = new Audio(url);
-    audio.onended = audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      playingRef.current = false;
-      playNext();
-    };
-    audio.play().catch(() => {
+    playEncodedAudio(bytes).then(() => {
       playingRef.current = false;
       playNext();
     });
@@ -209,13 +205,11 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
         const bin = atob(p.audio);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const blob = new Blob([bytes], { type: p.mime });
-        const url = URL.createObjectURL(blob);
         if (!receivingRef.current) {
           receivingRef.current = true;
           playStatic();
         }
-        queueRef.current.push(url);
+        queueRef.current.push(bytes);
         setIncoming(`${p.senderName} • ${ROLE_LABELS[p.senderRole]}`);
         playNext();
         // Acknowledge back to the sender that this device actually heard the call.
