@@ -199,6 +199,7 @@ function rowToEmergency(r: any): Emergency {
     status: (r.status as Emergency['status']) ?? 'active',
     acknowledgedById: r.acknowledged_by ?? undefined,
     acknowledgedAt: r.acknowledged_at ?? undefined,
+    resolvedById: r.resolved_by ?? undefined,
     resolvedAt: r.resolved_at ?? undefined,
     createdAt: r.created_at,
   };
