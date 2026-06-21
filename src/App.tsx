@@ -73,8 +73,10 @@ export default function App() {
     if (asked) { setPermsRequested(true); return; }
 
     const t1 = setTimeout(() => {
-      if (navigator.geolocation && 'requestPermission' in navigator.geolocation) {
-        (navigator.geolocation as any).requestPermission?.();
+      // Trigger the native location permission prompt. Once granted, the
+      // global tracker (useLocationTracker) keeps following the user live.
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: true, timeout: 10_000 });
       }
     }, 3000);
     const t2 = setTimeout(() => {
