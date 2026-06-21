@@ -294,6 +294,8 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
 
   const startTalking = useCallback(async () => {
     if (transmitting || !me) return;
+    // New transmission → clear the "who heard me" list so it reflects this call.
+    setRecentListeners([]);
     if (!navigator.mediaDevices?.getUserMedia) {
       toast.error('المتصفح لا يدعم الميكروفون على هذا الجهاز');
       return;
