@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import TimeLockBar from '../components/TimeLockBar';
 import MapPicker from '../components/MapPicker';
 import type { ReportFieldDefinition, ReportFieldGroup } from '../data/types';
+import { operationalDate } from '../lib/opDate';
 
 type Pt = { lat: number; lng: number };
 
@@ -138,7 +139,7 @@ export default function ReportPage() {
         id: `r-new-${Date.now()}`,
         officeId: office.id,
         submittedBy: user.id,
-        reportDate: new Date().toISOString().slice(0, 10),
+        reportDate: operationalDate(),
         submittedAt: new Date().toISOString(),
         isLateSubmission: status === 'pre_warning' || status === 'locked',
         deploymentCount: num('deploymentCount'),
