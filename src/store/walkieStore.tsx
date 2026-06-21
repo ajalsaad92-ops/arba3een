@@ -113,6 +113,8 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
   // Background mode + director-listen default to ON, and persist across sessions.
   const [bgEnabled, setBgEnabled] = useState(() => loadBool(LS_BG, true));
   const [directorListening, setDirectorListeningState] = useState(() => loadBool(LS_DIRLISTEN, true));
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [recentListeners, setRecentListeners] = useState<Listener[]>([]);
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
