@@ -1004,9 +1004,10 @@ function DrillDownPanel({ office, onClose }: { office: Office; onClose: () => vo
           )}
 
           <div>
-            <div className="text-xs font-bold text-slate-300 mb-2">المناديب النشطون ({agents.length})</div>
+            <div className="text-xs font-bold text-slate-300 mb-2">مستخدمو الموقع النشطون ({agents.length})</div>
             {agents.length === 0 ? (
-              <div className="text-xs text-slate-500 bg-[#111827] border border-[#1E293B] rounded-lg p-3 text-center">لا يوجد مناديب نشطون</div>
+              <div className="text-xs text-slate-500 bg-[#111827] border border-[#1E293B] rounded-lg p-3 text-center">لا يوجد مستخدمون نشطون</div>
+
             ) : (
               <div className="space-y-1">
                 {agents.map(a => (
