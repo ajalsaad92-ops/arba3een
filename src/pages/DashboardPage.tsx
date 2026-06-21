@@ -245,7 +245,6 @@ export default function DashboardPage() {
 // ════════════════════════════════════════════════════════════════
 function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice, setSelectedOffice, activeEmergencies }: any) {
   const { state, actions } = useOps();
-  useNavigate();
   const user = state.currentUser;
   if (!user) return <div className="p-4 text-center text-slate-500">جاري التحميل...</div>;
   const canHandleEmergencies = user.role === 'director' || user.role === 'supervisor';
