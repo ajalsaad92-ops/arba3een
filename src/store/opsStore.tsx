@@ -210,8 +210,10 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'ADD_REPORT': {
       const todayReports = state.todayReports.filter(r => r.officeId !== action.report.officeId);
       const newAct = { id: `a-${Date.now()}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد مُرسل`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
-      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
+      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
+    case 'REMOVE_REPORT':
+      return { ...state, todayReports: state.todayReports.filter(r => r.id !== action.id) };
     case 'ADD_EMERGENCY': {
       const newAct = { id: `a-${Date.now()}`, type: 'emergency' as const, text: `حالة طارئة: ${action.emergency.emergencyType}`, officeId: action.emergency.officeId, createdAt: action.emergency.createdAt };
       // Viewers must not receive critical/emergency notifications, so skip the
@@ -219,7 +221,7 @@ function reducer(state: OpsState, action: Action): OpsState {
       if (action.silent) {
         return { ...state, emergencies: [action.emergency, ...state.emergencies] };
       }
-      return { ...state, emergencies: [action.emergency, ...state.emergencies], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
+      return { ...state, emergencies: [action.emergency, ...state.emergencies], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
     case 'ACK_EMERGENCY':
       return {
@@ -232,9 +234,11 @@ function reducer(state: OpsState, action: Action): OpsState {
       return {
         ...state,
         emergencies: state.emergencies.map(e =>
-          e.id === action.id ? { ...e, status: 'resolved', resolvedAt: new Date().toISOString() } : e
+          e.id === action.id ? { ...e, status: 'resolved', resolvedById: action.userId ?? e.resolvedById, resolvedAt: new Date().toISOString() } : e
         ),
       };
+    case 'REMOVE_EMERGENCY':
+      return { ...state, emergencies: state.emergencies.filter(e => e.id !== action.id) };
     case 'ADD_EXTENSION': {
       const newAct = { id: `a-${Date.now()}`, type: 'extension' as const, text: `طلب تمديد من ${action.extension.requestedByName}`, officeId: action.extension.officeId, createdAt: action.extension.requestTime };
       return { ...state, extensions: [action.extension, ...state.extensions], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
