@@ -525,7 +525,10 @@ export const api = {
         status: ex.status ?? 'pending',
         request_time: ex.requestTime,
         extension_window_end: ex.extensionWindowEnd ?? null,
-      })
+        // Tie the extension to the operational day it's requested for so it
+        // can't be reused to submit a report for a different day.
+        target_report_date: ex.targetReportDate ?? operationalDate(),
+      } as any)
       .select('*')
       .single();
     if (error) {
@@ -545,6 +548,8 @@ export const api = {
     if (patch.supervisorApprovedById !== undefined) row.supervisor_approved_by = patch.supervisorApprovedById;
     if (patch.supervisorApprovedAt !== undefined) row.supervisor_approved_at = patch.supervisorApprovedAt;
     if (patch.extensionWindowEnd !== undefined) row.extension_window_end = patch.extensionWindowEnd;
+    if (patch.targetReportDate !== undefined) row.target_report_date = patch.targetReportDate;
+    if (patch.consumedAt !== undefined) row.consumed_at = patch.consumedAt;
     if (patch.reason !== undefined) row.reason = patch.reason;
     const { error } = await supabase.from('extension_requests').update(row).eq('id', id);
     if (error) throw error;
