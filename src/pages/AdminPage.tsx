@@ -157,7 +157,7 @@ export default function AdminPage() {
   };
 
   const clearData = async () => {
-    if (!confirm('سيتم حذف جميع البيانات المدخلة (التقارير، الطوارئ، التمديدات، مواقع المندوبين) مع الإبقاء على المستخدمين. هل أنت متأكد؟')) return;
+    if (!confirm('سيتم حذف جميع البيانات المدخلة (التقارير، الطوارئ، التمديدات، مواقع مستخدمي الموقع) مع الإبقاء على المستخدمين. هل أنت متأكد؟')) return;
     const t = toast.loading('جاري تفريغ البيانات...');
     try {
       const { data, error } = await supabase.functions.invoke('admin-manage-users', {
