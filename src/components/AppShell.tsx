@@ -6,6 +6,7 @@ import TimeLockBar from './TimeLockBar';
 import EmergencyBanner from './EmergencyBanner';
 import { OFFICES } from '../data/offices';
 import { toast } from 'sonner';
+import { useLocationTracker } from '../lib/useLocationTracker';
 
 const roleLabels = {
   director: 'مدير عام',
