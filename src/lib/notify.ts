@@ -6,6 +6,7 @@ type AlertKind = 'emergency' | 'extension' | 'report' | 'system';
 
 let audioCtx: AudioContext | null = null;
 let soundUnlocked = false;
+let keepAliveStarted = false;
 
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -14,6 +15,28 @@ function getCtx(): AudioContext | null {
   if (!AC) return null;
   try { audioCtx = new AC(); } catch { audioCtx = null; }
   return audioCtx;
+}
+
+/**
+ * Keep the AudioContext "warm" so programmatic sounds (notification beeps that
+ * fire from realtime events, NOT from a tap) still play on iOS Safari. iOS
+ * suspends an idle context within seconds, after which resume() outside a user
+ * gesture is ignored — that's why sound used to work only on the always-active
+ * walkie/emergency screen. A near-silent looping buffer keeps it running.
+ */
+function startKeepAlive(ctx: AudioContext) {
+  if (keepAliveStarted) return;
+  try {
+    const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    const g = ctx.createGain();
+    g.gain.value = 0.0000001; // effectively silent
+    src.connect(g); g.connect(ctx.destination);
+    src.start();
+    keepAliveStarted = true;
+  } catch { /* ignore */ }
 }
 
 /** Must be called from inside a user gesture (click/tap) to unlock audio on iOS. */
@@ -31,6 +54,7 @@ export function unlockAudio() {
     } catch {}
     soundUnlocked = true;
   }
+  startKeepAlive(ctx);
 }
 
 /**
