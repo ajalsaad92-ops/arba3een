@@ -68,7 +68,7 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
         {/* Body */}
         <div className="p-4 overflow-y-auto">
           <Row icon={<Building2 className="w-4 h-4" />} label="المكتب / المحافظة" value={`${office?.nameAr ?? em.officeId} — ${office?.governorateAr ?? ''}`} />
-          <Row icon={<User className="w-4 h-4" />} label="مُبلِّغ الحالة" value={em.reportedByName || profileById(em.reportedById)?.fullNameAr || '—'} />
+          <Row icon={<User className="w-4 h-4" />} label="مُبلِّغ الحالة" value={em.reportedByName || nameById(em.reportedById) || '—'} />
           <Row icon={<FileText className="w-4 h-4" />} label="الوصف التفصيلي" value={em.description || '—'} />
           <Row
             icon={<MapPin className="w-4 h-4" />}
