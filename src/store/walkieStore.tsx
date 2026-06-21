@@ -139,14 +139,16 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
     saveBool(LS_DIRLISTEN, v);
   }, []);
 
-  // Sequential playback queue for received segments
-  const queueRef = useRef<string[]>([]);
+  // Sequential playback queue for received segments (raw encoded bytes).
+  // We decode + play through the shared WebAudio context (notify.playEncodedAudio)
+  // because HTML <audio>.play() is blocked from autoplaying on iOS Safari.
+  const queueRef = useRef<Uint8Array[]>([]);
   const playingRef = useRef(false);
 
   const playNext = useCallback(() => {
     if (playingRef.current) return;
-    const url = queueRef.current.shift();
-    if (!url) {
+    const bytes = queueRef.current.shift();
+    if (!bytes) {
       if (receivingRef.current) {
         receivingRef.current = false;
         playStatic();
@@ -155,13 +157,7 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
       return;
     }
     playingRef.current = true;
-    const audio = new Audio(url);
-    audio.onended = audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      playingRef.current = false;
-      playNext();
-    };
-    audio.play().catch(() => {
+    playEncodedAudio(bytes).then(() => {
       playingRef.current = false;
       playNext();
     });
