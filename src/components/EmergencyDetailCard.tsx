@@ -29,11 +29,12 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
   );
 }
 
-export default function EmergencyDetailCard({ emergency, onClose }: { emergency: Emergency; onClose: () => void }) {
+export default function EmergencyDetailCard({ emergency, users = [], onClose }: { emergency: Emergency; users?: Profile[]; onClose: () => void }) {
   const em = emergency;
   const office = officeById(em.officeId);
   const meta = STATUS_META[em.status];
-  const ackBy = em.acknowledgedById ? profileById(em.acknowledgedById)?.fullNameAr : undefined;
+  const nameById = (id?: string) => (id ? users.find(u => u.id === id)?.fullNameAr : undefined);
+  const ackBy = nameById(em.acknowledgedById);
   const hasCoords = typeof em.lat === 'number' && typeof em.lng === 'number';
 
   return createPortal(
