@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { UserPlus, Edit2, Power, PowerOff, Shield, Save, X, Database, Check, Search, Timer, FileText, MapPinned, Eye, Navigation, MapPin, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { relativeTime } from '../lib/utils';
+import LiveTrackingMap from '../components/LiveTrackingMap';
 import type { Role, Profile } from '../data/types';
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -38,6 +39,7 @@ export default function AdminPage() {
   const [draft, setDraft] = useState<Partial<Profile>>({});
   const [username, setUsername] = useState('');
   const [tracking, setTracking] = useState<Profile | null>(null);
+  const [showLiveMap, setShowLiveMap] = useState(false);
 
   const filtered = state.users.filter(u => u.fullNameAr.includes(search));
 
@@ -183,6 +185,9 @@ export default function AdminPage() {
             <div className="text-xs text-slate-400 mt-1">إدارة حسابات وصلاحيات مستخدمي النظام</div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowLiveMap(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-l from-sky-500/20 to-sky-600/10 border border-sky-500/30 hover:border-sky-500/60 text-sky-300 text-sm font-bold">
+              <MapPinned className="w-4 h-4" /> تتبّع الجميع على الخريطة
+            </button>
             <button onClick={seedData} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-l from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 text-sm font-bold">
               <Database className="w-4 h-4" /> تحميل بيانات تجريبية
             </button>
@@ -425,6 +430,8 @@ export default function AdminPage() {
         {tracking && (
           <TrackingModal user={tracking} loc={lastLocOf(tracking.id)} stale={lastLocOf(tracking.id) ? isStale(lastLocOf(tracking.id)!.updatedAt) : false} onClose={() => setTracking(null)} />
         )}
+
+        {showLiveMap && <LiveTrackingMap onClose={() => setShowLiveMap(false)} />}
       </div>
     </div>
   );
