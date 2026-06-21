@@ -228,9 +228,50 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table (desktop) */}
         <div className="bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-[#1E293B]">
+            {paginated.length === 0 && (
+              <div className="p-6 text-center text-xs text-slate-500">لا توجد تقارير ضمن الفلاتر المحددة</div>
+            )}
+            {paginated.map(r => {
+              const isExp = expanded.has(r.id);
+              return (
+                <div key={r.id} className="p-3">
+                  <button
+                    onClick={() => { const next = new Set(expanded); next.has(r.id) ? next.delete(r.id) : next.add(r.id); setExpanded(next); }}
+                    className="w-full flex items-center justify-between gap-2 text-right"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-slate-100 truncate">{officeById(r.officeId)?.nameAr}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{r.reportDate}</div>
+                    </div>
+                    {r.isLateSubmission
+                      ? <span className="text-amber-400 text-[10px] flex items-center gap-1 shrink-0"><Clock className="w-3 h-3" /> متأخر</span>
+                      : <span className="text-emerald-400 text-[10px] flex items-center gap-1 shrink-0"><Check className="w-3 h-3" /> في الوقت</span>}
+                  </button>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-[11px]">
+                    <Stat label="داخلون" value={formatNumber(r.visitorsIn)} tone="text-emerald-400" />
+                    <Stat label="خارجون" value={formatNumber(r.visitorsOut)} tone="text-amber-400" />
+                    <Stat label="العجلات" value={formatNumber(r.vehiclesCount)} />
+                    <Stat label="المواكب" value={String(r.processionsCount)} />
+                    <Stat label="الفعاليات" value={String(r.eventsCount)} />
+                    <Stat label="الوفيات" value={String(r.deathsCount)} tone="text-red-400" />
+                  </div>
+                  {isExp && (
+                    <div className="grid grid-cols-1 gap-2 mt-2 text-[11px]">
+                      {r.deploymentLocations && <Field label="مواقع الانتشار" value={r.deploymentLocations} />}
+                      {r.incidentsDetails && <Field label="تفاصيل الحوادث" value={r.incidentsDetails} />}
+                      {r.violationsDetails && <Field label="تفاصيل الخروقات" value={r.violationsDetails} />}
+                      {r.otherNotes && <Field label="ملاحظات" value={r.otherNotes} />}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-xs">
               <thead className="bg-[#0B0F19] border-b border-[#1E293B] text-slate-400">
                 <tr>
