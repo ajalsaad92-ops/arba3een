@@ -364,6 +364,30 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
         </>
       )}
 
+      {fieldType === 'select' && (
+        <div className="mt-2 rounded-lg bg-[#0B0F19] border border-[#1E293B] p-3 space-y-2">
+          <FieldRow label="خيارات القائمة (خيار واحد في كل سطر)">
+            <textarea
+              value={optionsText}
+              onChange={e => setOptionsText(e.target.value)}
+              rows={5}
+              className={inputCls + ' resize-none font-mono'}
+              placeholder={'مثال:\nماء\nطعام\nأدوية\nبطانيات'}
+            />
+          </FieldRow>
+          <label className="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" checked={allowFreeText} onChange={e => setFreeText(e.target.checked)} className="accent-amber-500" />
+            إضافة خيار «أخرى» للكتابة المباشرة (إدخال نص خارج القائمة)
+          </label>
+          <label className="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" checked={withQuantity} onChange={e => setWithQty(e.target.checked)} className="accent-amber-500" />
+            تفعيل إدخال الكمية وإمكانية إضافة مواد متعددة (زر «إضافة مادة أخرى»)
+          </label>
+        </div>
+      )}
+
+
+
       <label className="flex items-center gap-2 text-xs text-slate-300 mt-2">
         <input type="checkbox" checked={hidden} onChange={e => setHidden(e.target.checked)} className="accent-amber-500" />
         إخفاء الحقل (لن يظهر لأي مستخدم في نموذج التقرير)
