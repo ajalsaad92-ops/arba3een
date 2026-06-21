@@ -216,7 +216,6 @@ export default function AppShell() {
                     <div className="divide-y divide-[#1E293B]">
                       {state.lastActivity
                         .filter(a => !(isViewer && a.type === 'emergency'))
-                        .slice(0, 5)
                         .map((a, i) => {
                         const isRead = (a as any).read;
                         return (
