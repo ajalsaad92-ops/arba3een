@@ -511,6 +511,7 @@ export const api = {
       .select('id, status')
       .eq('office_id', ex.officeId)
       .in('status', ['pending', 'forwarded_to_supervisor', 'approved'])
+      .is('consumed_at', null)
       .maybeSingle();
     if (existing) {
       throw new Error('يوجد طلب تمديد مفتوح مسبقاً لهذا المكتب');

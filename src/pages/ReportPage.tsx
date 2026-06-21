@@ -45,7 +45,15 @@ export default function ReportPage() {
   const [reporterLng, setReporterLng] = useState<number | null>(null);
 
   const reportExists = state.todayReports.find(r => r.officeId === user.officeId);
-  const extensionActive = state.extensions.find(e => e.officeId === user.officeId && e.status === 'approved');
+  // An extension is only usable when it's approved, not yet consumed, and was
+  // granted for today's operational day — preventing reuse across days.
+  const today = operationalDate();
+  const extensionActive = state.extensions.find(e =>
+    e.officeId === user.officeId &&
+    e.status === 'approved' &&
+    !e.consumedAt &&
+    (!e.targetReportDate || e.targetReportDate === today)
+  );
   const status = state.timeWindowStatus;
   const canSubmit = status === 'open' || status === 'pre_warning' || (extensionActive !== undefined);
 
@@ -178,6 +186,11 @@ export default function ReportPage() {
         extraFields,
       });
       toast.success('✅ تم إرسال التقرير بنجاح', { id: t, description: 'تم إخطار المشرف والمدير' });
+      // If the report was sent outside the normal window using an approved
+      // extension, mark that extension consumed so it can't be reused.
+      if (extensionActive && status !== 'open') {
+        actions.updateExtension(extensionActive.id, { consumedAt: new Date().toISOString() }).catch(() => {});
+      }
       setForm({}); setLocations({}); setRoutes({});
     } catch (e: any) {
       toast.error(e?.message || 'فشل إرسال التقرير', { id: t });
