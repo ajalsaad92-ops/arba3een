@@ -13,7 +13,7 @@ function usePersistedState<T>(key: string, initial: T): [T, React.Dispatch<React
   }, [key, value]);
   return [value, setValue];
 }
-import { useNavigate } from 'react-router-dom';
+
 import { useOps } from '../store/opsStore';
 import { OFFICES, officeById } from '../data/offices';
 import KpiCard from '../components/KpiCard';
@@ -27,8 +27,9 @@ import { exportComprehensiveReports } from '../lib/exportReports';
 import { toast } from 'sonner';
 import {
   Users, Truck, AlertOctagon, BarChart3, Map, Activity,
-  Award, Check, Clock, X, Timer, Search, Download, Plus, TrendingUp, TrendingDown, Star, Info, ZapOff, Package, BarChart2
+  Award, Check, Clock, X, Timer, Search, Download, Plus, TrendingUp, TrendingDown, Star, Info, ZapOff, Package, BarChart2, Eye
 } from 'lucide-react';
+import EmergencyDetailCard from '../components/EmergencyDetailCard';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { formatNumber, formatFullNumber, relativeTime } from '../lib/utils';
 import type { Office } from '../data/offices';
@@ -244,14 +245,13 @@ export default function DashboardPage() {
 // ════════════════════════════════════════════════════════════════
 function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice, setSelectedOffice, activeEmergencies }: any) {
   const { state, actions } = useOps();
-  const navigate = useNavigate();
   const user = state.currentUser;
   if (!user) return <div className="p-4 text-center text-slate-500">جاري التحميل...</div>;
   const canHandleEmergencies = user.role === 'director' || user.role === 'supervisor';
+  const [detailEm, setDetailEm] = useState<any>(null);
 
   const handleAck = async (id: string) => { await actions.ackEmergency(id, user.id); };
   const handleResolve = async (id: string) => { await actions.resolveEmergency(id); };
-  const goToEmergency = () => { navigate('/emergency'); };
 
   const governorateData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -379,24 +379,30 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
             </div>
             <div className="space-y-1">
               {state.emergencies.filter((e: any) => e.status === 'active' || e.status === 'acknowledged').slice(0, 3).map((e: any) => (
-                <button
+                <div
                   key={e.id}
-                  onClick={goToEmergency}
                   className="w-full flex items-center gap-2 p-2 rounded-md bg-red-500/10 text-xs hover:bg-red-500/20 transition-colors"
                 >
                   <AlertOctagon className={`w-3.5 h-3.5 shrink-0 ${e.status === 'active' ? 'text-red-400 animate-pulse' : 'text-amber-400'}`} />
                   <span className="text-red-200 font-bold">{officeById(e.officeId)?.nameAr}</span>
                   <span className="text-slate-300 truncate flex-1">— {e.emergencyType}</span>
                   <span className="text-slate-500 text-[10px] shrink-0">{relativeTime(e.createdAt)}</span>
+                  <button
+                    onClick={() => setDetailEm(e)}
+                    title="عرض التفاصيل"
+                    className="shrink-0 p-1 rounded bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-colors"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
                   {canHandleEmergencies && (
-                    <div className="flex gap-1 shrink-0" onClick={ev => ev.stopPropagation()}>
+                    <div className="flex gap-1 shrink-0">
                       {e.status === 'active' && (
                         <button onClick={() => handleAck(e.id)} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-200 hover:bg-amber-500/50">تأكيد</button>
                       )}
                       <button onClick={() => handleResolve(e.id)} className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-200 hover:bg-emerald-500/50">حل</button>
                     </div>
                   )}
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -413,6 +419,10 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
           height="100%"
         />
       </div>
+
+      {detailEm && (
+        <EmergencyDetailCard emergency={detailEm} users={state.users} onClose={() => setDetailEm(null)} />
+      )}
     </div>
   );
 }

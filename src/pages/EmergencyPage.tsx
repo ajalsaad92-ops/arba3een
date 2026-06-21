@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useOps } from '../store/opsStore';
-import { AlertOctagon, MapPin, Send, Crosshair, Check, Loader2 } from 'lucide-react';
+import { AlertOctagon, MapPin, Send, Crosshair, Check, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import WalkieTalkie from '../components/WalkieTalkie';
+import EmergencyDetailCard from '../components/EmergencyDetailCard';
+import type { Emergency } from '../data/types';
 
 const EMERGENCY_TYPES = [
   'بحاجة عجلات مياه إضافية',
@@ -22,6 +24,7 @@ export default function EmergencyPage() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [detailEm, setDetailEm] = useState<Emergency | null>(null);
 
   const handleLocate = () => {
     setLocating(true);
@@ -221,6 +224,13 @@ export default function EmergencyPage() {
                     }`} />
                     <span className="text-sm font-bold text-slate-200">{em.emergencyType}</span>
                     <span className="text-[10px] text-slate-500 mr-auto">{new Date(em.createdAt).toLocaleString('ar-IQ')}</span>
+                    <button
+                      onClick={() => setDetailEm(em)}
+                      title="عرض التفاصيل"
+                      className="shrink-0 p-1.5 rounded-md bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
                   </div>
                   <div className="text-xs text-slate-400 line-clamp-2">{em.description}</div>
                   {state.currentUser?.role === 'director' || state.currentUser?.role === 'supervisor' ? (
@@ -243,6 +253,10 @@ export default function EmergencyPage() {
           </div>
         </div>
       </div>
+
+      {detailEm && (
+        <EmergencyDetailCard emergency={detailEm} users={state.users} onClose={() => setDetailEm(null)} />
+      )}
     </div>
   );
 }
