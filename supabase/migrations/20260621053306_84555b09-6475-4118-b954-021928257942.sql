@@ -1,0 +1,1 @@
+ALTER TYPE public.report_field_type ADD VALUE IF NOT EXISTS 'select';
