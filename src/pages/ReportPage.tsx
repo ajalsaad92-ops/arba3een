@@ -595,6 +595,110 @@ function DynamicFieldRenderer({
   return null;
 }
 
+// ─── Dropdown (select) field with optional quantity + multi-item ─────
+const OTHER = '__other__';
+type QtyItem = { item: string; qty: number };
+
+function SelectFieldInput({ field, value, onChange }: {
+  field: ReportFieldDefinition;
+  value: any;
+  onChange: (v: any) => void;
+}) {
+  const options: string[] = field.options ?? [];
+  const allowFree = field.allowFreeText;
+  const selCls = 'flex-1 bg-[#1E293B] border border-[#263244] rounded-lg px-3 py-2.5 text-sm text-white focus:border-amber-500/40 focus:outline-none';
+
+  // ── Single select (no quantity) ──
+  if (!field.withQuantity) {
+    const v: string = typeof value === 'string' ? value : '';
+    const isFree = v !== '' && !options.includes(v);
+    const dropdownVal = isFree ? OTHER : v;
+    return (
+      <div className="space-y-1.5">
+        <select
+          value={dropdownVal}
+          onChange={e => onChange(e.target.value === OTHER ? '' : e.target.value)}
+          className={selCls + ' w-full'}
+        >
+          <option value="">— اختر —</option>
+          {options.map(o => <option key={o} value={o}>{o}</option>)}
+          {allowFree && <option value={OTHER}>أخرى (كتابة مباشرة)</option>}
+        </select>
+        {allowFree && dropdownVal === OTHER && (
+          <input
+            type="text"
+            value={v}
+            onChange={e => onChange(e.target.value)}
+            placeholder="اكتب القيمة هنا…"
+            className={selCls + ' w-full'}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ── With quantity → repeatable list of {item, qty} ──
+  const list: QtyItem[] = Array.isArray(value) ? value : [];
+  const rows = list.length > 0 ? list : [{ item: '', qty: 1 }];
+  const update = (next: QtyItem[]) => onChange(next.filter(r => r.item !== '' && r.qty > 0));
+  const setRow = (i: number, patch: Partial<QtyItem>) => {
+    const next = rows.map((r, idx) => idx === i ? { ...r, ...patch } : r);
+    update(next);
+  };
+  const addRow = () => onChange([...rows.filter(r => r.item !== ''), { item: '', qty: 1 }]);
+  const removeRow = (i: number) => update(rows.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-2">
+      {rows.map((r, i) => {
+        const isFree = r.item !== '' && !options.includes(r.item);
+        const dv = isFree ? OTHER : r.item;
+        return (
+          <div key={i} className="flex flex-wrap items-center gap-1.5 bg-[#0B0F19] border border-[#1E293B] rounded-lg p-2">
+            <select
+              value={dv}
+              onChange={e => setRow(i, { item: e.target.value === OTHER ? ' ' : e.target.value })}
+              className={selCls}
+            >
+              <option value="">— اختر مادة —</option>
+              {options.map(o => <option key={o} value={o}>{o}</option>)}
+              {allowFree && <option value={OTHER}>أخرى…</option>}
+            </select>
+            {allowFree && dv === OTHER && (
+              <input
+                type="text"
+                value={r.item.trim()}
+                onChange={e => setRow(i, { item: e.target.value })}
+                placeholder="اسم المادة"
+                className={selCls}
+              />
+            )}
+            <input
+              type="number" min={1}
+              value={r.qty}
+              onChange={e => setRow(i, { qty: Math.max(1, Number(e.target.value) || 1) })}
+              className="w-20 bg-[#1E293B] border border-[#263244] rounded-lg px-2 py-2.5 text-sm text-white text-center focus:border-amber-500/40 focus:outline-none"
+              title="الكمية"
+            />
+            {rows.length > 1 && (
+              <button onClick={() => removeRow(i)} className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        );
+      })}
+      <button
+        onClick={addRow}
+        className="w-full flex items-center justify-center gap-2 p-2 bg-[#1E293B] border border-dashed border-[#263244] rounded-lg text-amber-400 hover:border-amber-500/40 text-xs font-bold"
+      >
+        <Plus className="w-4 h-4" /> إضافة مادة أخرى
+      </button>
+    </div>
+  );
+}
+
+
 // ─── Previous-reports panel (manager/supervisor/director only) ──────
 function PreviousReportsPanel({ currentUserRole, currentUserOfficeId }: { currentUserRole: string; currentUserOfficeId: string }) {
   const { state } = useOps();
