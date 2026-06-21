@@ -334,8 +334,8 @@ const actions = {
   async ackEmergency(id: string, userId: string) {
     await api.updateEmergency(id, { status: 'acknowledged', acknowledgedById: userId, acknowledgedAt: new Date().toISOString() });
   },
-  async resolveEmergency(id: string) {
-    await api.updateEmergency(id, { status: 'resolved', resolvedAt: new Date().toISOString() });
+  async resolveEmergency(id: string, userId?: string) {
+    await api.updateEmergency(id, { status: 'resolved', resolvedById: userId, resolvedAt: new Date().toISOString() });
   },
   async submitExtension(ex: ExtensionRequest) {
     await api.insertExtension(ex);
