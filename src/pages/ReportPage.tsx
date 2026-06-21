@@ -599,7 +599,23 @@ function DynamicFieldRenderer({
       </div>
     );
   }
-  return null;
+  // Fallback: any unknown/new field type renders as a plain text input so the
+  // form never silently drops a field (or crashes) when the DB schema adds a
+  // type the frontend doesn't explicitly handle yet.
+  return (
+    <div>
+      {Label}
+      <input
+        type="text"
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={field.placeholderAr ?? ''}
+        className="w-full bg-[#1E293B] border border-[#263244] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+      />
+      <div className="text-[10px] text-amber-500/70 mt-1">نوع حقل غير مدعوم ({field.fieldType}) — يُعرض كنص</div>
+      {helper}
+    </div>
+  );
 }
 
 // ─── Dropdown (select) field with optional quantity + multi-item ─────
