@@ -241,7 +241,7 @@ function reducer(state: OpsState, action: Action): OpsState {
       return { ...state, emergencies: state.emergencies.filter(e => e.id !== action.id) };
     case 'ADD_EXTENSION': {
       const newAct = { id: `a-${Date.now()}`, type: 'extension' as const, text: `طلب تمديد من ${action.extension.requestedByName}`, officeId: action.extension.officeId, createdAt: action.extension.requestTime };
-      return { ...state, extensions: [action.extension, ...state.extensions], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 12) };
+      return { ...state, extensions: [action.extension, ...state.extensions], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
     case 'UPDATE_EXTENSION':
       return {
