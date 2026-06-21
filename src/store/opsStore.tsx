@@ -393,6 +393,11 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   const currentUserRef = useRef(state.currentUser);
   useEffect(() => { currentUserRef.current = state.currentUser; }, [state.currentUser]);
 
+  // Keep a live ref to the full state so realtime callbacks can resolve names
+  // (e.g. who resolved an emergency) without re-subscribing.
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
   // Reusable loader for all dashboard data (used on first load and whenever
   // the auth session becomes available/refreshes).
   const loadAllData = useCallback(async () => {
