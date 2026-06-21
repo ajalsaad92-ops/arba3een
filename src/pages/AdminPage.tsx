@@ -421,10 +421,73 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+
+        {tracking && (
+          <TrackingModal user={tracking} loc={lastLocOf(tracking.id)} stale={lastLocOf(tracking.id) ? isStale(lastLocOf(tracking.id)!.updatedAt) : false} onClose={() => setTracking(null)} />
+        )}
       </div>
     </div>
   );
 }
+
+function TrackingModal({ user, loc, stale, onClose }: { user: Profile; loc: any; stale: boolean; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[#0B0F19] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-[#1E293B]">
+          <div className="flex items-center gap-2">
+            <Navigation className="w-4 h-4 text-amber-400" />
+            <div className="text-sm font-bold text-amber-400">تتبّع: {user.fullNameAr}</div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[#1E293B]"><X className="w-4 h-4 text-slate-400" /></button>
+        </div>
+        <div className="p-4 space-y-3">
+          {!loc ? (
+            <div className="text-center text-sm text-slate-500 py-6">لا توجد بيانات موقع لهذا المستخدم بعد.</div>
+          ) : (
+            <>
+              <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${stale ? 'bg-red-500/10 text-red-300 border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>
+                {stale ? <WifiOff className="w-4 h-4" /> : <Navigation className="w-4 h-4" />}
+                {stale ? 'الاتصال مفقود — يُعرض آخر موقع معروف' : 'متصل — يُحدّث الموقع مباشرة'}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">خط العرض</div>
+                  <div className="font-mono text-slate-200">{loc.lat.toFixed(5)}</div>
+                </div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">خط الطول</div>
+                  <div className="font-mono text-slate-200">{loc.lng.toFixed(5)}</div>
+                </div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">الدقة</div>
+                  <div className="text-slate-200">±{Math.round(loc.accuracyMeters)} م</div>
+                </div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">آخر تحديث</div>
+                  <div className="text-slate-200">{relativeTime(loc.updatedAt)}</div>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500 text-center">
+                {new Date(loc.updatedAt).toLocaleString('en-GB', { hour12: false })}
+              </div>
+              <a
+                href={`https://www.google.com/maps?q=${loc.lat},${loc.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold"
+              >
+                <MapPin className="w-4 h-4" /> فتح الموقع في الخريطة
+              </a>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
