@@ -188,8 +188,8 @@ export default function MapPicker({
 
         <div className="relative flex-1 min-h-[55vh] sm:min-h-[420px]">
           <MapContainer
-            center={livePos ? [livePos.lat, livePos.lng] : IRAQ_CENTER}
-            zoom={livePos ? 17 : 6}
+            center={openCenter ? [openCenter.lat, openCenter.lng] : IRAQ_CENTER}
+            zoom={openCenter ? 16 : 6}
             minZoom={5}
             maxZoom={19}
             maxBounds={IRAQ_BOUNDS}
@@ -205,6 +205,15 @@ export default function MapPicker({
             <ClickCapture onClick={handleClick} />
             <CenterOnUser pos={livePos} />
             <FixSize />
+
+            {/* 500m reference radius around the data-entry / office location. */}
+            {openCenter && (
+              <Circle
+                center={[openCenter.lat, openCenter.lng]}
+                radius={500}
+                pathOptions={{ color: '#3B82F6', weight: 1, fillColor: '#3B82F6', fillOpacity: 0.06, dashArray: '4,4' }}
+              />
+            )}
 
             {livePos && (
               <Marker position={[livePos.lat, livePos.lng]} icon={userIcon()} />
