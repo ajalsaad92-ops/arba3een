@@ -419,6 +419,10 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
           height="100%"
         />
       </div>
+
+      {detailEm && (
+        <EmergencyDetailCard emergency={detailEm} users={state.users} onClose={() => setDetailEm(null)} />
+      )}
     </div>
   );
 }
