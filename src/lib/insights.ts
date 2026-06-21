@@ -3,9 +3,11 @@ import type { DailyReport, Emergency, Profile } from '../data/types';
 
 export interface Insight {
   id: string;
-  icon: 'up' | 'down' | 'alert' | 'star' | 'info' | 'idle' | 'service';
+  icon: 'up' | 'down' | 'alert' | 'star' | 'info' | 'idle' | 'service' | 'news';
   tone: 'positive' | 'negative' | 'warning' | 'info';
   text: string;
+  /** Optional office/source name shown as a leading badge (TV-headline style). */
+  source?: string;
 }
 
 function sum(rs: DailyReport[], key: (r: DailyReport) => number) {
