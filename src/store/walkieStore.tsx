@@ -205,13 +205,11 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
         const bin = atob(p.audio);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const blob = new Blob([bytes], { type: p.mime });
-        const url = URL.createObjectURL(blob);
         if (!receivingRef.current) {
           receivingRef.current = true;
           playStatic();
         }
-        queueRef.current.push(url);
+        queueRef.current.push(bytes);
         setIncoming(`${p.senderName} • ${ROLE_LABELS[p.senderRole]}`);
         playNext();
         // Acknowledge back to the sender that this device actually heard the call.
