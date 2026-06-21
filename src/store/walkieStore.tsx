@@ -4,7 +4,7 @@ import {
 } from 'react';
 import { useOps } from './opsStore';
 import { supabase } from '../lib/supabase';
-import { playStatic } from '../lib/notify';
+import { playStatic, playEncodedAudio } from '../lib/notify';
 import { toast } from 'sonner';
 import type { Role } from '../data/types';
 
