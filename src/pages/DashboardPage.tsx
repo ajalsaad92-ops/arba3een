@@ -907,11 +907,24 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
       <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-sm font-bold text-slate-200">جميع المكاتب — حالة اليوم</div>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/20">
+          <button
+            onClick={() => {
+              const all = [...state.todayReports, ...state.historicalReports];
+              if (all.length === 0) { toast.error('لا توجد بيانات لتصديرها'); return; }
+              try {
+                exportComprehensiveReports(all, state.users, state.fieldDefinitions);
+                toast.success(`تم تصدير ${all.length} تقرير بكامل التفاصيل`);
+              } catch (e: any) {
+                toast.error(e?.message || 'فشل التصدير');
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/20"
+          >
             <Download className="w-4 h-4" />
             تصدير البيانات الشاملة (Excel)
           </button>
         </div>
+
         <div className="flex flex-wrap gap-1.5">
           {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).map(office => {
             const r = state.todayReports.find((x: any) => x.officeId === office.id);
