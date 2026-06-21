@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { operationalDate, operationalDateDaysAgo } from '../lib/opDate';
 
 // Persisted state hook — remembers the user's last choice across sessions.
 function usePersistedState<T>(key: string, initial: T): [T, React.Dispatch<React.SetStateAction<T>>] {
@@ -104,8 +105,7 @@ export default function DashboardPage() {
       .map(f => f.fieldKey);
     const dr = state.dateRange;
     if (!dr) {
-      const yest = new Date(); yest.setDate(yest.getDate() - 1);
-      const yestStr = yest.toISOString().slice(0, 10);
+      const yestStr = operationalDateDaysAgo(1);
       return {
         aggToday: computeAggregates(state.todayReports, effectiveFilter, extraKeys),
         aggYesterday: computeAggregates(state.historicalReports.filter(r => r.reportDate === yestStr), effectiveFilter, extraKeys),
@@ -119,8 +119,8 @@ export default function DashboardPage() {
     const days = Math.max(1, Math.round((toD.getTime() - fromD.getTime()) / 86400000) + 1);
     const prevTo = new Date(fromD); prevTo.setDate(prevTo.getDate() - 1);
     const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - (days - 1));
-    const prevFromStr = prevFrom.toISOString().slice(0, 10);
-    const prevToStr = prevTo.toISOString().slice(0, 10);
+    const prevFromStr = operationalDate(prevFrom);
+    const prevToStr = operationalDate(prevTo);
     const prev = all.filter(r => r.reportDate >= prevFromStr && r.reportDate <= prevToStr);
     return {
       aggToday: computeAggregates(inRange, effectiveFilter, extraKeys),
@@ -511,8 +511,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
   const sparklineFor = (key: keyof typeof agg) => {
     const days: number[] = [];
     for (let d = 13; d >= 0; d--) {
-      const ds = new Date(); ds.setDate(ds.getDate() - d);
-      const dsStr = ds.toISOString().slice(0, 10);
+      const dsStr = operationalDateDaysAgo(d);
       const dayAgg = computeAggregates(state.historicalReports.filter(r => r.reportDate === dsStr), effectiveFilter);
       days.push((dayAgg as any)[key] || 0);
     }
@@ -523,8 +522,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
   const areaData = useMemo(() => {
     const days: any[] = [];
     for (let d = 13; d >= 0; d--) {
-      const date = new Date(); date.setDate(date.getDate() - d);
-      const dsStr = date.toISOString().slice(0, 10);
+      const dsStr = operationalDateDaysAgo(d);
       const obj: any = { date: dsStr.slice(5) };
       const dayReports = state.historicalReports.filter(r => r.reportDate === dsStr);
       officesForChart.forEach((officeForChart: Office) => {
@@ -542,8 +540,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
     return officesForChart.map((o: Office) => {
       let total = 0;
       for (let d = 13; d >= 0; d--) {
-        const ds = new Date(); ds.setDate(ds.getDate() - d);
-        const dsStr = ds.toISOString().slice(0, 10);
+        const dsStr = operationalDateDaysAgo(d);
         const r = d === 0
           ? state.todayReports.find(x => x.officeId === o.id)
           : state.historicalReports.find(x => x.officeId === o.id && x.reportDate === dsStr);
@@ -782,8 +779,7 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
               // Get all visitor counts for this office in the window
               const cellData: { value: number; date: string }[] = [];
               for (let i = 6; i >= 0; i--) {
-                const ds = new Date(); ds.setDate(ds.getDate() - i);
-                const dsStr = ds.toISOString().slice(0, 10);
+                const dsStr = operationalDateDaysAgo(i);
                 const r = i === 0
                   ? state.todayReports.find(x => x.officeId === office.id)
                   : state.historicalReports.find(x => x.officeId === office.id && x.reportDate === dsStr);
