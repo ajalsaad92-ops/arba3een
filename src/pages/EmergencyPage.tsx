@@ -24,6 +24,7 @@ export default function EmergencyPage() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [detailEm, setDetailEm] = useState<Emergency | null>(null);
 
   const handleLocate = () => {
     setLocating(true);
