@@ -182,10 +182,26 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
   // Single global subscription — runs everywhere the user is logged in, so the
   // walkie-talkie keeps receiving in the background regardless of the page.
   useEffect(() => {
-    if (!me) { setConnected(false); return; }
+    if (!me) { setConnected(false); setOnlineUsers([]); return; }
     const channel = supabase.channel('walkie-talkie', {
-      config: { broadcast: { self: false } },
+      config: { broadcast: { self: false }, presence: { key: me.id } },
     });
+
+    // Presence → who is actually connected right now (excluding me).
+    const syncPresence = () => {
+      const stateMap = channel.presenceState() as Record<string, any[]>;
+      const seen = new Map<string, OnlineUser>();
+      Object.values(stateMap).forEach((metas) => {
+        metas.forEach((m: any) => {
+          if (m?.id && m.id !== me.id) seen.set(m.id, { id: m.id, name: m.name, role: m.role });
+        });
+      });
+      setOnlineUsers([...seen.values()]);
+    };
+    channel.on('presence', { event: 'sync' }, syncPresence);
+    channel.on('presence', { event: 'join' }, syncPresence);
+    channel.on('presence', { event: 'leave' }, syncPresence);
+
     channel.on('broadcast', { event: 'voice' }, ({ payload }) => {
       const p = payload as VoicePayload;
       if (!isForMe(p)) return;
@@ -202,10 +218,30 @@ export function WalkieProvider({ children }: { children: ReactNode }) {
         queueRef.current.push(url);
         setIncoming(`${p.senderName} • ${ROLE_LABELS[p.senderRole]}`);
         playNext();
+        // Acknowledge back to the sender that this device actually heard the call.
+        channel.send({
+          type: 'broadcast',
+          event: 'ack',
+          payload: { senderId: p.senderId, id: me.id, name: me.fullNameAr, role: me.role },
+        });
       } catch { /* ignore malformed */ }
     });
+
+    // Receive acks → record who heard MY transmission.
+    channel.on('broadcast', { event: 'ack' }, ({ payload }) => {
+      const a = payload as { senderId: string; id: string; name: string; role: Role };
+      if (a.senderId !== me.id) return;
+      setRecentListeners((prev) => {
+        const others = prev.filter((l) => l.id !== a.id);
+        return [...others, { id: a.id, name: a.name, role: a.role, at: Date.now() }];
+      });
+    });
+
     channel.subscribe((status) => {
       setConnected(status === 'SUBSCRIBED');
+      if (status === 'SUBSCRIBED') {
+        channel.track({ id: me.id, name: me.fullNameAr, role: me.role });
+      }
     });
     channelRef.current = channel;
     return () => {
