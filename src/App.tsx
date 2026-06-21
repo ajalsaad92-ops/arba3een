@@ -100,13 +100,18 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Unlock WebAudio on the first user gesture anywhere (required by iOS)
+  // Unlock WebAudio on the first user gesture anywhere (required by iOS), and
+  // keep re-resuming on every gesture so a context iOS suspended in the
+  // background comes back — this is what makes notification sounds work on
+  // iPhone outside the always-active emergency/walkie screen.
   useEffect(() => {
     const handler = () => { unlockAudio(); };
-    window.addEventListener('pointerdown', handler, { once: true });
-    window.addEventListener('keydown', handler, { once: true });
+    window.addEventListener('pointerdown', handler);
+    window.addEventListener('touchstart', handler);
+    window.addEventListener('keydown', handler);
     return () => {
       window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('touchstart', handler);
       window.removeEventListener('keydown', handler);
     };
   }, []);
