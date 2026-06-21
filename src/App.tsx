@@ -68,8 +68,19 @@ function AnimatedRoutes() {
 export default function App() {
   const [permsRequested, setPermsRequested] = useState(false);
 
+  // On a native device, request ALL permissions at once on first launch
+  // (location, push + local notifications, microphone). On the web we fall back
+  // to the staggered browser prompts below.
+  useEffect(() => {
+    if (isNative()) {
+      const t = setTimeout(() => { requestAllNativePermissions().catch(() => {}); }, 1500);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   // Request browser permissions on first load (staggered)
   useEffect(() => {
+    if (isNative()) return;
     if (permsRequested) return;
     const asked = localStorage.getItem('ops:perms-asked');
     if (asked) { setPermsRequested(true); return; }
