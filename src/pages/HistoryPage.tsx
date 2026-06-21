@@ -377,3 +377,12 @@ function Field({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function Stat({ label, value, tone = 'text-slate-300' }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="bg-[#0B0F19] border border-[#1E293B] rounded-lg px-2 py-1.5 text-center">
+      <div className="text-[9px] text-slate-500">{label}</div>
+      <div className={`font-bold tabular-nums ${tone}`}>{value}</div>
+    </div>
+  );
+}
