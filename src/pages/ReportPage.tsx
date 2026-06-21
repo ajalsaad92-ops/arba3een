@@ -393,6 +393,7 @@ export default function ReportPage() {
           initialSingle={locations[picker.fieldKey] ?? null}
           initialMulti={routes[picker.fieldKey] ?? []}
           userLocation={reporterLat != null && reporterLng != null ? { lat: reporterLat, lng: reporterLng } : null}
+          focusPoint={office ? { lat: office.lat, lng: office.lng } : null}
           onCancel={() => setPicker(null)}
           onConfirmSingle={(p) => {
             setLocations(l => ({ ...l, [picker.fieldKey]: p }));
