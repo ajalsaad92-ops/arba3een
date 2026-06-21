@@ -596,25 +596,6 @@ export function OpsProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; unsub(); };
   }, [userId]);
 
-  // Simulate live agent GPS jitter (15s)
-  const tickRef = useRef(0);
-  useEffect(() => {
-    if (!ready) return;
-    const interval = setInterval(() => {
-      tickRef.current += 1;
-      state.agentLocations.slice(0, 5).forEach(loc => {
-        const jitter = () => (Math.random() - 0.5) * 0.002;
-        actions.updateAgentLocation({
-          ...loc,
-          lat: loc.lat + jitter(),
-          lng: loc.lng + jitter(),
-          updatedAt: new Date().toISOString(),
-        }).catch(() => {});
-      });
-    }, 15_000);
-    return () => clearInterval(interval);
-  }, [ready, state.agentLocations.length]);
-
   if (!ready) {
     return (
       <div className="min-h-screen w-screen flex items-center justify-center bg-[#0B0F19]">
