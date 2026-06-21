@@ -8,6 +8,7 @@ import {
   testVibration,
   unlockAudio,
 } from '../lib/notify';
+import { requestAllNativePermissions, isNative } from '../lib/nativePermissions';
 
 const STORAGE_KEY = 'ops:perms-granted-v2';
 
@@ -40,6 +41,8 @@ export function ToastPermissions() {
     try {
       // Audio must unlock inside this click handler for iOS
       unlockAudio();
+      // On a real device, request all native OS permissions at once.
+      if (isNative()) await requestAllNativePermissions(true);
       // Vibration test (Android)
       testVibration();
       // Notifications — must be from gesture
