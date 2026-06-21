@@ -4,8 +4,7 @@ import {
   ShieldCheck, ExternalLink, Building2,
 } from 'lucide-react';
 import { officeById } from '../data/offices';
-import { profileById } from '../store/opsStore';
-import type { Emergency } from '../data/types';
+import type { Emergency, Profile } from '../data/types';
 
 const STATUS_META: Record<Emergency['status'], { label: string; cls: string; dot: string }> = {
   active: { label: 'نشطة', cls: 'bg-red-500/15 text-red-300 border-red-500/40', dot: 'bg-red-500 animate-pulse' },
