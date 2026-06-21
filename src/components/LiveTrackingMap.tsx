@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { X, Navigation, WifiOff, Users } from 'lucide-react';
@@ -44,7 +44,7 @@ function userMarkerIcon(name: string, stale: boolean) {
 
 function FitToMarkers({ points }: { points: [number, number][] }) {
   const map = useMap();
-  useMemo(() => {
+  useEffect(() => {
     if (points.length === 0) return;
     if (points.length === 1) {
       map.setView(points[0], 13);
