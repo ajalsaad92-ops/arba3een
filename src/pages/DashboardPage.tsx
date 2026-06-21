@@ -270,9 +270,10 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
   }, [state.todayReports, effectiveFilter]);
 
   return (
-    <div className="h-full flex flex-col lg:flex-row gap-3 p-3 overflow-hidden">
+    <div className="h-full flex flex-col lg:flex-row gap-3 p-3 overflow-y-auto lg:overflow-hidden">
       {/* Left 45% */}
-      <div className="lg:w-[45%] flex flex-col gap-3 overflow-y-auto">
+      <div className="lg:w-[45%] flex flex-col gap-3 lg:overflow-y-auto">
+
         {/* Top KPIs — driven by customKpis */}
         <CustomKpiGrid agg={agg} aggYesterday={aggYesterday} trend={trend} activeEmergencies={activeEmergencies} cols={3} />
 
