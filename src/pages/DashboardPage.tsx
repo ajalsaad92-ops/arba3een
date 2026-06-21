@@ -27,8 +27,9 @@ import { exportComprehensiveReports } from '../lib/exportReports';
 import { toast } from 'sonner';
 import {
   Users, Truck, AlertOctagon, BarChart3, Map, Activity,
-  Award, Check, Clock, X, Timer, Search, Download, Plus, TrendingUp, TrendingDown, Star, Info, ZapOff, Package, BarChart2
+  Award, Check, Clock, X, Timer, Search, Download, Plus, TrendingUp, TrendingDown, Star, Info, ZapOff, Package, BarChart2, Eye
 } from 'lucide-react';
+import EmergencyDetailCard from '../components/EmergencyDetailCard';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import { formatNumber, formatFullNumber, relativeTime } from '../lib/utils';
 import type { Office } from '../data/offices';
