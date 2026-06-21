@@ -475,6 +475,7 @@ export const api = {
     if (patch.status !== undefined) row.status = patch.status;
     if (patch.acknowledgedById !== undefined) row.acknowledged_by = patch.acknowledgedById;
     if (patch.acknowledgedAt !== undefined) row.acknowledged_at = patch.acknowledgedAt;
+    if (patch.resolvedById !== undefined) row.resolved_by = patch.resolvedById;
     if (patch.resolvedAt !== undefined) row.resolved_at = patch.resolvedAt;
     if (patch.description !== undefined) row.description = patch.description;
     if (patch.emergencyType !== undefined) row.emergency_type = patch.emergencyType;
