@@ -60,9 +60,11 @@ type Action =
   | { type: 'FORCE_OPEN_WINDOW' }
   | { type: 'FORCE_CLOSE_WINDOW' }
   | { type: 'ADD_REPORT'; report: DailyReport }
+  | { type: 'REMOVE_REPORT'; id: string }
   | { type: 'ADD_EMERGENCY'; emergency: Emergency; silent?: boolean }
   | { type: 'ACK_EMERGENCY'; id: string; userId: string }
-  | { type: 'RESOLVE_EMERGENCY'; id: string }
+  | { type: 'RESOLVE_EMERGENCY'; id: string; userId?: string }
+  | { type: 'REMOVE_EMERGENCY'; id: string }
   | { type: 'ADD_EXTENSION'; extension: ExtensionRequest }
   | { type: 'UPDATE_EXTENSION'; id: string; patch: Partial<ExtensionRequest> }
   | { type: 'UPDATE_AGENT_LOCATION'; location: AgentLocation }
