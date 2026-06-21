@@ -512,6 +512,17 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
 
       unsub = api.subscribe((event) => {
+      // Viewers must never hear any sound or receive any alert. Route every
+      // alert through this helper so a single role check silences them entirely.
+      const alert = (kind: Parameters<typeof fireAlert>[0], title: string, body: string) => {
+        if (currentUserRef.current?.role === 'viewer') return;
+        fireAlert(kind, title, body);
+      };
+      // Resolve a user id → Arabic name from the loaded users list.
+      const nameOf = (id?: string) => {
+        if (!id) return '';
+        return stateRef.current.users.find(u => u.id === id)?.fullNameAr ?? '';
+      };
       if (event.table === '*') {
         // Full refresh signal
         (async () => {
@@ -524,15 +535,21 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         })();
         return;
       }
-      if (event.table === 'daily_reports' && event.payload?.new) {
-        dispatch({ type: 'ADD_REPORT', report: event.payload.new });
-        const r = event.payload.new;
-        // The author of the report shouldn't be alerted about their own submit.
-        if (currentUserRef.current?.id !== r.submittedBy) {
-          fireAlert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
+      if (event.table === 'daily_reports') {
+        if (event.type === 'DELETE' && event.payload?.old?.id) {
+          dispatch({ type: 'REMOVE_REPORT', id: event.payload.old.id });
+        } else if (event.payload?.new) {
+          dispatch({ type: 'ADD_REPORT', report: event.payload.new });
+          const r = event.payload.new;
+          // The author of the report shouldn't be alerted about their own submit.
+          if (currentUserRef.current?.id !== r.submittedBy) {
+            alert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
+          }
         }
       } else if (event.table === 'emergencies') {
-        if (event.type === 'INSERT' && event.payload?.new) {
+        if (event.type === 'DELETE' && event.payload?.old?.id) {
+          dispatch({ type: 'REMOVE_EMERGENCY', id: event.payload.old.id });
+        } else if (event.type === 'INSERT' && event.payload?.new) {
           const e = event.payload.new;
           const me = currentUserRef.current;
           const isViewer = me?.role === 'viewer';
@@ -542,20 +559,23 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           const isOwn = !!me && e.reportedById === me.id;
           dispatch({ type: 'ADD_EMERGENCY', emergency: e, silent: isViewer || isOwn });
           if (!isViewer && !isOwn) {
-            fireAlert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
+            alert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
           }
         }
         else if (event.type === 'UPDATE' && event.payload?.new) {
           const e = event.payload.new;
-          if (e.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: e.id });
+          if (e.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: e.id, userId: e.resolvedById });
           else if (e.status === 'acknowledged') dispatch({ type: 'ACK_EMERGENCY', id: e.id, userId: e.acknowledgedById || '' });
-          // Notify the person who created the emergency when it's acknowledged/resolved.
+          // Notify the person who created the emergency when it's acknowledged/resolved,
+          // naming who handled it.
           const me = currentUserRef.current;
-          if (me && e.reportedById === me.id && me.id !== e.acknowledgedById) {
-            if (e.status === 'acknowledged') {
-              fireAlert('extension', '✅ تم استلام حالتك الطارئة', `${e.emergencyType} — تم تأكيد الاستلام من القيادة`);
-            } else if (e.status === 'resolved') {
-              fireAlert('report', '✔ تم حل حالتك الطارئة', `${e.emergencyType} — تم وضع الحالة كمنجزة`);
+          if (me && e.reportedById === me.id) {
+            if (e.status === 'acknowledged' && me.id !== e.acknowledgedById) {
+              const who = nameOf(e.acknowledgedById);
+              alert('extension', '✅ تم استلام حالتك الطارئة', `${e.emergencyType} — تم تأكيد الاستلام${who ? ` من ${who}` : ' من القيادة'}`);
+            } else if (e.status === 'resolved' && me.id !== e.resolvedById) {
+              const who = nameOf(e.resolvedById);
+              alert('report', '✔ تم حل حالتك الطارئة', `${e.emergencyType} — تم حل الحالة${who ? ` بواسطة ${who}` : ''}`);
             }
           }
         }
@@ -564,7 +584,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           dispatch({ type: 'ADD_EXTENSION', extension: event.payload.new });
           const x = event.payload.new;
           if (currentUserRef.current?.id !== x.requestedById) {
-            fireAlert('extension', 'طلب تمديد جديد', `${x.requestedByName || x.officeId} يطلب تمديد الوقت`);
+            alert('extension', 'طلب تمديد جديد', `${x.requestedByName || x.officeId} يطلب تمديد الوقت`);
           }
         }
         else if (event.type === 'UPDATE' && event.payload?.new) {
@@ -573,8 +593,8 @@ export function OpsProvider({ children }: { children: ReactNode }) {
           // Tell the requester when their extension is approved/rejected.
           const me = currentUserRef.current;
           if (me && x.requestedById === me.id) {
-            if (x.status === 'approved') fireAlert('extension', '✅ تمت الموافقة على التمديد', 'تم فتح نافذة إضافية للإرسال');
-            else if (x.status === 'rejected') fireAlert('system', '❌ تم رفض طلب التمديد', 'لم تتم الموافقة على طلبك');
+            if (x.status === 'approved') alert('extension', '✅ تمت الموافقة على التمديد', 'تم فتح نافذة إضافية للإرسال');
+            else if (x.status === 'rejected') alert('system', '❌ تم رفض طلب التمديد', 'لم تتم الموافقة على طلبك');
           }
         }
       } else if (event.table === 'time_windows' && event.payload?.new) {
