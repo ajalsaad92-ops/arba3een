@@ -8,6 +8,7 @@ import { api } from '../lib/api';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import EnvErrorPage from '../pages/EnvErrorPage';
 import { fireAlert } from '../lib/notify';
+import { operationalDate, baghdadMinutes } from '../lib/opDate';
 
 interface OpsState {
   // Auth
@@ -117,7 +118,7 @@ const initialState: OpsState = {
   currentUser: null,
   authLoading: true,
   serverTime: new Date(),
-  timeWindow: { windowDate: new Date().toISOString().slice(0,10), openTime: '00:00', closeTime: '23:59', isManuallyOpen: false, isManuallyClosed: false },
+  timeWindow: { windowDate: operationalDate(), openTime: '00:00', closeTime: '23:59', isManuallyOpen: false, isManuallyClosed: false },
   timeWindowStatus: 'open',
   users: [],
   todayReports: [],
@@ -151,7 +152,9 @@ function computeTimeWindowStatus(serverTime: Date, window: TimeWindow): TimeWind
   if (window.isManuallyOpen) return 'open';
   const [openH, openM] = window.openTime.split(':').map(Number);
   const [closeH, closeM] = window.closeTime.split(':').map(Number);
-  const nowMin = serverTime.getHours() * 60 + serverTime.getMinutes();
+  // Use Baghdad wall-clock time so the window is identical for every user
+  // regardless of their device timezone.
+  const nowMin = baghdadMinutes(serverTime);
   const openMin = openH * 60 + openM;
   const closeMin = closeH * 60 + closeM;
   const preWarnMin = closeMin - 30;
@@ -479,7 +482,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   // current YYYY-MM-DD against the one in state; updates only if changed.
   useEffect(() => {
     const rollIfNewDay = async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = operationalDate();
       if (today !== state.timeWindow.windowDate) {
         const tw = await api.getTimeWindow();
         dispatch({ type: 'SET_TIME_WINDOW', window: { ...tw, windowDate: today } });
