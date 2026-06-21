@@ -1159,8 +1159,14 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
         رؤى لحظية
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <div className="flex items-center gap-10 px-4 animate-ticker-rtl whitespace-nowrap text-xs">
-          {[...insights, ...insights, ...insights].map((ins, i) => (
+        {/* Single pass over the FULL set of insights, then it loops. The
+            duration scales with the number of insights so every headline is
+            shown completely before the cycle restarts (no early repeat). */}
+        <div
+          className="inline-flex items-center gap-10 px-4 animate-ticker whitespace-nowrap text-xs"
+          style={{ animationDuration: `${Math.max(30, insights.length * 7)}s` }}
+        >
+          {insights.map((ins, i) => (
             <div key={`${ins.id}-${i}`} className="flex items-center gap-2">
               {ins.source && (
                 <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black shrink-0">
@@ -1173,6 +1179,7 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
           ))}
         </div>
       </div>
+
     </div>
   );
 }
