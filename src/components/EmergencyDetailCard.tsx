@@ -97,7 +97,7 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
             <Row icon={<ShieldCheck className="w-4 h-4" />} label="تم الاستلام" value={`${fmt(em.acknowledgedAt)}${ackBy ? ` — ${ackBy}` : ''}`} />
           )}
           {em.resolvedAt && (
-            <Row icon={<CheckCircle2 className="w-4 h-4" />} label="تم الحل" value={fmt(em.resolvedAt)} />
+            <Row icon={<CheckCircle2 className="w-4 h-4" />} label="تم الحل" value={`${fmt(em.resolvedAt)}${resolvedBy ? ` — ${resolvedBy}` : ''}`} />
           )}
         </div>
       </div>
