@@ -37,8 +37,14 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<Partial<Profile>>({});
   const [username, setUsername] = useState('');
+  const [tracking, setTracking] = useState<Profile | null>(null);
 
   const filtered = state.users.filter(u => u.fullNameAr.includes(search));
+
+  // Last known location for a user (from live tracking).
+  const lastLocOf = (userId: string) => state.agentLocations.find(a => a.agentId === userId);
+  // A fix older than 2 minutes likely means the user lost connectivity.
+  const isStale = (iso: string) => Date.now() - new Date(iso).getTime() > 120_000;
 
   const startCreate = () => {
     setDraft({ fullNameAr: '', role: 'agent', officeId: OFFICES[0].id, permittedOfficeIds: [], specialPermissions: { canExport: false, canAddCrossings: false, canViewAllOffices: false, canOpenWindow: false, canEditReports: false }, isActive: true });
