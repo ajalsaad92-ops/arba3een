@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { useWalkie, ROLE_LABELS, type Target } from '../store/walkieStore';
-import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2, Headphones, HeadphoneOff } from 'lucide-react';
+import { Radio, Mic, Users, ChevronDown, Volume2, Wifi, WifiOff, Loader2, Headphones, HeadphoneOff, CheckCheck, Circle } from 'lucide-react';
 import type { Role } from '../data/types';
 
 export default function WalkieTalkie() {
@@ -14,6 +14,7 @@ export default function WalkieTalkie() {
     directorListening, setDirectorListening,
     isDirector,
     startTalking, stopTalking,
+    onlineUsers, recentListeners,
   } = useWalkie();
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -25,27 +26,30 @@ export default function WalkieTalkie() {
     return u ? u.fullNameAr : 'شخص محدد';
   })();
 
-  // Everyone who can be called (the director can never be a recipient).
+  // Everyone who can be picked as a recipient (the director is never a target).
   const callableUsers = useMemo(
     () => state.users.filter((u) => u.id !== me?.id && u.role !== 'director'),
     [state.users, me?.id],
   );
   const callableRoles = (Object.keys(ROLE_LABELS) as Role[]).filter((r) => r !== 'director');
 
-  // How many people will actually hear this call, broken down by category.
+  // How many people are ACTUALLY online and will hear this call right now.
+  // Based on live presence — never counts me, and never counts the director.
   const recipients = useMemo(() => {
-    let list = callableUsers;
-    if (target.mode === 'role') list = callableUsers.filter((u) => u.role === target.value);
-    else if (target.mode === 'user') list = callableUsers.filter((u) => u.id === target.value);
+    let list = onlineUsers.filter((u) => u.role !== 'director');
+    if (target.mode === 'role') list = list.filter((u) => u.role === target.value);
+    else if (target.mode === 'user') list = list.filter((u) => u.id === target.value);
     const count = (r: Role) => list.filter((u) => u.role === r).length;
     return {
+      list,
       supervisor: count('supervisor'),
       manager: count('manager'),
       agent: count('agent'),
       other: list.filter((u) => !['supervisor', 'manager', 'agent'].includes(u.role)).length,
       total: list.length,
     };
-  }, [callableUsers, target]);
+  }, [onlineUsers, target]);
+
 
   const pick = (t: Target) => { setTarget(t); setPickerOpen(false); };
 
