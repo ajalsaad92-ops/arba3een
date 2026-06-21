@@ -31,6 +31,9 @@ export default function AppShell() {
   const [bellOpen, setBellOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // Continuously track the signed-in user's location in the background.
+  useLocationTracker();
+
   // ProtectedRoute already checks auth, so this should never be null
   // But show loading just in case
   if (!state.currentUser) {
