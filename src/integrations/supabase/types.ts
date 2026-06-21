@@ -447,6 +447,7 @@ export type Database = {
       }
       report_field_definitions: {
         Row: {
+          allow_free_text: boolean
           allowed_user_ids: string[]
           count_in_stats: boolean
           created_at: string
@@ -459,12 +460,15 @@ export type Database = {
           is_hidden: boolean
           label_ar: string
           max_length: number | null
+          options: Json
           placeholder_ar: string | null
           sort_order: number
           stat_label_ar: string | null
           updated_at: string
+          with_quantity: boolean
         }
         Insert: {
+          allow_free_text?: boolean
           allowed_user_ids?: string[]
           count_in_stats?: boolean
           created_at?: string
@@ -477,12 +481,15 @@ export type Database = {
           is_hidden?: boolean
           label_ar: string
           max_length?: number | null
+          options?: Json
           placeholder_ar?: string | null
           sort_order?: number
           stat_label_ar?: string | null
           updated_at?: string
+          with_quantity?: boolean
         }
         Update: {
+          allow_free_text?: boolean
           allowed_user_ids?: string[]
           count_in_stats?: boolean
           created_at?: string
@@ -495,10 +502,12 @@ export type Database = {
           is_hidden?: boolean
           label_ar?: string
           max_length?: number | null
+          options?: Json
           placeholder_ar?: string | null
           sort_order?: number
           stat_label_ar?: string | null
           updated_at?: string
+          with_quantity?: boolean
         }
         Relationships: [
           {
