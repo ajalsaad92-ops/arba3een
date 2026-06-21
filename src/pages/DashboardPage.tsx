@@ -13,7 +13,7 @@ function usePersistedState<T>(key: string, initial: T): [T, React.Dispatch<React
   }, [key, value]);
   return [value, setValue];
 }
-import { useNavigate } from 'react-router-dom';
+
 import { useOps } from '../store/opsStore';
 import { OFFICES, officeById } from '../data/offices';
 import KpiCard from '../components/KpiCard';
