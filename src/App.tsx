@@ -90,6 +90,16 @@ export default function App() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [permsRequested]);
 
+  // Sync any existing Web Push subscription with the backend once the app
+  // loads. This re-uploads the endpoint/key pair if the user already granted
+  // permission, so the server can reach them when the app is fully closed.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      syncPushSubscriptionState().catch(() => {});
+    }, 5000);
+    return () => clearTimeout(t);
+  }, []);
+
   // Unlock WebAudio on the first user gesture anywhere (required by iOS)
   useEffect(() => {
     const handler = () => { unlockAudio(); };
