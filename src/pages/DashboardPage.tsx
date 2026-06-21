@@ -470,14 +470,14 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
 
 
   type VisitorChartType = 'area' | 'line' | 'vertical' | 'horizontal';
-  const [visitorChartType, setVisitorChartType] = useState<VisitorChartType>('area');
-  const [chartMetric, setChartMetric] = useState<string>('visitorsIn');
+  const [visitorChartType, setVisitorChartType] = usePersistedState<VisitorChartType>('dash:visitorChartType', 'area');
+  const [chartMetric, setChartMetric] = usePersistedState<string>('dash:chartMetric', 'visitorsIn');
   // Visitors KPI shows arrivals OR departures — never their sum (they are distinct flows).
-  const [visitorFlow, setVisitorFlow] = useState<'in' | 'out'>('in');
+  const [visitorFlow, setVisitorFlow] = usePersistedState<'in' | 'out'>('dash:visitorFlow', 'in');
   const [officeMenuOpen, setOfficeMenuOpen] = useState(false);
   // Offices available for this user, and which are selected for the chart (max recommended 5 shown).
   const availableOffices = useMemo(() => OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)), [effectiveFilter]);
-  const [selectedChartOffices, setSelectedChartOffices] = useState<string[]>(() => availableOffices.slice(0, 5).map((o: Office) => o.id));
+  const [selectedChartOffices, setSelectedChartOffices] = usePersistedState<string[]>('dash:selectedChartOffices', availableOffices.slice(0, 5).map((o: Office) => o.id));
 
   const activeMetric = CHART_METRICS.find((m) => m.id === chartMetric) || CHART_METRICS[0];
   const officesForChart = useMemo(
