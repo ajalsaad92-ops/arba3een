@@ -99,6 +99,8 @@ interface Props {
   initialSingle?: Pt | null;
   initialMulti?: Pt[];
   userLocation?: Pt | null;
+  /** Where to centre the map when GPS is not available (e.g. the data-entry user's office). */
+  focusPoint?: Pt | null;
   onCancel: () => void;
   onConfirmSingle?: (p: Pt) => void;
   onConfirmMulti?: (pts: Pt[]) => void;
