@@ -300,7 +300,7 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'ADD_BORDER_CROSSING':
       return { ...state, borderCrossings: [...state.borderCrossings, action.crossing] };
     case 'ADD_ACTIVITY':
-      return { ...state, lastActivity: [action.activity, ...state.lastActivity.slice(0, 11)] };
+      return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50) };
     case 'CLEAR_UNREAD':
       return { ...state, unreadNotifications: 0 };
     case 'MARK_NOTIFICATION_READ':
