@@ -225,6 +225,8 @@ function rowToExtension(r: any): ExtensionRequest {
     supervisorApprovedById: r.supervisor_approved_by ?? undefined,
     supervisorApprovedAt: r.supervisor_approved_at ?? undefined,
     extensionWindowEnd: r.extension_window_end ?? undefined,
+    targetReportDate: r.target_report_date ?? undefined,
+    consumedAt: r.consumed_at ?? undefined,
   };
 }
 

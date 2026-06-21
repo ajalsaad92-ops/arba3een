@@ -75,6 +75,10 @@ export interface ExtensionRequest {
   supervisorApprovedById?: string;
   supervisorApprovedAt?: string;
   extensionWindowEnd?: string;
+  /** The operational day (YYYY-MM-DD) this extension applies to. */
+  targetReportDate?: string;
+  /** Set once a report is submitted using this extension — prevents reuse. */
+  consumedAt?: string;
 }
 
 export interface Emergency {
