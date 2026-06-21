@@ -35,6 +35,7 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
   const meta = STATUS_META[em.status];
   const nameById = (id?: string) => (id ? users.find(u => u.id === id)?.fullNameAr : undefined);
   const ackBy = nameById(em.acknowledgedById);
+  const resolvedBy = nameById(em.resolvedById);
   const hasCoords = typeof em.lat === 'number' && typeof em.lng === 'number';
 
   return createPortal(
