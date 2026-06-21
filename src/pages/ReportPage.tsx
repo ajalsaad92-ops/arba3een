@@ -59,6 +59,49 @@ export default function ReportPage() {
   const status = state.timeWindowStatus;
   const canSubmit = status === 'open' || status === 'pre_warning' || (extensionActive !== undefined);
 
+  // ─── Draft auto-save (survives phone calls / app restarts) ─────────
+  const DRAFT_KEY = `ops:report-draft:${user.id}:${today}`;
+  const draftRestoredRef = useRef(false);
+  // On first mount, detect an existing draft for today and offer to resume.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      const hasContent = (d?.form && Object.keys(d.form).length) ||
+        (d?.locations && Object.keys(d.locations).length) ||
+        (d?.routes && Object.keys(d.routes).length) || d?.mgrs;
+      if (hasContent) setDraftAvailable(true);
+    } catch { /* ignore */ }
+  }, [DRAFT_KEY]);
+  // Persist the in-progress form to localStorage whenever it changes.
+  useEffect(() => {
+    if (!draftRestoredRef.current && !draftAvailable) {
+      // Don't overwrite an un-restored saved draft with the empty initial form.
+    }
+    const empty = Object.keys(form).length === 0 && Object.keys(locations).length === 0 &&
+      Object.keys(routes).length === 0 && !mgrs;
+    if (empty) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, locations, routes, mgrs, ts: Date.now() }));
+    } catch { /* ignore */ }
+  }, [form, locations, routes, mgrs, DRAFT_KEY, draftAvailable]);
+  const restoreDraft = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+      setForm(d.form ?? {}); setLocations(d.locations ?? {}); setRoutes(d.routes ?? {});
+      setMgrs(d.mgrs ?? '');
+      draftRestoredRef.current = true;
+      toast.success('تمت استعادة المسودة');
+    } catch { toast.error('تعذّر استعادة المسودة'); }
+    setDraftAvailable(false);
+  };
+  const discardDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    setDraftAvailable(false);
+  };
+
+
   // ─── Live GPS for agents (unchanged) ───────────────────────────────
   const watchIdRef = useRef<number | null>(null);
   useEffect(() => {
