@@ -8,6 +8,7 @@ import {
   testVibration,
   unlockAudio,
 } from '../lib/notify';
+import { requestAllNativePermissions, isNative } from '../lib/nativePermissions';
 
 const STORAGE_KEY = 'ops:perms-granted-v2';
 
