@@ -43,6 +43,8 @@ export default function ReportPage() {
   const [mgrs, setMgrs] = useState('');
   const [reporterLat, setReporterLat] = useState<number | null>(null);
   const [reporterLng, setReporterLng] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftAvailable, setDraftAvailable] = useState(false);
 
   const reportExists = state.todayReports.find(r => r.officeId === user.officeId);
   // An extension is only usable when it's approved, not yet consumed, and was
