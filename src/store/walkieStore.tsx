@@ -26,7 +26,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   director: 'المدراء العامون',
   supervisor: 'المشرفون',
   manager: 'مدراء المكاتب',
-  agent: 'المندوبون',
+  agent: 'مستخدمو الموقع',
   viewer: 'المشاهدون',
 };
 

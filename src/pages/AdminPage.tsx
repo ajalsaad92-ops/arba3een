@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useOps } from '../store/opsStore';
 import { OFFICES, officeById } from '../data/offices';
 import { supabase } from '../lib/supabase';
-import { UserPlus, Edit2, Power, PowerOff, Shield, Save, X, Database, Check, Search, Timer, FileText, MapPinned, Eye } from 'lucide-react';
+import { UserPlus, Edit2, Power, PowerOff, Shield, Save, X, Database, Check, Search, Timer, FileText, MapPinned, Eye, Navigation, MapPin, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { relativeTime } from '../lib/utils';
 import type { Role, Profile } from '../data/types';
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -36,8 +37,14 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<Partial<Profile>>({});
   const [username, setUsername] = useState('');
+  const [tracking, setTracking] = useState<Profile | null>(null);
 
   const filtered = state.users.filter(u => u.fullNameAr.includes(search));
+
+  // Last known location for a user (from live tracking).
+  const lastLocOf = (userId: string) => state.agentLocations.find(a => a.agentId === userId);
+  // A fix older than 2 minutes likely means the user lost connectivity.
+  const isStale = (iso: string) => Date.now() - new Date(iso).getTime() > 120_000;
 
   const startCreate = () => {
     setDraft({ fullNameAr: '', role: 'agent', officeId: OFFICES[0].id, permittedOfficeIds: [], specialPermissions: { canExport: false, canAddCrossings: false, canViewAllOffices: false, canOpenWindow: false, canEditReports: false }, isActive: true });
@@ -150,7 +157,7 @@ export default function AdminPage() {
   };
 
   const clearData = async () => {
-    if (!confirm('سيتم حذف جميع البيانات المدخلة (التقارير، الطوارئ، التمديدات، مواقع المندوبين) مع الإبقاء على المستخدمين. هل أنت متأكد؟')) return;
+    if (!confirm('سيتم حذف جميع البيانات المدخلة (التقارير، الطوارئ، التمديدات، مواقع مستخدمي الموقع) مع الإبقاء على المستخدمين. هل أنت متأكد؟')) return;
     const t = toast.loading('جاري تفريغ البيانات...');
     try {
       const { data, error } = await supabase.functions.invoke('admin-manage-users', {
@@ -203,7 +210,10 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="divide-y divide-[#1E293B] max-h-[600px] overflow-y-auto">
-              {filtered.map(u => (
+              {filtered.map(u => {
+                const loc = lastLocOf(u.id);
+                const stale = loc ? isStale(loc.updatedAt) : false;
+                return (
                 <div key={u.id} className={`p-3 hover:bg-[#1E293B]/40 cursor-pointer ${editing?.id === u.id ? 'bg-amber-500/10 border-r-2 border-amber-500' : ''}`} onClick={() => startEdit(u)}>
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold">{u.fullNameAr.charAt(0)}</div>
@@ -213,11 +223,27 @@ export default function AdminPage() {
                     </div>
                     {!u.isActive && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">معطّل</span>}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1">
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_COLORS[u.role]}`}>{ROLE_LABELS[u.role]}</span>
+                    {loc ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setTracking(u); }}
+                        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${stale ? 'bg-red-500/15 text-red-300 border-red-500/40' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'}`}
+                        title="تتبّع موقع المستخدم"
+                      >
+                        {stale ? <WifiOff className="w-3 h-3" /> : <Navigation className="w-3 h-3" />}
+                        تتبّع • {relativeTime(loc.updatedAt)}
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-[#0B0F19] text-slate-500 border-[#1E293B]">
+                        <MapPin className="w-3 h-3" /> لا يوجد موقع
+                      </span>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+
             </div>
           </div>
 
@@ -395,10 +421,73 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+
+        {tracking && (
+          <TrackingModal user={tracking} loc={lastLocOf(tracking.id)} stale={lastLocOf(tracking.id) ? isStale(lastLocOf(tracking.id)!.updatedAt) : false} onClose={() => setTracking(null)} />
+        )}
       </div>
     </div>
   );
 }
+
+function TrackingModal({ user, loc, stale, onClose }: { user: Profile; loc: any; stale: boolean; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[#0B0F19] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-[#1E293B]">
+          <div className="flex items-center gap-2">
+            <Navigation className="w-4 h-4 text-amber-400" />
+            <div className="text-sm font-bold text-amber-400">تتبّع: {user.fullNameAr}</div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[#1E293B]"><X className="w-4 h-4 text-slate-400" /></button>
+        </div>
+        <div className="p-4 space-y-3">
+          {!loc ? (
+            <div className="text-center text-sm text-slate-500 py-6">لا توجد بيانات موقع لهذا المستخدم بعد.</div>
+          ) : (
+            <>
+              <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${stale ? 'bg-red-500/10 text-red-300 border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>
+                {stale ? <WifiOff className="w-4 h-4" /> : <Navigation className="w-4 h-4" />}
+                {stale ? 'الاتصال مفقود — يُعرض آخر موقع معروف' : 'متصل — يُحدّث الموقع مباشرة'}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">خط العرض</div>
+                  <div className="font-mono text-slate-200">{loc.lat.toFixed(5)}</div>
+                </div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">خط الطول</div>
+                  <div className="font-mono text-slate-200">{loc.lng.toFixed(5)}</div>
+                </div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">الدقة</div>
+                  <div className="text-slate-200">±{Math.round(loc.accuracyMeters)} م</div>
+                </div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                  <div className="text-slate-500 mb-1">آخر تحديث</div>
+                  <div className="text-slate-200">{relativeTime(loc.updatedAt)}</div>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500 text-center">
+                {new Date(loc.updatedAt).toLocaleString('en-GB', { hour12: false })}
+              </div>
+              <a
+                href={`https://www.google.com/maps?q=${loc.lat},${loc.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold"
+              >
+                <MapPin className="w-4 h-4" /> فتح الموقع في الخريطة
+              </a>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (

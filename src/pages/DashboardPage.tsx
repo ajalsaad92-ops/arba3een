@@ -23,6 +23,8 @@ import KpiCustomizer from '../components/KpiCustomizer';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { getEffectiveKpiCatalog } from '../lib/kpiCatalog';
 import { buildInsights } from '../lib/insights';
+import { exportComprehensiveReports } from '../lib/exportReports';
+import { toast } from 'sonner';
 import {
   Users, Truck, AlertOctagon, BarChart3, Map, Activity,
   Award, Check, Clock, X, Timer, Search, Download, Plus, TrendingUp, TrendingDown, Star, Info, ZapOff, Package, BarChart2
@@ -905,11 +907,24 @@ function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffi
       <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-sm font-bold text-slate-200">جميع المكاتب — حالة اليوم</div>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/20">
+          <button
+            onClick={() => {
+              const all = [...state.todayReports, ...state.historicalReports];
+              if (all.length === 0) { toast.error('لا توجد بيانات لتصديرها'); return; }
+              try {
+                exportComprehensiveReports(all, state.users, state.fieldDefinitions);
+                toast.success(`تم تصدير ${all.length} تقرير بكامل التفاصيل`);
+              } catch (e: any) {
+                toast.error(e?.message || 'فشل التصدير');
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/20"
+          >
             <Download className="w-4 h-4" />
             تصدير البيانات الشاملة (Excel)
           </button>
         </div>
+
         <div className="flex flex-wrap gap-1.5">
           {OFFICES.filter((o: Office) => effectiveFilter.includes(o.id)).map(office => {
             const r = state.todayReports.find((x: any) => x.officeId === office.id);
@@ -989,9 +1004,10 @@ function DrillDownPanel({ office, onClose }: { office: Office; onClose: () => vo
           )}
 
           <div>
-            <div className="text-xs font-bold text-slate-300 mb-2">المناديب النشطون ({agents.length})</div>
+            <div className="text-xs font-bold text-slate-300 mb-2">مستخدمو الموقع النشطون ({agents.length})</div>
             {agents.length === 0 ? (
-              <div className="text-xs text-slate-500 bg-[#111827] border border-[#1E293B] rounded-lg p-3 text-center">لا يوجد مناديب نشطون</div>
+              <div className="text-xs text-slate-500 bg-[#111827] border border-[#1E293B] rounded-lg p-3 text-center">لا يوجد مستخدمون نشطون</div>
+
             ) : (
               <div className="space-y-1">
                 {agents.map(a => (
@@ -1143,8 +1159,14 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
         رؤى لحظية
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <div className="flex items-center gap-10 px-4 animate-ticker-rtl whitespace-nowrap text-xs">
-          {[...insights, ...insights, ...insights].map((ins, i) => (
+        {/* Single pass over the FULL set of insights, then it loops. The
+            duration scales with the number of insights so every headline is
+            shown completely before the cycle restarts (no early repeat). */}
+        <div
+          className="inline-flex items-center gap-10 px-4 animate-ticker whitespace-nowrap text-xs"
+          style={{ animationDuration: `${Math.max(30, insights.length * 7)}s` }}
+        >
+          {insights.map((ins, i) => (
             <div key={`${ins.id}-${i}`} className="flex items-center gap-2">
               {ins.source && (
                 <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black shrink-0">
@@ -1157,6 +1179,7 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
           ))}
         </div>
       </div>
+
     </div>
   );
 }

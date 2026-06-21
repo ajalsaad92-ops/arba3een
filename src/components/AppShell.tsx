@@ -6,6 +6,7 @@ import TimeLockBar from './TimeLockBar';
 import EmergencyBanner from './EmergencyBanner';
 import { OFFICES } from '../data/offices';
 import { toast } from 'sonner';
+import { useLocationTracker } from '../lib/useLocationTracker';
 
 const roleLabels = {
   director: 'مدير عام',
@@ -29,6 +30,9 @@ export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+
+  // Continuously track the signed-in user's location in the background.
+  useLocationTracker();
 
   // ProtectedRoute already checks auth, so this should never be null
   // But show loading just in case

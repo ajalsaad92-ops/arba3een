@@ -8,7 +8,7 @@ const LAYERS = [
   { id: 'borderCrossings', label: 'المنافذ الحدودية', icon: Diamond, color: 'text-emerald-400' },
   { id: 'events', label: 'الانتشار والفعاليات', icon: MapPin, color: 'text-blue-400' },
   { id: 'flowPaths', label: 'مسارات الزوار', icon: Waves, color: 'text-orange-400' },
-  { id: 'agentGPS', label: 'مواقع المناديب (مباشر)', icon: Users, color: 'text-blue-300' },
+  { id: 'agentGPS', label: 'مواقع مستخدمي الموقع (مباشر)', icon: Users, color: 'text-blue-300' },
 ];
 
 const PROVINCES = OFFICES.filter(o => o.id !== 'HQ').map(o => ({ code: o.id, label: o.governorateAr }));
