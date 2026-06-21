@@ -210,7 +210,10 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="divide-y divide-[#1E293B] max-h-[600px] overflow-y-auto">
-              {filtered.map(u => (
+              {filtered.map(u => {
+                const loc = lastLocOf(u.id);
+                const stale = loc ? isStale(loc.updatedAt) : false;
+                return (
                 <div key={u.id} className={`p-3 hover:bg-[#1E293B]/40 cursor-pointer ${editing?.id === u.id ? 'bg-amber-500/10 border-r-2 border-amber-500' : ''}`} onClick={() => startEdit(u)}>
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold">{u.fullNameAr.charAt(0)}</div>
@@ -220,11 +223,27 @@ export default function AdminPage() {
                     </div>
                     {!u.isActive && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">معطّل</span>}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1">
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_COLORS[u.role]}`}>{ROLE_LABELS[u.role]}</span>
+                    {loc ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setTracking(u); }}
+                        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${stale ? 'bg-red-500/15 text-red-300 border-red-500/40' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'}`}
+                        title="تتبّع موقع المستخدم"
+                      >
+                        {stale ? <WifiOff className="w-3 h-3" /> : <Navigation className="w-3 h-3" />}
+                        تتبّع • {relativeTime(loc.updatedAt)}
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-[#0B0F19] text-slate-500 border-[#1E293B]">
+                        <MapPin className="w-3 h-3" /> لا يوجد موقع
+                      </span>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+
             </div>
           </div>
 
