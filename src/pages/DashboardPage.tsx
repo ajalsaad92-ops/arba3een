@@ -249,6 +249,7 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
   const user = state.currentUser;
   if (!user) return <div className="p-4 text-center text-slate-500">جاري التحميل...</div>;
   const canHandleEmergencies = user.role === 'director' || user.role === 'supervisor';
+  const [detailEm, setDetailEm] = useState<any>(null);
 
   const handleAck = async (id: string) => { await actions.ackEmergency(id, user.id); };
   const handleResolve = async (id: string) => { await actions.resolveEmergency(id); };
