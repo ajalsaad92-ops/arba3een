@@ -253,6 +253,10 @@ export default function EmergencyPage() {
           </div>
         </div>
       </div>
+
+      {detailEm && (
+        <EmergencyDetailCard emergency={detailEm} users={state.users} onClose={() => setDetailEm(null)} />
+      )}
     </div>
   );
 }
