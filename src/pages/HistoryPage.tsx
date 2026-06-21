@@ -5,6 +5,7 @@ import { FileSpreadsheet, Check, Clock } from 'lucide-react';
 import { formatNumber } from '../lib/utils';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
+import { operationalDate, operationalDateDaysAgo } from '../lib/opDate';
 
 export default function HistoryPage() {
   const { state } = useOps();
@@ -13,11 +14,8 @@ export default function HistoryPage() {
   const permittedIds = user.role === 'director' ? OFFICES.map(o => o.id) :
     user.role === 'supervisor' ? user.permittedOfficeIds : [user.officeId];
 
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 14);
-    return d.toISOString().slice(0, 10);
-  });
-  const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fromDate, setFromDate] = useState(() => operationalDateDaysAgo(14));
+  const [toDate, setToDate] = useState(() => operationalDate());
   const [selectedOffices, setSelectedOffices] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
@@ -223,16 +221,57 @@ export default function HistoryPage() {
               <button onClick={() => { setPage(0); toast.info(`تم تطبيق الفلتر: ${filtered.length} تقرير`); }} className="flex-1 bg-gradient-to-l from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black text-xs font-bold py-1.5 rounded-md">
                 تطبيق الفلتر
               </button>
-              <button onClick={() => { setFromDate((() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().slice(0,10); })()); setToDate(new Date().toISOString().slice(0,10)); setSelectedOffices([]); setStatusFilter('all'); setPage(0); toast.info('تم إعادة تعيين الفلاتر'); }} className="px-3 bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-xs font-bold py-1.5 rounded-md">
+              <button onClick={() => { setFromDate(operationalDateDaysAgo(14)); setToDate(operationalDate()); setSelectedOffices([]); setStatusFilter('all'); setPage(0); toast.info('تم إعادة تعيين الفلاتر'); }} className="px-3 bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-xs font-bold py-1.5 rounded-md">
                 إعادة تعيين
               </button>
             </div>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table (desktop) */}
         <div className="bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-[#1E293B]">
+            {paginated.length === 0 && (
+              <div className="p-6 text-center text-xs text-slate-500">لا توجد تقارير ضمن الفلاتر المحددة</div>
+            )}
+            {paginated.map(r => {
+              const isExp = expanded.has(r.id);
+              return (
+                <div key={r.id} className="p-3">
+                  <button
+                    onClick={() => { const next = new Set(expanded); next.has(r.id) ? next.delete(r.id) : next.add(r.id); setExpanded(next); }}
+                    className="w-full flex items-center justify-between gap-2 text-right"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-slate-100 truncate">{officeById(r.officeId)?.nameAr}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{r.reportDate}</div>
+                    </div>
+                    {r.isLateSubmission
+                      ? <span className="text-amber-400 text-[10px] flex items-center gap-1 shrink-0"><Clock className="w-3 h-3" /> متأخر</span>
+                      : <span className="text-emerald-400 text-[10px] flex items-center gap-1 shrink-0"><Check className="w-3 h-3" /> في الوقت</span>}
+                  </button>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-[11px]">
+                    <Stat label="داخلون" value={formatNumber(r.visitorsIn)} tone="text-emerald-400" />
+                    <Stat label="خارجون" value={formatNumber(r.visitorsOut)} tone="text-amber-400" />
+                    <Stat label="العجلات" value={formatNumber(r.vehiclesCount)} />
+                    <Stat label="المواكب" value={String(r.processionsCount)} />
+                    <Stat label="الفعاليات" value={String(r.eventsCount)} />
+                    <Stat label="الوفيات" value={String(r.deathsCount)} tone="text-red-400" />
+                  </div>
+                  {isExp && (
+                    <div className="grid grid-cols-1 gap-2 mt-2 text-[11px]">
+                      {r.deploymentLocations && <Field label="مواقع الانتشار" value={r.deploymentLocations} />}
+                      {r.incidentsDetails && <Field label="تفاصيل الحوادث" value={r.incidentsDetails} />}
+                      {r.violationsDetails && <Field label="تفاصيل الخروقات" value={r.violationsDetails} />}
+                      {r.otherNotes && <Field label="ملاحظات" value={r.otherNotes} />}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-xs">
               <thead className="bg-[#0B0F19] border-b border-[#1E293B] text-slate-400">
                 <tr>
@@ -335,6 +374,15 @@ function Field({ label, value }: { label: string; value: string }) {
     <div className="bg-[#111827] border border-[#1E293B] rounded p-2">
       <div className="text-[10px] text-slate-500 mb-0.5">{label}</div>
       <div className="text-slate-200 text-[11px]">{value}</div>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone = 'text-slate-300' }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="bg-[#0B0F19] border border-[#1E293B] rounded-lg px-2 py-1.5 text-center">
+      <div className="text-[9px] text-slate-500">{label}</div>
+      <div className={`font-bold tabular-nums ${tone}`}>{value}</div>
     </div>
   );
 }

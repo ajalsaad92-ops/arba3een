@@ -1,5 +1,6 @@
 import { OFFICES, officeById } from '../data/offices';
 import type { DailyReport, Emergency, Profile } from '../data/types';
+import { operationalDateDaysAgo } from './opDate';
 
 export interface Insight {
   id: string;
@@ -21,8 +22,7 @@ export function buildInsights(
   _users: Profile[],
 ): Insight[] {
   const out: Insight[] = [];
-  const yest = new Date(); yest.setDate(yest.getDate() - 1);
-  const yestStr = yest.toISOString().slice(0, 10);
+  const yestStr = operationalDateDaysAgo(1);
   const yReports = historicalReports.filter(r => r.reportDate === yestStr);
 
   // 1) Visitors trend today vs yesterday

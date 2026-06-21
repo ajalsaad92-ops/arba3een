@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import TimeLockBar from '../components/TimeLockBar';
 import MapPicker from '../components/MapPicker';
 import type { ReportFieldDefinition, ReportFieldGroup } from '../data/types';
+import { operationalDate } from '../lib/opDate';
 
 type Pt = { lat: number; lng: number };
 
@@ -42,11 +43,61 @@ export default function ReportPage() {
   const [mgrs, setMgrs] = useState('');
   const [reporterLat, setReporterLat] = useState<number | null>(null);
   const [reporterLng, setReporterLng] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftAvailable, setDraftAvailable] = useState(false);
 
   const reportExists = state.todayReports.find(r => r.officeId === user.officeId);
-  const extensionActive = state.extensions.find(e => e.officeId === user.officeId && e.status === 'approved');
+  // An extension is only usable when it's approved, not yet consumed, and was
+  // granted for today's operational day — preventing reuse across days.
+  const today = operationalDate();
+  const extensionActive = state.extensions.find(e =>
+    e.officeId === user.officeId &&
+    e.status === 'approved' &&
+    !e.consumedAt &&
+    (!e.targetReportDate || e.targetReportDate === today)
+  );
   const status = state.timeWindowStatus;
   const canSubmit = status === 'open' || status === 'pre_warning' || (extensionActive !== undefined);
+
+  // ─── Draft auto-save (survives phone calls / app restarts) ─────────
+  const DRAFT_KEY = `ops:report-draft:${user.id}:${today}`;
+  const draftRestoredRef = useRef(false);
+  // On first mount, detect an existing draft for today and offer to resume.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      const hasContent = (d?.form && Object.keys(d.form).length) ||
+        (d?.locations && Object.keys(d.locations).length) ||
+        (d?.routes && Object.keys(d.routes).length) || d?.mgrs;
+      if (hasContent) setDraftAvailable(true);
+    } catch { /* ignore */ }
+  }, [DRAFT_KEY]);
+  // Persist the in-progress form to localStorage whenever it changes.
+  useEffect(() => {
+    const empty = Object.keys(form).length === 0 && Object.keys(locations).length === 0 &&
+      Object.keys(routes).length === 0 && !mgrs;
+    if (empty) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, locations, routes, mgrs, ts: Date.now() }));
+    } catch { /* ignore */ }
+  }, [form, locations, routes, mgrs, DRAFT_KEY, draftAvailable]);
+  const restoreDraft = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+      setForm(d.form ?? {}); setLocations(d.locations ?? {}); setRoutes(d.routes ?? {});
+      setMgrs(d.mgrs ?? '');
+      draftRestoredRef.current = true;
+      toast.success('تمت استعادة المسودة');
+    } catch { toast.error('تعذّر استعادة المسودة'); }
+    setDraftAvailable(false);
+  };
+  const discardDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    setDraftAvailable(false);
+  };
+
 
   // ─── Live GPS for agents (unchanged) ───────────────────────────────
   const watchIdRef = useRef<number | null>(null);
@@ -85,6 +136,7 @@ export default function ReportPage() {
 
   // ─── Submit ────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (submitting) return; // guard against double-tap
     if (!canSubmit && !extensionActive) { setShowExtension(true); return; }
     if (!office) return;
     if (!mgrs && (reporterLat == null || reporterLng == null)) {
@@ -133,12 +185,13 @@ export default function ReportPage() {
     const str = (k: string) => form[k] ?? '';
 
     const t = toast.loading('جاري إرسال التقرير...');
+    setSubmitting(true);
     try {
       await actions.submitReport({
         id: `r-new-${Date.now()}`,
         officeId: office.id,
         submittedBy: user.id,
-        reportDate: new Date().toISOString().slice(0, 10),
+        reportDate: operationalDate(),
         submittedAt: new Date().toISOString(),
         isLateSubmission: status === 'pre_warning' || status === 'locked',
         deploymentCount: num('deploymentCount'),
@@ -177,9 +230,17 @@ export default function ReportPage() {
         extraFields,
       });
       toast.success('✅ تم إرسال التقرير بنجاح', { id: t, description: 'تم إخطار المشرف والمدير' });
-      setForm({}); setLocations({}); setRoutes({});
+      // If the report was sent outside the normal window using an approved
+      // extension, mark that extension consumed so it can't be reused.
+      if (extensionActive && status !== 'open') {
+        actions.updateExtension(extensionActive.id, { consumedAt: new Date().toISOString() }).catch(() => {});
+      }
+      setForm({}); setLocations({}); setRoutes({}); setMgrs('');
+      discardDraft(); // clear saved draft after a successful send
     } catch (e: any) {
       toast.error(e?.message || 'فشل إرسال التقرير', { id: t });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -247,7 +308,19 @@ export default function ReportPage() {
               <Check className="w-3.5 h-3.5" /> تم إرسال تقرير اليوم — {new Date(reportExists.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
             </div>
           )}
+          {draftAvailable && (
+            <div className="mt-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/30 text-xs text-blue-200">
+              <div className="flex items-center gap-2 mb-2 font-bold">
+                <History className="w-3.5 h-3.5" /> لديك مسودة غير مُرسلة لهذا اليوم
+              </div>
+              <div className="flex gap-2">
+                <button onClick={restoreDraft} className="flex-1 py-1.5 rounded-md bg-blue-500 hover:bg-blue-400 text-black font-bold">استئناف المسودة</button>
+                <button onClick={discardDraft} className="px-3 py-1.5 rounded-md bg-[#1E293B] hover:bg-[#263244] text-slate-300 font-bold">تجاهل</button>
+              </div>
+            </div>
+          )}
         </div>
+
 
         {/* Form groups */}
         {plan.length === 0 ? (
@@ -355,8 +428,8 @@ export default function ReportPage() {
 
           <button
             onClick={handleSubmit}
-            disabled={status === 'locked' && !extensionActive}
-            className={`w-full py-3.5 rounded-lg font-display font-black text-base transition-all ${
+            disabled={submitting || (status === 'locked' && !extensionActive)}
+            className={`w-full py-3.5 rounded-lg font-display font-black text-base transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
               status === 'locked' && !extensionActive
                 ? 'bg-red-600/80 hover:bg-red-500 text-white'
                 : extensionActive
@@ -364,7 +437,11 @@ export default function ReportPage() {
                 : 'bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/30'
             }`}
           >
-            {status === 'locked' && !extensionActive ? (
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> جاري الإرسال...
+              </span>
+            ) : status === 'locked' && !extensionActive ? (
               <span className="flex items-center justify-center gap-2"><Lock className="w-4 h-4" /> انتهى وقت الإرسال — طلب تمديد</span>
             ) : extensionActive ? (
               <span className="flex items-center justify-center gap-2"><Timer className="w-4 h-4" /> إرسال التقرير (تمديد نشط)</span>
@@ -373,6 +450,7 @@ export default function ReportPage() {
             )}
           </button>
         </div>
+
 
         {/* Past reports — visible only to office manager / supervisor / director */}
         {user.role !== 'agent' && (
@@ -598,7 +676,23 @@ function DynamicFieldRenderer({
       </div>
     );
   }
-  return null;
+  // Fallback: any unknown/new field type renders as a plain text input so the
+  // form never silently drops a field (or crashes) when the DB schema adds a
+  // type the frontend doesn't explicitly handle yet.
+  return (
+    <div>
+      {Label}
+      <input
+        type="text"
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={field.placeholderAr ?? ''}
+        className="w-full bg-[#1E293B] border border-[#263244] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+      />
+      <div className="text-[10px] text-amber-500/70 mt-1">نوع حقل غير مدعوم ({field.fieldType}) — يُعرض كنص</div>
+      {helper}
+    </div>
+  );
 }
 
 // ─── Dropdown (select) field with optional quantity + multi-item ─────

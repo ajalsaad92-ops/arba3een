@@ -19,6 +19,7 @@ import type {
 } from '../data/types';
 import { INITIAL_BORDER_CROSSINGS, type BorderCrossing } from '../data/borderCrossings';
 import { isSupabaseConfigured, supabase } from './supabase';
+import { operationalDate } from './opDate';
 
 const SESSION_KEY = 'ops:session:v1';
 const SINGLE_TIME_WINDOW_ID = '00000000-0000-0000-0000-000000000001';
@@ -224,6 +225,8 @@ function rowToExtension(r: any): ExtensionRequest {
     supervisorApprovedById: r.supervisor_approved_by ?? undefined,
     supervisorApprovedAt: r.supervisor_approved_at ?? undefined,
     extensionWindowEnd: r.extension_window_end ?? undefined,
+    targetReportDate: r.target_report_date ?? undefined,
+    consumedAt: r.consumed_at ?? undefined,
   };
 }
 
@@ -411,7 +414,7 @@ export const api = {
 
   // ─── Daily reports ──────────────────────────────────────────────
   async getTodayReports(): Promise<DailyReport[]> {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = operationalDate();
     const { data, error } = await supabase
       .from('daily_reports')
       .select('*')
@@ -422,7 +425,7 @@ export const api = {
   },
 
   async getHistoricalReports(): Promise<DailyReport[]> {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = operationalDate();
     const { data, error } = await supabase
       .from('daily_reports')
       .select('*')
@@ -508,6 +511,7 @@ export const api = {
       .select('id, status')
       .eq('office_id', ex.officeId)
       .in('status', ['pending', 'forwarded_to_supervisor', 'approved'])
+      .is('consumed_at', null)
       .maybeSingle();
     if (existing) {
       throw new Error('يوجد طلب تمديد مفتوح مسبقاً لهذا المكتب');
@@ -522,7 +526,10 @@ export const api = {
         status: ex.status ?? 'pending',
         request_time: ex.requestTime,
         extension_window_end: ex.extensionWindowEnd ?? null,
-      })
+        // Tie the extension to the operational day it's requested for so it
+        // can't be reused to submit a report for a different day.
+        target_report_date: ex.targetReportDate ?? operationalDate(),
+      } as any)
       .select('*')
       .single();
     if (error) {
@@ -542,6 +549,8 @@ export const api = {
     if (patch.supervisorApprovedById !== undefined) row.supervisor_approved_by = patch.supervisorApprovedById;
     if (patch.supervisorApprovedAt !== undefined) row.supervisor_approved_at = patch.supervisorApprovedAt;
     if (patch.extensionWindowEnd !== undefined) row.extension_window_end = patch.extensionWindowEnd;
+    if (patch.targetReportDate !== undefined) row.target_report_date = patch.targetReportDate;
+    if (patch.consumedAt !== undefined) row.consumed_at = patch.consumedAt;
     if (patch.reason !== undefined) row.reason = patch.reason;
     const { error } = await supabase.from('extension_requests').update(row).eq('id', id);
     if (error) throw error;
@@ -556,7 +565,7 @@ export const api = {
       .maybeSingle();
     if (error || !data) {
       // fallback to today's date
-      return { windowDate: new Date().toISOString().slice(0, 10), openTime: '00:00', closeTime: '23:59', isManuallyOpen: false, isManuallyClosed: false };
+      return { windowDate: operationalDate(), openTime: '00:00', closeTime: '23:59', isManuallyOpen: false, isManuallyClosed: false };
     }
     return rowToTimeWindow(data);
   },
@@ -570,7 +579,7 @@ export const api = {
     const merged = { ...current, ...patch };
     const row: any = {
       id: SINGLE_TIME_WINDOW_ID,
-      window_date: merged.windowDate || new Date().toISOString().slice(0, 10),
+      window_date: merged.windowDate || operationalDate(),
       open_time: merged.openTime,
       close_time: merged.closeTime,
       is_manually_open: merged.isManuallyOpen,
@@ -685,7 +694,7 @@ export const api = {
     if (!submittedBy) return { added: 0, error: 'الجلسة منتهية — أعد تسجيل الدخول ثم حاول مرة أخرى' };
     for (let dOff = 30; dOff >= 0; dOff--) {
       const dt = new Date(); dt.setDate(dt.getDate() - dOff);
-      const dateStr = dt.toISOString().slice(0, 10);
+      const dateStr = operationalDate(dt);
       for (const office of offices) {
         if (rng() < 0.15) continue;
         rows.push({

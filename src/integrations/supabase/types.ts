@@ -308,6 +308,7 @@ export type Database = {
       }
       extension_requests: {
         Row: {
+          consumed_at: string | null
           created_at: string
           extension_window_end: string | null
           id: string
@@ -323,8 +324,10 @@ export type Database = {
           supervisor_approved_at: string | null
           supervisor_approved_by: string | null
           supervisor_approved_by_name: string | null
+          target_report_date: string | null
         }
         Insert: {
+          consumed_at?: string | null
           created_at?: string
           extension_window_end?: string | null
           id?: string
@@ -340,8 +343,10 @@ export type Database = {
           supervisor_approved_at?: string | null
           supervisor_approved_by?: string | null
           supervisor_approved_by_name?: string | null
+          target_report_date?: string | null
         }
         Update: {
+          consumed_at?: string | null
           created_at?: string
           extension_window_end?: string | null
           id?: string
@@ -357,6 +362,7 @@ export type Database = {
           supervisor_approved_at?: string | null
           supervisor_approved_by?: string | null
           supervisor_approved_by_name?: string | null
+          target_report_date?: string | null
         }
         Relationships: [
           {

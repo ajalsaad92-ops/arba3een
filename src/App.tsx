@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { OpsProvider, useOps } from './store/opsStore';
 import { WalkieProvider } from './store/walkieStore';
@@ -42,6 +42,35 @@ function RoleBasedRedirect() {
   if (!state.currentUser) return <Navigate to="/login" replace />;
   const target = state.currentUser.role === 'agent' ? '/report' : '/dashboard';
   return <Navigate to={target} replace />;
+}
+
+// Native hardware back button (Android): navigate the React Router history
+// instead of letting Capacitor close the app. Only exits when already at a
+// top-level screen.
+function CapacitorBackHandler() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  useEffect(() => {
+    if (!isNative()) return;
+    let remove: (() => void) | undefined;
+    (async () => {
+      try {
+        const { App: CapApp } = await import('@capacitor/app');
+        const handle = await CapApp.addListener('backButton', () => {
+          const roots = ['/', '/dashboard', '/report', '/login'];
+          const atRoot = roots.includes(location.pathname);
+          if (!atRoot && window.history.length > 1) {
+            navigate(-1);
+          } else {
+            CapApp.exitApp();
+          }
+        });
+        remove = () => { handle.remove(); };
+      } catch { /* @capacitor/app unavailable on web */ }
+    })();
+    return () => { remove?.(); };
+  }, [location.pathname, navigate]);
+  return null;
 }
 
 function AnimatedRoutes() {
@@ -132,6 +161,7 @@ export default function App() {
     <OpsProvider>
       <WalkieProvider>
         <BrowserRouter>
+          <CapacitorBackHandler />
           <AnimatedRoutes />
           <ToastPermissions />
           <Toaster
