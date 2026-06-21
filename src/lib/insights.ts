@@ -128,5 +128,43 @@ export function buildInsights(
     out.push({ id: 'late', icon: 'idle', tone: 'warning', text: `${late.length} تقرير وصل متأخراً اليوم` });
   }
 
+  // 10) News-style headlines: free-text notes entered by data-entry users,
+  //     attributed to their office and shown like a TV ticker headline.
+  const clip = (s: string, n = 160) => {
+    const t = s.replace(/\s+/g, ' ').trim();
+    return t.length > n ? t.slice(0, n - 1) + '…' : t;
+  };
+  const textParts: { key: keyof DailyReport; label: string }[] = [
+    { key: 'eventsDetails', label: 'فعاليات' },
+    { key: 'incidentsDetails', label: 'حوادث' },
+    { key: 'violationsDetails', label: 'خروقات' },
+    { key: 'visitsSummary', label: 'زيارات' },
+    { key: 'deploymentLocations', label: 'انتشار' },
+    { key: 'otherNotes', label: 'ملاحظات' },
+  ];
+  todayReports.forEach(r => {
+    const officeName = (officeById(r.officeId)?.nameAr || r.officeId).replace('مكتب ', '');
+    textParts.forEach(p => {
+      const raw = (r as any)[p.key];
+      if (typeof raw === 'string' && raw.trim().length > 2) {
+        out.push({
+          id: `news-${r.officeId}-${String(p.key)}`,
+          icon: 'news',
+          tone: 'info',
+          source: officeName,
+          text: `${p.label}: ${clip(raw)}`,
+        });
+      }
+    });
+    // Custom free-text fields added via the field manager.
+    if (r.extraFields) {
+      Object.values(r.extraFields).forEach((v, idx) => {
+        if (typeof v === 'string' && v.trim().length > 2) {
+          out.push({ id: `news-x-${r.officeId}-${idx}`, icon: 'news', tone: 'info', source: officeName, text: clip(v) });
+        }
+      });
+    }
+  });
+
   return out;
 }
