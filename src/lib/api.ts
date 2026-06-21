@@ -296,6 +296,9 @@ function rowToFieldDefinition(r: any): ReportFieldDefinition {
     countInStats: !!r.count_in_stats,
     statLabelAr: r.stat_label_ar ?? null,
     allowedUserIds: Array.isArray(r.allowed_user_ids) ? r.allowed_user_ids : [],
+    options: Array.isArray(r.options) ? r.options : [],
+    withQuantity: !!r.with_quantity,
+    allowFreeText: !!r.allow_free_text,
   };
 }
 
@@ -818,6 +821,9 @@ export const api = {
       count_in_stats: f.countInStats ?? false,
       stat_label_ar: f.statLabelAr ?? null,
       allowed_user_ids: f.allowedUserIds ?? [],
+      options: f.options ?? [],
+      with_quantity: f.withQuantity ?? false,
+      allow_free_text: f.allowFreeText ?? false,
     };
     if (f.id) row.id = f.id;
     const { data, error } = await supabase
