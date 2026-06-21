@@ -23,8 +23,11 @@ type ViewMode = 'command' | 'ops' | 'analytics';
 const GOVERNORATE_COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#EC4899', '#84CC16', '#FBBF24', '#A78BFA', '#34D399', '#F87171', '#FB923C', '#FB7185'];
 
 // Selectable metrics (categories) for the visitor-movement chart.
+// Arrivals (وافدون) and departures (مغادرون) are intentionally separate —
+// they must never be summed together into one cumulative number.
 const CHART_METRICS: { id: string; label: string; get: (r: any) => number }[] = [
-  { id: 'visitors', label: 'حركة الزوار', get: (r) => (r.visitorsIn || 0) + (r.visitorsOut || 0) },
+  { id: 'visitorsIn', label: 'الوافدون', get: (r) => r.visitorsIn || 0 },
+  { id: 'visitorsOut', label: 'المغادرون', get: (r) => r.visitorsOut || 0 },
   { id: 'vehicles', label: 'حركة العجلات', get: (r) => r.vehiclesCount || 0 },
   { id: 'processions', label: 'أعداد المواكب', get: (r) => r.processionsCount || 0 },
   { id: 'deaths', label: 'الوفيات', get: (r) => r.deathsCount || 0 },
