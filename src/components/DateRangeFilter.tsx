@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useOps } from '../store/opsStore';
 import { Calendar, X } from 'lucide-react';
+import { operationalDate, operationalDateDaysAgo } from '../lib/opDate';
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
-function daysAgoStr(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
+function todayStr() { return operationalDate(); }
+function daysAgoStr(n: number) { return operationalDateDaysAgo(n); }
 
 export default function DateRangeFilter() {
   const { state, dispatch } = useOps();

@@ -13,11 +13,8 @@ export default function HistoryPage() {
   const permittedIds = user.role === 'director' ? OFFICES.map(o => o.id) :
     user.role === 'supervisor' ? user.permittedOfficeIds : [user.officeId];
 
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 14);
-    return d.toISOString().slice(0, 10);
-  });
-  const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fromDate, setFromDate] = useState(() => operationalDateDaysAgo(14));
+  const [toDate, setToDate] = useState(() => operationalDate());
   const [selectedOffices, setSelectedOffices] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
