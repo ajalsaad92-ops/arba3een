@@ -5,13 +5,14 @@ import { toast } from 'sonner';
 import {
   Plus, Eye, EyeOff, Trash2, Save, X, Type, Hash, AlignLeft,
   MapPin, MapPinned, Route, Calendar, Clock, Users as UsersIcon, Edit2, Info,
-  ChevronDown,
+  ChevronDown, List,
 } from 'lucide-react';
 
 const TYPE_META: Record<ReportFieldType, { icon: any; label: string }> = {
   number:         { icon: Hash,      label: 'رقم' },
   text:           { icon: Type,      label: 'نص قصير' },
   textarea:       { icon: AlignLeft, label: 'نص طويل' },
+  select:         { icon: List,      label: 'قائمة منسدلة' },
   location:       { icon: MapPin,    label: 'موقع واحد' },
   multi_location: { icon: MapPinned, label: 'مواقع متعددة' },
   route:          { icon: Route,     label: 'مسار على الخريطة' },
