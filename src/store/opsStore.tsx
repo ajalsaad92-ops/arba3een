@@ -247,30 +247,46 @@ function reducer(state: OpsState, action: Action): OpsState {
       const updated = exists ? state.agentLocations.map(a => a.agentId === action.location.agentId ? action.location : a) : [...state.agentLocations, action.location];
       return { ...state, agentLocations: updated };
     }
-    case 'SELECT_OFFICE':
-      return { ...state, selectedOfficeId: action.id };
+    case 'SELECT_OFFICE': {
+      const next = { ...state, selectedOfficeId: action.id };
+      savePrefs(next);
+      return next;
+    }
     case 'TOGGLE_LAYER': {
-      const next = new Set(state.activeMapLayers);
-      if (next.has(action.layer)) next.delete(action.layer);
-      else next.add(action.layer);
-      return { ...state, activeMapLayers: next };
+      const layers = new Set(state.activeMapLayers);
+      if (layers.has(action.layer)) layers.delete(action.layer);
+      else layers.add(action.layer);
+      const next = { ...state, activeMapLayers: layers };
+      savePrefs(next);
+      return next;
     }
-    case 'SET_OFFICE_FILTER':
-      return { ...state, officeFilter: action.ids };
+    case 'SET_OFFICE_FILTER': {
+      const next = { ...state, officeFilter: action.ids };
+      savePrefs(next);
+      return next;
+    }
     case 'TOGGLE_PROVINCE': {
-      const next = new Set(state.visibleProvinces);
-      if (next.has(action.code)) next.delete(action.code);
-      else next.add(action.code);
-      return { ...state, visibleProvinces: next };
+      const provinces = new Set(state.visibleProvinces);
+      if (provinces.has(action.code)) provinces.delete(action.code);
+      else provinces.add(action.code);
+      const next = { ...state, visibleProvinces: provinces };
+      savePrefs(next);
+      return next;
     }
-    case 'SET_PROVINCES':
-      return { ...state, visibleProvinces: new Set(action.codes) };
+    case 'SET_PROVINCES': {
+      const next = { ...state, visibleProvinces: new Set(action.codes) };
+      savePrefs(next);
+      return next;
+    }
     case 'SET_CUSTOM_KPIS': {
       try { localStorage.setItem('ops:customKpis', JSON.stringify(action.ids)); } catch {}
       return { ...state, customKpis: action.ids };
     }
-    case 'SET_DATE_RANGE':
-      return { ...state, dateRange: action.range };
+    case 'SET_DATE_RANGE': {
+      const next = { ...state, dateRange: action.range };
+      savePrefs(next);
+      return next;
+    }
     case 'ADD_USER':
       return { ...state, users: [...state.users, action.user] };
     case 'UPDATE_USER':
