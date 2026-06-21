@@ -430,6 +430,8 @@ export default function AdminPage() {
         {tracking && (
           <TrackingModal user={tracking} loc={lastLocOf(tracking.id)} stale={lastLocOf(tracking.id) ? isStale(lastLocOf(tracking.id)!.updatedAt) : false} onClose={() => setTracking(null)} />
         )}
+
+        {showLiveMap && <LiveTrackingMap onClose={() => setShowLiveMap(false)} />}
       </div>
     </div>
   );
