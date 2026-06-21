@@ -253,7 +253,6 @@ function CommandView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice
 
   const handleAck = async (id: string) => { await actions.ackEmergency(id, user.id); };
   const handleResolve = async (id: string) => { await actions.resolveEmergency(id); };
-  const goToEmergency = () => { navigate('/emergency'); };
 
   const governorateData = useMemo(() => {
     const map: Record<string, number> = {};
