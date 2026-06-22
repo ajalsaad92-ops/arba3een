@@ -208,6 +208,35 @@ export default function IraqMap({ onSelectOffice, selectedOfficeId, height = '10
     [state.todayReports]
   );
 
+  // ── Visitor flow paths ──────────────────────────────────────────────
+  // Use real DB paths when present; otherwise derive them from today's
+  // reports: every office that received visitors becomes a route flowing
+  // toward Karbala (the Arba'een destination), with density classified by
+  // visitor count so heavier flows render thicker / hotter.
+  const flowPaths = useMemo(() => {
+    if (state.flowPaths.length > 0) return state.flowPaths;
+    const dest = officeById('KRB');
+    if (!dest) return [];
+    const reports = state.todayReports.filter(r => r.officeId !== 'KRB' && (r.visitorsIn ?? 0) > 0);
+    const max = Math.max(1, ...reports.map(r => r.visitorsIn ?? 0));
+    return reports.map(r => {
+      const o = officeById(r.officeId);
+      if (!o) return null;
+      const ratio = (r.visitorsIn ?? 0) / max;
+      const density: 'high' | 'medium' | 'normal' = ratio >= 0.66 ? 'high' : ratio >= 0.33 ? 'medium' : 'normal';
+      return {
+        id: `flow-${r.officeId}`,
+        officeId: r.officeId,
+        fromLat: o.lat, fromLng: o.lng,
+        toLat: dest.lat, toLng: dest.lng,
+        visitorCount: r.visitorsIn ?? 0,
+        density,
+        pathNameAr: `${o.governorateAr} ← كربلاء`,
+      };
+    }).filter(Boolean) as typeof state.flowPaths;
+  }, [state.flowPaths, state.todayReports]);
+
+
   const getOfficeIcon = (office: Office) => {
     const key = `${office.id}-${submittedOfficeIds.has(office.id) ? 1 : 0}-${selectedOfficeId === office.id ? 1 : 0}`;
     if (!officeIconCache.current.has(key)) {
