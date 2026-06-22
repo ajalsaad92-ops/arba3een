@@ -2,8 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -90,9 +89,11 @@ Deno.serve(async (req) => {
       // the local part, so we sanitize the chosen username (or fall back to a
       // generated handle). This fixes "Unable to validate email address".
       const sanitizeLocal = (s: string) =>
-        s.toLowerCase().trim()
-          .replace(/[^a-z0-9._-]+/g, "")     // drop Arabic / spaces / symbols
-          .replace(/^[._-]+|[._-]+$/g, "");  // trim leading/trailing separators
+        s
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9._-]+/g, "") // drop Arabic / spaces / symbols
+          .replace(/^[._-]+|[._-]+$/g, ""); // trim leading/trailing separators
 
       let email: string;
       if (body.email && body.email.includes("@")) {
@@ -103,7 +104,6 @@ Deno.serve(async (req) => {
         email = `${local}@ops.iq`;
       }
       const password = body.password && body.password.length >= 6 ? body.password : "123456";
-
 
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
@@ -166,7 +166,9 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "updateEmail") {
-      const local = (body.username ?? "").toLowerCase().trim()
+      const local = (body.username ?? "")
+        .toLowerCase()
+        .trim()
         .replace(/[^a-z0-9._-]+/g, "")
         .replace(/^[._-]+|[._-]+$/g, "");
       if (!body.userId || !local) {
@@ -182,13 +184,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "clearData") {
-      const tables = [
-        "daily_reports",
-        "emergencies",
-        "extension_requests",
-        "agent_locations",
-        "visitor_flow_paths",
-      ];
+      const tables = ["daily_reports", "emergencies", "extension_requests", "agent_locations", "visitor_flow_paths"];
       for (const t of tables) {
         await admin.from(t).delete().not("id", "is", null);
       }
