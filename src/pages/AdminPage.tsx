@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
-import { OFFICES, officeById } from '../data/offices';
+import { useOffices } from '../lib/offices';
 import { supabase } from '../lib/supabase';
 import { UserPlus, Edit2, Power, PowerOff, Shield, Save, X, Database, Check, Search, Timer, FileText, MapPinned, Eye, Navigation, MapPin, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { relativeTime } from '../lib/utils';
 import LiveTrackingMap from '../components/LiveTrackingMap';
+import { FormField, EmptyState } from '../components/FormField';
 import type { Role, Profile } from '../data/types';
+import { validateUsername, validatePassword, passwordStrength, validateText } from '../lib/validation';
+import { useDebounce } from '../hooks/useUtils';
 
 const ROLE_LABELS: Record<Role, string> = {
   director: 'مدير عام',
@@ -24,105 +27,113 @@ const ROLE_COLORS: Record<Role, string> = {
 };
 
 const PERMS = [
-  { key: 'canExport', label: 'تصدير Excel', icon: FileText },
-  { key: 'canAddCrossings', label: 'إضافة منافذ', icon: MapPinned },
-  { key: 'canViewAllOffices', label: 'مشاهدة كل المكاتب', icon: Eye },
-  { key: 'canOpenWindow', label: 'فتح النافذة يدوياً', icon: Timer },
-  { key: 'canEditReports', label: 'تعديل التقارير', icon: Edit2 },
+  { key: 'canExport', label: 'تصدير Excel', desc: 'يسمح بتصدير التقارير' },
+  { key: 'canAddCrossings', label: 'إضافة منافذ', desc: 'إدارة المعابر الحدودية' },
+  { key: 'canViewAllOffices', label: 'مشاهدة كل المكاتب', desc: 'تجاوز قيود المكتب' },
+  { key: 'canOpenWindow', label: 'فتح النافذة يدوياً', desc: 'التحكم بنافذة التقرير' },
+  { key: 'canEditReports', label: 'تعديل التقارير', desc: 'تعديل تقارير الآخرين' },
 ];
 
 export default function AdminPage() {
   const { state, dispatch, actions } = useOps();
-  const [search, setSearch] = useState('');
+  const { offices } = useOffices();
+  const [searchRaw, setSearchRaw] = useState('');
+  const search = useDebounce(searchRaw, 300);
   const [editing, setEditing] = useState<Profile | null>(null);
   const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState<Partial<Profile>>({});
+  const [draft, setDraft] = useState<Partial<Profile & { password?: string; confirmPassword?: string }>>({});
   const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const [tracking, setTracking] = useState<Profile | null>(null);
   const [showLiveMap, setShowLiveMap] = useState(false);
 
-  const filtered = state.users.filter(u => u.fullNameAr.includes(search));
+  // users pagination
+  const [page, setPage] = useState(1);
+  const PAGE = 30;
 
-  // Last known location for a user (from live tracking).
+  const filtered = useMemo(() => {
+    const q = search.trim();
+    let list = state.users;
+    if (q) list = list.filter(u => u.fullNameAr.includes(q) || u.officeId.includes(q) || u.role.includes(q as any));
+    return list;
+  }, [state.users, search]);
+
+  const paginated = useMemo(() => filtered.slice((page-1)*PAGE, page*PAGE), [filtered, page]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE));
+
   const lastLocOf = (userId: string) => state.agentLocations.find(a => a.agentId === userId);
-  // A fix older than 2 minutes likely means the user lost connectivity.
   const isStale = (iso: string) => Date.now() - new Date(iso).getTime() > 120_000;
 
   const startCreate = () => {
-    setDraft({ fullNameAr: '', role: 'agent', officeId: OFFICES[0].id, permittedOfficeIds: [], specialPermissions: { canExport: false, canAddCrossings: false, canViewAllOffices: false, canOpenWindow: false, canEditReports: false }, isActive: true });
-    setUsername('');
-    setCreating(true);
-    setEditing(null);
+    setDraft({ fullNameAr: '', role: 'agent', officeId: offices[0]?.id || 'KRB', permittedOfficeIds: [], specialPermissions: { canExport:false, canAddCrossings:false, canViewAllOffices:false, canOpenWindow:false, canEditReports:false }, isActive: true, password:'', confirmPassword:'' });
+    setUsername(''); setUsernameError(''); setCreating(true); setEditing(null);
+  };
+  const startEdit = (u: Profile) => {
+    setDraft({ ...u, password:'', confirmPassword:'' }); setUsername(''); setUsernameError(''); setEditing(u); setCreating(false);
   };
 
-  const startEdit = (u: Profile) => {
-    setDraft({ ...u });
-    setUsername('');
-    setEditing(u);
-    setCreating(false);
+  const validateDraft = () => {
+    const nameErr = validateText(draft.fullNameAr || '', { min: 3, max: 200, label: 'الاسم' });
+    if (nameErr) { toast.error(nameErr); return false; }
+    if (draft.role !== 'director' && !draft.officeId) { toast.error('المكتب مطلوب'); return false; }
+    if (creating) {
+      const uErr = validateUsername(username);
+      if (uErr) { setUsernameError(uErr); toast.error(uErr); return false; }
+      const pErr = validatePassword(draft.password || '', { min: 6 });
+      if (pErr) { toast.error(pErr); return false; }
+      if (draft.password !== draft.confirmPassword) { toast.error('كلمتا المرور غير متطابقتين'); return false; }
+      // check duplicate username locally
+      const email = `${username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g,'')}@ops.iq`;
+      if (state.users.some(u => (u as any).email === email)) { toast.error('اسم المستخدم موجود مسبقاً'); return false; }
+    } else if (draft.password) {
+      const pErr = validatePassword(draft.password, { min: 6 });
+      if (pErr) { toast.error(pErr); return false; }
+      if (draft.password !== draft.confirmPassword) { toast.error('كلمتا المرور غير متطابقتين'); return false; }
+    }
+    return true;
   };
 
   const save = async () => {
-    if (!draft.fullNameAr) return toast.error('الاسم الكامل مطلوب');
-    if (draft.role !== 'director' && !draft.officeId) return toast.error('المكتب مطلوب');
-    if (creating) {
-      const cleanUser = username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '');
-      if (!cleanUser) return toast.error('اسم المستخدم مطلوب (أحرف إنجليزية أو أرقام)');
-      if (!draft.password || draft.password.length < 6) return toast.error('كلمة المرور مطلوبة (6 أحرف على الأقل)');
-    }
+    if (!validateDraft()) return;
     try {
       if (creating) {
+        const cleanUser = username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '');
         const { data, error } = await supabase.functions.invoke('admin-manage-users', {
           body: {
             action: 'create',
-            fullNameAr: draft.fullNameAr,
-            username: username.toLowerCase().trim(),
-            password: draft.password || undefined,
+            fullNameAr: draft.fullNameAr?.trim(),
+            username: cleanUser,
+            password: draft.password,
             role: draft.role ?? 'agent',
-            officeId: draft.officeId ?? OFFICES[0].id,
+            officeId: draft.officeId ?? offices[0]?.id,
             permittedOfficeIds: draft.permittedOfficeIds ?? [],
             specialPermissions: draft.specialPermissions,
           },
         });
-        if (error || (data as any)?.error || !(data as any)?.user) {
-          toast.error((data as any)?.error || error?.message || 'فشل إنشاء المستخدم');
-          return;
-        }
-        // M2: dispatch ADD_USER so the new row appears in the list immediately
-        // without waiting for a refresh or a Realtime round-trip.
+        if (error || (data as any)?.error || !(data as any)?.user) { toast.error((data as any)?.error || error?.message || 'فشل إنشاء المستخدم'); return; }
         dispatch({ type: 'ADD_USER', user: (data as any).user });
-        toast.success(`تم إنشاء المستخدم — اسم الدخول: ${(data as any).user.email} — كلمة المرور: ${draft.password || '123456'}`);
+        toast.success(`تم إنشاء المستخدم — ${(data as any).user.email}`);
       } else if (editing) {
         await actions.updateUser(editing.id, draft);
         const cleanUser = username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '');
-        // Optional username (login email) change.
         if (cleanUser) {
           const { data, error } = await supabase.functions.invoke('admin-manage-users', {
             body: { action: 'updateEmail', userId: editing.id, username: cleanUser },
           });
-          if (error || (data as any)?.error) {
-            toast.error((data as any)?.error || error?.message || 'تعذّر تغيير اسم المستخدم');
-            return;
-          }
+          if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || 'تعذّر تغيير اسم المستخدم'); return; }
         }
-        // Optional password reset for an existing user (director only).
         if (draft.password && draft.password.length >= 6) {
           const { data, error } = await supabase.functions.invoke('admin-manage-users', {
             body: { action: 'resetPassword', userId: editing.id, password: draft.password },
           });
-          if (error || (data as any)?.error) {
-            toast.error((data as any)?.error || error?.message || 'تعذّر تغيير كلمة المرور');
-            return;
-          }
+          if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || 'تعذّر تغيير كلمة المرور'); return; }
           toast.success('تم تحديث المستخدم وكلمة المرور');
         } else {
-          toast.success(cleanUser ? 'تم تحديث المستخدم واسم الدخول' : 'تم تحديث المستخدم');
+          toast.success('تم تحديث المستخدم');
         }
       }
       setCreating(false); setEditing(null); setDraft({}); setUsername('');
-    } catch (e: any) {
-      toast.error(e.message || 'فشل الحفظ');
-    }
+    } catch (e:any) { toast.error(e.message || 'فشل الحفظ'); }
   };
 
   const toggleActive = async (u: Profile) => {
@@ -131,259 +142,191 @@ export default function AdminPage() {
   };
 
   const togglePerm = (perm: string) => {
-    setDraft(d => ({
-      ...d,
-      specialPermissions: { ...(d.specialPermissions || { canExport: false, canAddCrossings: false, canViewAllOffices: false, canOpenWindow: false, canEditReports: false }), [perm]: !(d.specialPermissions as any)?.[perm] }
-    }));
+    setDraft(d => ({ ...d, specialPermissions: { ...(d.specialPermissions||{}), [perm]: !(d.specialPermissions as any)?.[perm] } as any }));
   };
-
   const togglePermittedOffice = (id: string) => {
-    setDraft(d => {
-      const list = d.permittedOfficeIds || [];
-      return { ...d, permittedOfficeIds: list.includes(id) ? list.filter(x => x !== id) : [...list, id] };
-    });
+    setDraft(d => { const list = d.permittedOfficeIds || []; return { ...d, permittedOfficeIds: list.includes(id) ? list.filter(x=>x!==id) : [...list, id] }; });
   };
 
   const seedData = async () => {
     const t = toast.loading('جاري تحميل البيانات التجريبية...');
     try {
       const result = await actions.seedDemoData();
-      if (result?.error) {
-        toast.error(result.error, { id: t });
-      } else {
-        toast.success(`🌱 تم تحميل ${result.added} تقرير تجريبي بنجاح`, { id: t });
-      }
-    } catch (e: any) {
-      toast.error(e?.message || 'فشل تحميل البيانات', { id: t });
-    }
+      if (result?.error) toast.error(result.error, { id: t });
+      else toast.success(`تم تحميل ${result.added} تقرير`, { id: t });
+    } catch (e:any) { toast.error(e?.message || 'فشل', { id: t }); }
+  };
+  const clearData = async () => {
+    if (!confirm('سيتم حذف جميع البيانات المدخلة مع الإبقاء على المستخدمين. متأكد؟')) return;
+    const t = toast.loading('جاري التفريغ...');
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', { body: { action: 'clearData' } });
+      if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || 'فشل', { id: t }); return; }
+      toast.success('تم تفريغ البيانات', { id: t });
+      setTimeout(()=> window.location.reload(), 1200);
+    } catch (e:any) { toast.error(e?.message || 'فشل', { id: t }); }
   };
 
-  const clearData = async () => {
-    if (!confirm('سيتم حذف جميع البيانات المدخلة (التقارير، الطوارئ، التمديدات، مواقع مستخدمي الموقع) مع الإبقاء على المستخدمين. هل أنت متأكد؟')) return;
-    const t = toast.loading('جاري تفريغ البيانات...');
-    try {
-      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
-        body: { action: 'clearData' },
-      });
-      if (error || (data as any)?.error) {
-        toast.error((data as any)?.error || error?.message || 'فشل تفريغ البيانات', { id: t });
-        return;
-      }
-      toast.success('تم تفريغ البيانات بنجاح', { id: t });
-      setTimeout(() => window.location.reload(), 1200);
-    } catch (e: any) {
-      toast.error(e?.message || 'فشل تفريغ البيانات', { id: t });
-    }
-  };
+  const pwInfo = passwordStrength(draft.password || '');
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0B0F19] p-3 md:p-5">
+    <div className="h-full overflow-y-auto bg-[#0B0F19] p-3 md:p-5" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
             <div className="text-2xl font-display font-black text-amber-400">إدارة المستخدمين</div>
-            <div className="text-xs text-slate-400 mt-1">إدارة حسابات وصلاحيات مستخدمي النظام</div>
+            <div className="text-xs text-slate-400 mt-1">{state.users.length} مستخدم • {filtered.length} نتائج بحث</div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setShowLiveMap(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-l from-sky-500/20 to-sky-600/10 border border-sky-500/30 hover:border-sky-500/60 text-sky-300 text-sm font-bold">
-              <MapPinned className="w-4 h-4" /> تتبّع الجميع على الخريطة
-            </button>
-            <button onClick={seedData} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-l from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 text-sm font-bold">
-              <Database className="w-4 h-4" /> تحميل بيانات تجريبية
-            </button>
-            <button onClick={clearData} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#111827] border border-orange-500/30 hover:border-orange-500/60 text-orange-400 text-sm font-bold">
-              <Power className="w-4 h-4" /> تفريغ البيانات
-            </button>
-            <button onClick={startCreate} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-l from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black text-sm font-bold">
-              <UserPlus className="w-4 h-4" /> مستخدم جديد
-            </button>
+          <div className="flex gap-2 flex-wrap text-sm">
+            <button onClick={()=>setShowLiveMap(true)} className="px-3 py-2 rounded-lg bg-sky-500/15 border border-sky-500/30 text-sky-300 font-bold">تتبّع الجميع</button>
+            <button onClick={seedData} className="px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold">بيانات تجريبية</button>
+            <button onClick={clearData} className="px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-300 font-bold">تفريغ البيانات</button>
+            <button onClick={startCreate} className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black flex items-center gap-2"><UserPlus className="w-4 h-4" /> مستخدم جديد</button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Users list */}
           <div className="lg:col-span-2 bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden">
             <div className="p-3 border-b border-[#1E293B]">
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="بحث..."
-                  className="w-full bg-[#0B0F19] border border-[#1E293B] rounded-md pr-9 pl-3 py-2 text-xs text-white placeholder-slate-500"
-                />
+                <input value={searchRaw} onChange={e=>{ setSearchRaw(e.target.value); setPage(1); }}
+                  placeholder="بحث بالاسم / الدور / المكتب..."
+                  className="w-full bg-[#0B0F19] border border-[#1E293B] rounded-md pr-9 pl-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none" />
               </div>
             </div>
             <div className="divide-y divide-[#1E293B] max-h-[600px] overflow-y-auto">
-              {filtered.map(u => {
+              {paginated.length===0 && <EmptyState title="لا يوجد مستخدمون" description="جرّب تغيير كلمات البحث" />}
+              {paginated.map(u => {
                 const loc = lastLocOf(u.id);
                 const stale = loc ? isStale(loc.updatedAt) : false;
                 return (
-                <div key={u.id} className={`p-3 hover:bg-[#1E293B]/40 cursor-pointer ${editing?.id === u.id ? 'bg-amber-500/10 border-r-2 border-amber-500' : ''}`} onClick={() => startEdit(u)}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold">{u.fullNameAr.charAt(0)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold truncate">{u.fullNameAr}</div>
-                      <div className="text-[10px] text-slate-500 truncate">{officeById(u.officeId)?.nameAr}</div>
+                  <div key={u.id} className={`p-3 hover:bg-[#1E293B]/40 cursor-pointer ${editing?.id===u.id ? 'bg-amber-500/10 border-r-2 border-amber-500':''}`} onClick={()=>startEdit(u)}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold">{u.fullNameAr.charAt(0)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate">{u.fullNameAr}</div>
+                        <div className="text-[10px] text-slate-500 truncate">{offices.find(o=>o.id===u.officeId)?.nameAr || u.officeId}</div>
+                      </div>
+                      {!u.isActive && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">معطّل</span>}
                     </div>
-                    {!u.isActive && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">معطّل</span>}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_COLORS[u.role]}`}>{ROLE_LABELS[u.role]}</span>
+                      {loc ? (
+                        <button onClick={e=>{ e.stopPropagation(); setTracking(u); }} className={`text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1 ${stale ? 'bg-red-500/15 text-red-300 border-red-500/40' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'}`}>
+                          <Navigation className="w-3 h-3" /> {relativeTime(loc.updatedAt)}
+                        </button>
+                      ) : (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border bg-[#0B0F19] text-slate-500 border-[#1E293B] flex items-center gap-1"><MapPin className="w-3 h-3" /> لا يوجد موقع</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_COLORS[u.role]}`}>{ROLE_LABELS[u.role]}</span>
-                    {loc ? (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setTracking(u); }}
-                        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${stale ? 'bg-red-500/15 text-red-300 border-red-500/40' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'}`}
-                        title="تتبّع موقع المستخدم"
-                      >
-                        {stale ? <WifiOff className="w-3 h-3" /> : <Navigation className="w-3 h-3" />}
-                        تتبّع • {relativeTime(loc.updatedAt)}
-                      </button>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-[#0B0F19] text-slate-500 border-[#1E293B]">
-                        <MapPin className="w-3 h-3" /> لا يوجد موقع
-                      </span>
-                    )}
-                  </div>
-                </div>
                 );
               })}
-
             </div>
+            {totalPages > 1 && (
+              <div className="p-2 border-t border-[#1E293B] flex items-center justify-between text-[11px] text-slate-400">
+                <span>صفحة {page} / {totalPages}</span>
+                <div className="flex gap-1">
+                  <button disabled={page<=1} onClick={()=>setPage(p=>p-1)} className="px-2 py-1 rounded bg-[#1E293B] disabled:opacity-30">السابق</button>
+                  <button disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)} className="px-2 py-1 rounded bg-[#1E293B] disabled:opacity-30">التالي</button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Edit/Create form */}
           <div className="lg:col-span-3 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
             {!creating && !editing ? (
-              <div className="text-center py-12">
-                <Shield className="w-12 h-12 mx-auto text-slate-700 mb-3" />
-                <div className="text-sm text-slate-500">اختر مستخدماً من القائمة أو أنشئ مستخدماً جديداً</div>
-              </div>
+              <EmptyState icon={Shield} title="اختر مستخدماً للتعديل" description="أو أنشئ مستخدماً جديداً من الزر بالأعلى" />
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-bold text-amber-400">{creating ? 'مستخدم جديد' : `تعديل: ${editing?.fullNameAr}`}</div>
-                  <button onClick={() => { setCreating(false); setEditing(null); setDraft({}); setUsername(''); }} className="p-1 rounded hover:bg-[#1E293B]">
-                    <X className="w-4 h-4 text-slate-400" />
-                  </button>
+                  <button onClick={()=>{ setCreating(false); setEditing(null); setDraft({}); }} className="p-1 rounded hover:bg-[#1E293B]"><X className="w-4 h-4 text-slate-400" /></button>
                 </div>
 
-                <FieldRow label="الاسم الكامل">
-                  <input
-                    value={draft.fullNameAr ?? ''}
-                    onChange={e => setDraft(d => ({ ...d, fullNameAr: e.target.value }))}
-                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none"
-                  />
-                </FieldRow>
+                <FormField label="الاسم الكامل" required id="adm-name">
+                  <input id="adm-name" value={draft.fullNameAr ?? ''} onChange={e=>setDraft(d=>({...d, fullNameAr: e.target.value}))}
+                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" />
+                </FormField>
 
-                <FieldRow label={creating ? 'اسم المستخدم (للدخول)' : 'اسم المستخدم الجديد (اتركه فارغاً للإبقاء على الحالي)'}>
-                  <input
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    placeholder="مثال: ahmed.karbala"
-                    dir="ltr"
-                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/40 focus:outline-none"
-                  />
-                  {username.trim() && (
-                    <div className="text-[10px] text-slate-500 mt-1">
-                      أحرف إنجليزية وأرقام فقط. سيُسجّل الدخول بالبريد: {(username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '') || 'username')}@ops.iq
-                    </div>
-                  )}
-                </FieldRow>
+                <FormField label={creating ? 'اسم المستخدم (للدخول)' : 'تغيير اسم المستخدم (اختياري)'} hint={username ? `سيُسجّل الدخول: ${username.toLowerCase().replace(/[^a-z0-9._-]+/g,'')||'username'}@ops.iq` : undefined} error={usernameError} id="adm-user">
+                  <input id="adm-user" value={username} onChange={e=>{ setUsername(e.target.value); setUsernameError(''); }}
+                    placeholder="ahmed.karbala" dir="ltr"
+                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white text-left focus:border-amber-500/40 focus:outline-none" />
+                </FormField>
 
-
-
-                <FieldRow label="الدور">
-                  <select
-                    value={draft.role ?? 'agent'}
-                    onChange={e => setDraft(d => ({ ...d, role: e.target.value as Role }))}
-                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none"
-                  >
-                    {Object.entries(ROLE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </FieldRow>
-
-                {draft.role !== 'director' && (
-                  <FieldRow label="المكتب المرتبط">
-                    <select
-                      value={draft.officeId ?? ''}
-                      onChange={e => setDraft(d => ({ ...d, officeId: e.target.value }))}
-                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none"
-                    >
-                      {OFFICES.map(o => <option key={o.id} value={o.id}>{o.nameAr}</option>)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField label="الدور" required id="adm-role">
+                    <select id="adm-role" value={draft.role ?? 'agent'} onChange={e=>setDraft(d=>({...d, role: e.target.value as Role}))}
+                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white">
+                      {Object.entries(ROLE_LABELS).map(([k,v])=> <option key={k} value={k}>{v}</option>)}
                     </select>
-                  </FieldRow>
-                )}
+                  </FormField>
+                  {draft.role !== 'director' && (
+                    <FormField label="المكتب" required id="adm-office">
+                      <select id="adm-office" value={draft.officeId ?? ''} onChange={e=>setDraft(d=>({...d, officeId: e.target.value}))}
+                        className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white">
+                        {offices.map(o=> <option key={o.id} value={o.id}>{o.nameAr}</option>)}
+                      </select>
+                    </FormField>
+                  )}
+                </div>
 
-                <FieldRow label={creating ? 'كلمة المرور' : 'كلمة المرور الجديدة (اتركها فارغة للإبقاء على الحالية)'}>
-                  <input
-                    type="password"
-                    value={draft.password ?? ''}
-                    onChange={e => setDraft(d => ({ ...d, password: e.target.value }))}
-                    placeholder={creating ? 'أدخل كلمة المرور' : '••••••'}
-                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none"
-                    dir="ltr"
-                  />
-                </FieldRow>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField label={creating ? 'كلمة المرور' : 'كلمة مرور جديدة'} required={creating} id="adm-pass"
+                    hint={draft.password ? `قوة كلمة المرور: ${pwInfo.label}` : undefined}>
+                    <input id="adm-pass" type="password" value={draft.password ?? ''} onChange={e=>setDraft(d=>({...d, password: e.target.value}))}
+                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" dir="ltr" />
+                    {draft.password && (
+                      <div className="mt-1.5 h-1.5 rounded-full bg-[#1E293B] overflow-hidden">
+                        <div className="h-full transition-all" style={{ width: `${(pwInfo.score+1)*20}%`, background: pwInfo.color }} />
+                      </div>
+                    )}
+                  </FormField>
+                  <FormField label="تأكيد كلمة المرور" required={!!draft.password || creating} id="adm-pass2"
+                    error={draft.password && draft.confirmPassword && draft.password !== draft.confirmPassword ? 'كلمتا المرور غير متطابقتين' : undefined}>
+                    <input id="adm-pass2" type="password" value={draft.confirmPassword ?? ''} onChange={e=>setDraft(d=>({...d, confirmPassword: e.target.value}))}
+                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" dir="ltr" />
+                  </FormField>
+                </div>
 
                 {draft.role === 'supervisor' && (
-                  <FieldRow label="المكاتب المسموح بمشاهدتها">
-                    <div className="bg-[#0B0F19] border border-[#1E293B] rounded-md p-2 max-h-32 overflow-y-auto grid grid-cols-2 gap-1">
-                      {OFFICES.map(o => (
-                        <label key={o.id} className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={draft.permittedOfficeIds?.includes(o.id) || false}
-                            onChange={() => togglePermittedOffice(o.id)}
-                            className="accent-amber-500"
-                          />
+                  <FormField label="المكاتب المسموح بها" hint="اتركه فارغاً للسماح بالكل">
+                    <div className="bg-[#0B0F19] border border-[#1E293B] rounded-md p-2 max-h-32 overflow-y-auto grid grid-cols-2 gap-1 text-xs">
+                      {offices.map(o=>(
+                        <label key={o.id} className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                          <input type="checkbox" checked={draft.permittedOfficeIds?.includes(o.id) || false}
+                            onChange={()=>togglePermittedOffice(o.id)} className="accent-amber-500" />
                           {o.nameAr}
                         </label>
                       ))}
                     </div>
-                  </FieldRow>
+                  </FormField>
                 )}
 
-                <FieldRow label="الحالة">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setDraft(d => ({ ...d, isActive: true }))}
-                      className={`flex-1 py-2 rounded-md text-xs font-bold border ${draft.isActive ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-[#0B0F19] text-slate-400 border-[#1E293B]'}`}
-                    >
-                      <Power className="w-3 h-3 inline ml-1" /> مفعّل
-                    </button>
-                    <button
-                      onClick={() => setDraft(d => ({ ...d, isActive: false }))}
-                      className={`flex-1 py-2 rounded-md text-xs font-bold border ${!draft.isActive ? 'bg-red-500/20 text-red-300 border-red-500/40' : 'bg-[#0B0F19] text-slate-400 border-[#1E293B]'}`}
-                    >
-                      <PowerOff className="w-3 h-3 inline ml-1" /> معطّل
-                    </button>
-                  </div>
-                </FieldRow>
-
-                <div className="border-t border-[#1E293B] pt-3">
+                <div>
                   <div className="text-xs text-slate-400 mb-2 font-bold">الصلاحيات الخاصة</div>
-                  <div className="space-y-1.5">
-                    {PERMS.map(p => {
-                      const Icon = p.icon;
-                      const on = (draft.specialPermissions as any)?.[p.key];
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {PERMS.map(p=>{
+                      const on = (draft.specialPermissions as any)?.[p.key] || false;
                       return (
-                        <label key={p.key} className="flex items-center gap-2 p-2 rounded-md hover:bg-[#0B0F19] cursor-pointer">
-                          <input type="checkbox" checked={on || false} onChange={() => togglePerm(p.key)} className="accent-amber-500" />
-                          <Icon className="w-3.5 h-3.5 text-slate-500" />
-                          <span className="text-xs text-slate-300">{p.label}</span>
-                        </label>
+                        <button type="button" key={p.key} onClick={()=>togglePerm(p.key)}
+                          className={`text-right p-2.5 rounded-lg border text-xs transition-all ${on ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-[#0B0F19] border-[#1E293B] text-slate-300 hover:border-[#263244]'}`}>
+                          <div className="font-bold">{p.label} {on && <Check className="w-3 h-3 inline text-emerald-400" />}</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">{p.desc}</div>
+                        </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-3">
-                  <button onClick={save} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold">
+                <div className="flex gap-2 pt-2">
+                  <button onClick={save} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-black">
                     <Save className="w-4 h-4" /> {creating ? 'إنشاء الحساب' : 'حفظ التعديلات'}
                   </button>
                   {editing && (
-                    <button onClick={() => toggleActive(editing)} className="px-4 py-2.5 rounded-lg bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-sm">
+                    <button onClick={()=>toggleActive(editing)} className="px-4 py-2.5 rounded-lg bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-sm">
                       {editing.isActive ? 'تعطيل' : 'تفعيل'}
                     </button>
                   )}
@@ -392,115 +335,41 @@ export default function AdminPage() {
             )}
           </div>
         </div>
-
-        {/* Permissions matrix */}
-        <div className="mt-5 bg-[#111827] border border-[#1E293B] rounded-xl p-4 overflow-x-auto">
-          <div className="text-sm font-bold text-amber-400 mb-3">مصفوفة الصلاحيات</div>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-slate-400 border-b border-[#1E293B]">
-                <th className="text-right py-2 px-2">المستخدم</th>
-                <th className="text-center py-2 px-2">الدور</th>
-                {PERMS.map(p => (
-                  <th key={p.key} className="text-center py-2 px-2 text-[10px]">{p.label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1E293B]">
-              {state.users.map(u => (
-                <tr key={u.id} className="hover:bg-[#0B0F19]">
-                  <td className="py-2 px-2 text-slate-200">{u.fullNameAr}</td>
-                  <td className="py-2 px-2 text-center">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_COLORS[u.role]}`}>{ROLE_LABELS[u.role]}</span>
-                  </td>
-                  {PERMS.map(p => {
-                    const has = (u.specialPermissions as any)[p.key] || u.role === 'director';
-                    return (
-                      <td key={p.key} className="py-2 px-2 text-center">
-                        {has ? <Check className="w-3.5 h-3.5 text-emerald-400 inline" /> : <span className="text-slate-600">—</span>}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {tracking && (
-          <TrackingModal user={tracking} loc={lastLocOf(tracking.id)} stale={lastLocOf(tracking.id) ? isStale(lastLocOf(tracking.id)!.updatedAt) : false} onClose={() => setTracking(null)} />
-        )}
-
-        {showLiveMap && <LiveTrackingMap onClose={() => setShowLiveMap(false)} />}
       </div>
+
+      {tracking && <TrackingModal user={tracking} loc={lastLocOf(tracking.id)} stale={lastLocOf(tracking.id) ? isStale(lastLocOf(tracking.id)!.updatedAt) : false} onClose={()=>setTracking(null)} />}
+      {showLiveMap && <LiveTrackingMap onClose={()=>setShowLiveMap(false)} />}
     </div>
   );
 }
 
-function TrackingModal({ user, loc, stale, onClose }: { user: Profile; loc: any; stale: boolean; onClose: () => void }) {
+function TrackingModal({ user, loc, stale, onClose }: { user: Profile; loc: any; stale: boolean; onClose: ()=>void }) {
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative w-full max-w-md bg-[#0B0F19] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-[#1E293B]">
-          <div className="flex items-center gap-2">
-            <Navigation className="w-4 h-4 text-amber-400" />
-            <div className="text-sm font-bold text-amber-400">تتبّع: {user.fullNameAr}</div>
-          </div>
+          <div className="text-sm font-bold text-amber-400">تتبّع: {user.fullNameAr}</div>
           <button onClick={onClose} className="p-1 rounded hover:bg-[#1E293B]"><X className="w-4 h-4 text-slate-400" /></button>
         </div>
         <div className="p-4 space-y-3">
-          {!loc ? (
-            <div className="text-center text-sm text-slate-500 py-6">لا توجد بيانات موقع لهذا المستخدم بعد.</div>
-          ) : (
+          {!loc ? <div className="text-center text-sm text-slate-500 py-6">لا توجد بيانات موقع</div> : (
             <>
-              <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${stale ? 'bg-red-500/10 text-red-300 border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>
-                {stale ? <WifiOff className="w-4 h-4" /> : <Navigation className="w-4 h-4" />}
-                {stale ? 'الاتصال مفقود — يُعرض آخر موقع معروف' : 'متصل — يُحدّث الموقع مباشرة'}
+              <div className={`text-xs px-3 py-2 rounded-lg border ${stale ? 'bg-red-500/10 text-red-300 border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>
+                {stale ? 'الاتصال مفقود — آخر موقع معروف' : 'متصل — تحديث مباشر'}
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
-                  <div className="text-slate-500 mb-1">خط العرض</div>
-                  <div className="font-mono text-slate-200">{loc.lat.toFixed(5)}</div>
-                </div>
-                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
-                  <div className="text-slate-500 mb-1">خط الطول</div>
-                  <div className="font-mono text-slate-200">{loc.lng.toFixed(5)}</div>
-                </div>
-                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
-                  <div className="text-slate-500 mb-1">الدقة</div>
-                  <div className="text-slate-200">±{Math.round(loc.accuracyMeters)} م</div>
-                </div>
-                <div className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
-                  <div className="text-slate-500 mb-1">آخر تحديث</div>
-                  <div className="text-slate-200">{relativeTime(loc.updatedAt)}</div>
-                </div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">خط العرض</div><div className="font-mono">{loc.lat.toFixed(5)}</div></div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">خط الطول</div><div className="font-mono">{loc.lng.toFixed(5)}</div></div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">الدقة</div><div>±{Math.round(loc.accuracyMeters)} م</div></div>
+                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">آخر تحديث</div><div>{relativeTime(loc.updatedAt)}</div></div>
               </div>
-              <div className="text-[10px] text-slate-500 text-center">
-                {new Date(loc.updatedAt).toLocaleString('en-GB', { hour12: false })}
-              </div>
-              <a
-                href={`https://www.google.com/maps?q=${loc.lat},${loc.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold"
-              >
-                <MapPin className="w-4 h-4" /> فتح الموقع في الخريطة
-              </a>
+              <a href={`https://www.google.com/maps?q=${loc.lat},${loc.lng}`} target="_blank" rel="noopener noreferrer"
+                className="block text-center w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm">فتح في الخريطة</a>
             </>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-
-function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="text-xs text-slate-400 mb-1.5 block font-semibold">{label}</label>
-      {children}
     </div>
   );
 }

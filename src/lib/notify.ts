@@ -1,12 +1,15 @@
 // Real notification helper: browser Notification + sound (WebAudio) + vibration.
-// Designed for mobile-first: requires a user gesture for the first sound,
-// and uses the Vibration API where supported (Android).
 
 type AlertKind = 'emergency' | 'extension' | 'report' | 'system';
 
 let audioCtx: AudioContext | null = null;
 let soundUnlocked = false;
 let keepAliveStarted = false;
+
+// --- Audio lifecycle manager ---
+let currentOscillators = new Set<OscillatorNode>();
+let isPlaying = false;
+let playTimeout: number | null = null;
 
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -17,13 +20,6 @@ function getCtx(): AudioContext | null {
   return audioCtx;
 }
 
-/**
- * Keep the AudioContext "warm" so programmatic sounds (notification beeps that
- * fire from realtime events, NOT from a tap) still play on iOS Safari. iOS
- * suspends an idle context within seconds, after which resume() outside a user
- * gesture is ignored — that's why sound used to work only on the always-active
- * walkie/emergency screen. A near-silent looping buffer keeps it running.
- */
 function startKeepAlive(ctx: AudioContext) {
   if (keepAliveStarted) return;
   try {
@@ -32,14 +28,13 @@ function startKeepAlive(ctx: AudioContext) {
     src.buffer = buffer;
     src.loop = true;
     const g = ctx.createGain();
-    g.gain.value = 0.0000001; // effectively silent
+    g.gain.value = 0.0000001;
     src.connect(g); g.connect(ctx.destination);
     src.start();
     keepAliveStarted = true;
-  } catch { /* ignore */ }
+  } catch { }
 }
 
-/** Must be called from inside a user gesture (click/tap) to unlock audio on iOS. */
 export function unlockAudio() {
   const ctx = getCtx();
   if (!ctx) return;
@@ -57,21 +52,18 @@ export function unlockAudio() {
   startKeepAlive(ctx);
 }
 
-/**
- * Decode and play an encoded audio segment through the SHARED, unlocked
- * AudioContext. This is the only reliable way to play received walkie-talkie
- * voice on iOS Safari — HTML <audio>.play() is blocked from "autoplaying"
- * outside a user gesture, but a WebAudio buffer source plays fine once the
- * context has been unlocked by any earlier tap (see unlockAudio()).
- * Resolves when playback finishes (or immediately on failure) so callers can
- * chain segments sequentially.
- */
+export function stopAllAudio() {
+  isPlaying = false;
+  if (playTimeout) { clearTimeout(playTimeout); playTimeout = null; }
+  currentOscillators.forEach(o => { try { o.stop(); } catch {} });
+  currentOscillators.clear();
+}
+
 export function playEncodedAudio(bytes: Uint8Array): Promise<void> {
   return new Promise((resolve) => {
     const ctx = getCtx();
     if (!ctx) return resolve();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    // decodeAudioData needs its own ArrayBuffer copy.
     const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
     const done = () => resolve();
     try {
@@ -92,7 +84,6 @@ export function playEncodedAudio(bytes: Uint8Array): Promise<void> {
   });
 }
 
-/** Short white-noise "shhh" static burst, used to frame walkie-talkie calls. */
 export function playStatic(duration = 0.32, volume = 0.12) {
   const ctx = getCtx();
   if (!ctx) return;
@@ -104,7 +95,6 @@ export function playStatic(duration = 0.32, volume = 0.12) {
     for (let i = 0; i < frameCount; i++) data[i] = Math.random() * 2 - 1;
     const src = ctx.createBufferSource();
     src.buffer = buffer;
-    // Band-pass-ish filter to make it sound like radio static.
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
     filter.frequency.value = 1800;
@@ -121,7 +111,7 @@ export function playStatic(duration = 0.32, volume = 0.12) {
 
 function beep(freq: number, duration: number, when = 0, volume = 0.25, type: OscillatorType = 'sine') {
   const ctx = getCtx();
-  if (!ctx) return;
+  if (!ctx) return null;
   try {
     const o = ctx.createOscillator();
     const g = ctx.createGain();
@@ -133,41 +123,64 @@ function beep(freq: number, duration: number, when = 0, volume = 0.25, type: Osc
     g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
     o.connect(g); g.connect(ctx.destination);
     o.start(t); o.stop(t + duration + 0.02);
-  } catch {}
+    currentOscillators.add(o);
+    o.onended = () => currentOscillators.delete(o);
+    return o;
+  } catch { return null; }
 }
 
 function playPattern(kind: AlertKind) {
   const ctx = getCtx();
   if (!ctx) return;
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+  // Prevent overlapping alerts
+  if (isPlaying) return;
+  isPlaying = true;
+
+  stopAllAudio();
+  isPlaying = true;
+
+  const cleanup = () => {
+    isPlaying = false;
+    if (playTimeout) { clearTimeout(playTimeout); playTimeout = null; }
+  };
+
+  let totalDuration = 0;
   switch (kind) {
     case 'emergency':
-      // Urgent siren: 3 rapid alternating tones
-      beep(880, 0.18, 0.0, 0.35, 'square');
-      beep(660, 0.18, 0.22, 0.35, 'square');
-      beep(880, 0.18, 0.44, 0.35, 'square');
-      beep(660, 0.18, 0.66, 0.35, 'square');
+      // 2 cycles only, 3.5s max
+      beep(880, 0.15, 0.0, 0.28, 'square');
+      beep(660, 0.15, 0.18, 0.28, 'square');
+      beep(880, 0.15, 0.36, 0.28, 'square');
+      beep(660, 0.15, 0.54, 0.28, 'square');
+      totalDuration = 800;
       break;
     case 'extension':
-      beep(700, 0.14, 0.0, 0.25);
-      beep(900, 0.14, 0.18, 0.25);
+      beep(700, 0.12, 0.0, 0.22);
+      beep(900, 0.12, 0.15, 0.22);
+      totalDuration = 300;
       break;
     case 'report':
-      beep(880, 0.12, 0.0, 0.2);
-      beep(1175, 0.16, 0.14, 0.2);
+      beep(880, 0.1, 0.0, 0.18);
+      beep(1175, 0.14, 0.12, 0.18);
+      totalDuration = 280;
       break;
     default:
-      beep(660, 0.12, 0.0, 0.2);
+      beep(660, 0.1, 0.0, 0.18);
+      totalDuration = 120;
   }
+
+  playTimeout = window.setTimeout(cleanup, totalDuration + 100);
 }
 
 function vibrate(kind: AlertKind) {
   if (typeof navigator === 'undefined' || !('vibrate' in navigator)) return;
   try {
-    if (kind === 'emergency') navigator.vibrate([300, 100, 300, 100, 600]);
-    else if (kind === 'extension') navigator.vibrate([150, 80, 150]);
-    else if (kind === 'report') navigator.vibrate([120]);
-    else navigator.vibrate(100);
+    if (kind === 'emergency') navigator.vibrate([200, 80, 200]);
+    else if (kind === 'extension') navigator.vibrate([120, 60, 120]);
+    else if (kind === 'report') navigator.vibrate(100);
+    else navigator.vibrate(80);
   } catch {}
 }
 
@@ -175,9 +188,6 @@ function showSystemNotification(title: string, body: string, kind: AlertKind) {
   if (typeof Notification === 'undefined') return;
   if (Notification.permission !== 'granted') return;
 
-  // Prefer the service worker: registration.showNotification() keeps working
-  // when the tab is backgrounded / the screen is off, supports vibration and
-  // persistence, and is the only supported path on Android Chrome.
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then((reg) => {
       if (reg.active) {
@@ -190,36 +200,29 @@ function showSystemNotification(title: string, body: string, kind: AlertKind) {
       } else {
         reg.showNotification(title, {
           body, icon: '/favicon.ico', tag: `ops-${kind}-${Date.now()}`,
-          // @ts-ignore - vibrate is valid on Android
-          vibrate: kind === 'emergency' ? [300, 100, 300, 100, 600] : [150, 80, 150],
+          // @ts-ignore
+          vibrate: kind === 'emergency' ? [200, 80, 200] : [120, 60, 120],
         });
       }
-    }).catch(() => fallbackNotification(title, body, kind));
+    }).catch(() => fallbackNotification(title, body));
     return;
   }
-  fallbackNotification(title, body, kind);
+  fallbackNotification(title, body);
 }
 
-function fallbackNotification(title: string, body: string, kind: AlertKind) {
+function fallbackNotification(title: string, body: string) {
   try {
-    const n = new Notification(title, {
-      body,
-      icon: '/favicon.ico',
-      tag: `ops-${kind}-${Date.now()}`,
-      silent: false,
-    } as any);
-    setTimeout(() => { try { n.close(); } catch {} }, 8000);
+    const n = new Notification(title, { body, icon: '/favicon.ico', silent: false } as any);
+    setTimeout(() => { try { n.close(); } catch {} }, 6000);
   } catch {}
 }
 
-/** Fire a real notification: sound + vibration + OS notification (if allowed). */
 export function fireAlert(kind: AlertKind, title: string, body: string) {
   playPattern(kind);
   vibrate(kind);
   showSystemNotification(title, body, kind);
 }
 
-/** Ask the browser for notification permission. Must run from a user gesture. */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (typeof Notification === 'undefined') return 'denied';
   if (Notification.permission !== 'default') return Notification.permission;
@@ -231,7 +234,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   }
 }
 
-/** Ask for geolocation permission (resolves on grant/deny). */
 export function requestGeolocationPermission(): Promise<boolean> {
   return new Promise(resolve => {
     if (!('geolocation' in navigator)) return resolve(false);
@@ -239,9 +241,15 @@ export function requestGeolocationPermission(): Promise<boolean> {
   });
 }
 
-/** Trigger a short vibration to confirm vibration API works (Android). */
 export function testVibration() {
   if ('vibrate' in navigator) {
     try { navigator.vibrate([60, 40, 60]); } catch {}
   }
+}
+
+// Export class wrapper for easier use
+export class AudioNotifier {
+  init() { unlockAudio(); }
+  async playEmergencyAlert() { fireAlert('emergency', '🚨 حالة طارئة', 'تم استلام بلاغ طارئ'); }
+  stop() { stopAllAudio(); }
 }

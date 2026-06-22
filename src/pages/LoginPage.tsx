@@ -1,322 +1,102 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Hexagon, Mail, Lock, Eye, EyeOff, AlertCircle, Radio, Activity, MapPin, ChevronRight, Loader2, User } from 'lucide-react';
+import { useState } from 'react';
 import { useOps } from '../store/opsStore';
-import { OFFICES, officeById } from '../data/offices';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { Profile, Role } from '../data/types';
-import { api, type DemoCredHint } from '../lib/api';
-
-const ROLE_VISUALS: Record<Role, { label: string; desc: string; gradient: string; icon: string }> = {
-  director: { label: 'المدير العام', desc: 'صلاحيات كاملة', gradient: 'from-amber-400 to-orange-600', icon: '⚡' },
-  supervisor: { label: 'المشرف العام', desc: 'لوحة المشرف', gradient: 'from-blue-400 to-indigo-600', icon: '⏱️' },
-  manager: { label: 'مدير مكتب', desc: 'إدارة مكتب محدد', gradient: 'from-emerald-400 to-teal-600', icon: '🕌' },
-  agent: { label: 'مدخل بيانات', desc: 'إدخال التقارير', gradient: 'from-slate-400 to-slate-600', icon: '📋' },
-  viewer: { label: 'مشاهد', desc: 'مشاهدة لوحة القيادة', gradient: 'from-violet-400 to-purple-600', icon: '👁️' },
-};
-
-interface QuickAccessItem {
-  userId: string;
-  email: string;
-  password: string;
-  fullName: string;
-  role: Role;
-  officeName: string;
-  label: string;
-  desc: string;
-  gradient: string;
-  icon: string;
-}
+import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { FormField } from '../components/FormField';
+import { validateEmail } from '../lib/validation';
 
 export default function LoginPage() {
-  const { state, dispatch, actions } = useOps();
-  const navigate = useNavigate();
+  const { actions } = useOps();
+  const nav = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [shake, setShake] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{email?:string; password?:string}>({});
 
-  // Build quick access list from real DB users (live from state.users + api credentials)
-  const [quickAccess, setQuickAccess] = useState<QuickAccessItem[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        // Quick-access is hint-driven: each demo hint carries a guaranteed valid
-        // email + password. Live profiles only enrich the display (name/office),
-        // since profile rows do not expose the auth email.
-        const [users, hints] = await Promise.all([
-          api.getUsers().catch(() => [] as Profile[]),
-          api.getDemoLoginHints().catch(() => [] as DemoCredHint[]),
-        ]);
-
-        const seenRoles = new Set<Role>();
-        const items: QuickAccessItem[] = [];
-        hints.forEach((hint) => {
-          if (seenRoles.has(hint.role)) return;
-          seenRoles.add(hint.role);
-          const visual = ROLE_VISUALS[hint.role];
-          if (!visual) return;
-          const profile = users.find((u) => u.role === hint.role && u.isActive);
-          const officeId = profile?.officeId || hint.officeId;
-          const office = officeById(officeId);
-          const fullName = profile?.fullNameAr || hint.fullName;
-          items.push({
-            userId: profile?.id ?? hint.userId,
-            email: hint.email,
-            password: hint.password,
-            fullName,
-            role: hint.role,
-            officeName: office?.nameAr || officeId,
-            label: visual.label,
-            desc: `${fullName} • ${office?.governorateAr || ''}`,
-            gradient: visual.gradient,
-            icon: visual.icon,
-          });
-        });
-
-        setQuickAccess(items);
-      } catch (e) {
-        console.error('Failed to load quick access', e);
-        setQuickAccess([]);
-      }
-    })();
-  }, [state.users.length]);
-
-
-  const triggerError = (msg: string) => {
-    setError(msg);
-    setShake(true);
-    setTimeout(() => setShake(false), 500);
+  const validate = () => {
+    const e: typeof errors = {};
+    const em = validateEmail(email);
+    if (em) e.email = em;
+    if (!password || password.length < 3) e.password = 'كلمة المرور مطلوبة';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const performLogin = async (loginEmail: string, loginPassword: string) => {
-    const { user, error: err } = await actions.signIn(loginEmail, loginPassword);
-    if (err || !user) {
-      triggerError(err || 'فشل تسجيل الدخول');
-      return false;
-    }
-    dispatch({ type: 'AUTH_SUCCESS', user });
-    toast.success(`أهلاً ${user.fullNameAr}`, { description: 'تم تسجيل الدخول بنجاح' });
-    navigate(user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
-    return true;
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!validate()) return;
+    setSubmitting(true);
+    try {
+      const { user, error } = await actions.signIn(email, password);
+      if (error || !user) { toast.error(error || 'فشل تسجيل الدخول'); return; }
+      toast.success(`أهلاً ${user.fullNameAr}`);
+      nav(user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
+    } finally { setSubmitting(false); }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!email.trim()) { triggerError('الرجاء إدخال البريد الإلكتروني'); return; }
-    if (!password.trim()) { triggerError('الرجاء إدخال كلمة المرور'); return; }
-    setLoading(true);
-    await performLogin(email, password);
-    setLoading(false);
-  };
-
-  const quickLogin = async (item: QuickAccessItem) => {
-    setEmail(item.email);
-    setPassword(item.password);
-    setLoading(true);
-    const ok = await performLogin(item.email, item.password);
-    if (ok) {
-      toast.success(`أهلاً ${item.fullName}`, { description: `صلاحية: ${item.label}` });
-    }
-    setLoading(false);
-  };
+  const quick = [
+    { role: 'مدير عام', email: 'u-director@ops.iq', color: 'from-amber-500 to-orange-500' },
+    { role: 'مشرف', email: 'u-supervisor@ops.iq', color: 'from-blue-500 to-indigo-500' },
+    { role: 'مدير مكتب', email: 'u-manager@ops.iq', color: 'from-emerald-500 to-teal-500' },
+    { role: 'مندوب', email: 'u-agent@ops.iq', color: 'from-slate-500 to-slate-600' },
+  ];
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center p-4 grid-pattern relative overflow-hidden">
-      {/* Decorative gradient orbs */}
-      <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute top-1/2 left-1/3 w-72 h-72 rounded-full bg-red-500/8 blur-3xl pointer-events-none" />
-
-      <div className="relative z-10 w-full max-w-5xl grid md:grid-cols-2 gap-6">
-        {/* Left: Branding */}
-        <div className="hidden md:flex flex-col justify-center p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-amber-500/40 glow-amber">
-              <Hexagon className="w-9 h-9 text-black" strokeWidth={2.5} />
-            </div>
-            <div>
-              <div className="text-3xl font-display font-black bg-gradient-to-l from-amber-300 to-amber-500 bg-clip-text text-transparent">منظومة الرصد</div>
-              <div className="text-sm text-slate-400 mt-1">المركز العملياتي - مديرية شؤون المحافظات</div>
-            </div>
-          </div>
-          <h1 className="text-4xl font-display font-black mb-3 leading-tight">
-            مركز القيادة
-            <br />
-            <span className="bg-gradient-to-l from-amber-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">العملياتي الموحد</span>
-          </h1>
-          <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-md">
-            نظام رصد ميداني متكامل لإدارة التقارير الإحصائية اليومية عبر {OFFICES.length} مكتباً في عموم المحافظات العراقية خلال زيارة الأربعين.
-          </p>
-
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: Activity, label: 'رصد لحظي', value: '15 مكتب', gradient: 'from-amber-500/20 to-orange-500/10' },
-              { icon: MapPin, label: 'تغطية جغرافية', value: '11 منفذ', gradient: 'from-emerald-500/20 to-teal-500/10' },
-              { icon: Radio, label: 'مستخدمو ميدان', value: '100+ مستخدم', gradient: 'from-blue-500/20 to-indigo-500/10' },
-            ].map((s, i) => (
-              <div key={i} className={`p-3 rounded-xl bg-gradient-to-br ${s.gradient} border border-[#1E293B] backdrop-blur-sm`}>
-                <s.icon className="w-4 h-4 text-amber-400 mb-2" />
-                <div className="text-xs text-slate-500">{s.label}</div>
-                <div className="text-sm font-display font-bold mt-0.5">{s.value}</div>
-              </div>
-            ))}
-          </div>
+    <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4" dir="rtl">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <div className="text-3xl font-black text-amber-400 font-display">أربعين</div>
+          <div className="text-xs text-slate-400 mt-1">مركز القيادة والعمليات</div>
         </div>
 
-        {/* Right: Auth */}
-        <div className={`bg-gradient-to-br from-[#111827] to-[#0B0F19] border border-[#1E293B] rounded-2xl p-6 md:p-8 shadow-2xl shadow-black/60 ${shake ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
-          <div className="md:hidden flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
-              <Hexagon className="w-7 h-7 text-black" strokeWidth={2.5} />
-            </div>
-            <div>
-              <div className="text-xl font-display font-black text-amber-400">منظومة الرصد</div>
-              <div className="text-xs text-slate-400">المركز العملياتي</div>
-            </div>
-          </div>
+        <form onSubmit={handleLogin} className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 space-y-4" noValidate>
+          <FormField label="البريد الإلكتروني" required error={errors.email} id="login-email">
+            <input id="login-email" type="email" dir="ltr" value={email} onChange={e=>{ setEmail(e.target.value); if(errors.email) setErrors(s=>({...s, email: undefined} as any)); }}
+              placeholder="you@ops.iq"
+              className="w-full bg-[#0B0F19] border border-[#263244] rounded-lg px-3 py-3 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+              autoComplete="email" />
+          </FormField>
 
-          <div className="mb-6">
-            <h2 className="text-xl font-display font-bold mb-1">تسجيل الدخول</h2>
-            <p className="text-xs text-slate-500">الرجاء إدخال بيانات الاعتماد للمتابعة</p>
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="text-xs text-slate-400 mb-1.5 block">البريد الإلكتروني</label>
-              <div className="relative">
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  value={email}
-                  onChange={e => { setEmail(e.target.value); setError(''); }}
-                  placeholder="user@ops.iq"
-                  autoComplete="username"
-                  className="w-full bg-[#1E293B] border border-[#263244] rounded-lg pr-10 pl-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none focus:ring-1 focus:ring-amber-500/20 transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 mb-1.5 block">كلمة المرور</label>
-              <div className="relative">
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setError(''); }}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  className="w-full bg-[#1E293B] border border-[#263244] rounded-lg pr-10 pl-10 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none focus:ring-1 focus:ring-amber-500/20 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                  tabIndex={-1}
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-gradient-to-l from-red-500/15 to-red-900/10 border border-red-500/40 text-red-300 text-xs animate-fade-in-up">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span className="flex-1">{error}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-lg bg-gradient-to-l from-amber-400 via-amber-500 to-orange-600 hover:from-amber-300 hover:via-amber-400 hover:to-orange-500 text-black font-display font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/30"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  جاري التحقق...
-                </span>
-              ) : 'تسجيل الدخول'}
-            </button>
-
-            <div className="flex items-center justify-between text-xs">
-              <button type="button" className="text-slate-500 hover:text-amber-400 transition-colors">نسيت كلمة المرور؟</button>
-              <button type="button" onClick={() => navigate('/register')} className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1">
-                إنشاء حساب جديد <ChevronRight className="w-3 h-3" />
+          <FormField label="كلمة المرور" required error={errors.password} id="login-pass">
+            <div className="relative">
+              <input id="login-pass" type={showPass ? 'text' : 'password'} value={password}
+                onChange={e=>{ setPassword(e.target.value); if(errors.password) setErrors(s=>({...s, password: undefined} as any)); }}
+                className="w-full bg-[#0B0F19] border border-[#263244] rounded-lg px-3 py-3 pl-10 text-sm text-white focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                autoComplete="current-password" dir="ltr" />
+              <button type="button" onClick={()=>setShowPass(s=>!s)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-200" aria-label={showPass ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-          </form>
+          </FormField>
 
-          {/* Quick Access from DB */}
-          <div className="mt-6 pt-6 border-t border-[#1E293B]">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">وصول سريع للتجربة</div>
-              <div className="text-[9px] text-emerald-500/70 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                متصل بقاعدة البيانات
-              </div>
+          <button type="submit" disabled={submitting}
+            className="w-full py-3 rounded-xl bg-gradient-to-l from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-base shadow-lg shadow-amber-500/20 disabled:opacity-60 flex items-center justify-center gap-2">
+            <LogIn className="w-4 h-4" />
+            {submitting ? 'جاري تسجيل الدخول…' : 'تسجيل الدخول'}
+          </button>
+
+          <div className="pt-2 border-t border-[#1E293B]">
+            <div className="text-[11px] text-slate-500 mb-2 font-bold">دخول سريع للتجربة:</div>
+            <div className="grid grid-cols-2 gap-2">
+              {quick.map(q => (
+                <button type="button" key={q.email}
+                  onClick={()=>{ setEmail(q.email); setPassword('123456'); }}
+                  className={`text-[11px] py-2 rounded-lg bg-gradient-to-l ${q.color} text-white font-bold opacity-90 hover:opacity-100 transition-opacity`}>
+                  {q.role}
+                </button>
+              ))}
             </div>
-
-            {quickAccess.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 p-4 text-xs text-slate-500">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                جاري تحميل الحسابات التجريبية...
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {quickAccess.map(item => (
-                  <button
-                    key={item.userId}
-                    onClick={() => quickLogin(item)}
-                    disabled={loading}
-                    className="group p-2.5 rounded-lg bg-[#0B0F19] border border-[#1E293B] hover:border-amber-500/40 text-right transition-all relative overflow-hidden disabled:opacity-50"
-                    title={`${item.email} / ${item.password}`}
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-l ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
-                    <div className="relative flex items-center gap-2 mb-1">
-                      <div className={`w-9 h-9 rounded-md bg-gradient-to-br ${item.gradient} flex items-center justify-center text-base shadow-lg shrink-0`}>
-                        {item.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold truncate text-slate-100">{item.fullName}</div>
-                        <div className="text-[10px] text-amber-400 truncate">{item.label}</div>
-                      </div>
-                    </div>
-                    <div className="relative flex items-center gap-1.5 text-[10px] text-slate-500">
-                      <User className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate">{item.officeName}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {quickAccess.length > 0 && (
-              <div className="mt-3 p-2 rounded-md bg-[#0B0F19] border border-[#1E293B]">
-                <div className="text-[10px] text-slate-500 text-center">
-                  كلمات المرور التجريبية: <span className="text-amber-500/70 font-mono font-bold">123456</span>
-                </div>
-                <div className="text-[9px] text-slate-600 text-center mt-1">
-                  انقر على أي بطاقة لتسجيل الدخول الفوري
-                </div>
-              </div>
-            )}
+            <div className="text-[10px] text-slate-500 mt-2 text-center">كلمة المرور للتجربة: <b className="text-slate-300 font-mono">123456</b></div>
           </div>
+        </form>
+
+        <div className="text-center mt-4 text-[11px] text-slate-500">
+          ليس لديك حساب؟ <button onClick={()=>nav('/register')} className="text-amber-400 hover:underline font-bold">إنشاء حساب جديد</button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20%, 60% { transform: translateX(-8px); }
-          40%, 80% { transform: translateX(8px); }
-        }
-      `}</style>
     </div>
   );
 }

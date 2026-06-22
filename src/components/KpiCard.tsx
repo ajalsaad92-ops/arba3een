@@ -1,150 +1,48 @@
-import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, type LucideIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React from 'react';
+import { formatNumber } from '../lib/utils';
 
-type GradTone = 'amber' | 'emerald' | 'red' | 'blue' | 'purple' | 'orange' | 'slate';
-
-const GRADIENTS: Record<GradTone, { from: string; to: string; text: string; glow: string }> = {
-  amber:   { from: 'from-amber-400',   to: 'to-orange-600',   text: 'text-amber-400',   glow: 'shadow-amber-500/20' },
-  emerald: { from: 'from-emerald-400', to: 'to-teal-600',     text: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
-  red:     { from: 'from-red-400',     to: 'to-rose-700',     text: 'text-red-400',     glow: 'shadow-red-500/20' },
-  blue:    { from: 'from-blue-400',    to: 'to-indigo-600',   text: 'text-blue-400',    glow: 'shadow-blue-500/20' },
-  purple:  { from: 'from-purple-400',  to: 'to-fuchsia-700',  text: 'text-purple-400',  glow: 'shadow-purple-500/20' },
-  orange:  { from: 'from-orange-400',  to: 'to-red-600',      text: 'text-orange-400',  glow: 'shadow-orange-500/20' },
-  slate:   { from: 'from-slate-400',   to: 'to-slate-600',    text: 'text-slate-300',   glow: 'shadow-slate-500/20' },
-};
-
-interface Props {
+type Props = {
   label: string;
   value: number;
-  icon?: LucideIcon;
-  iconColor?: string;
-  bgColor?: string;
+  icon: React.ElementType;
   trend?: number;
-  format?: 'short' | 'full';
-  sparklineData?: number[];
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  suffix?: string;
+  tone?: 'amber'|'blue'|'emerald'|'red'|'orange'|'purple'|'slate';
+  size?: 'sm'|'lg';
   borderGlow?: boolean;
-  tone?: GradTone;
-}
+  sparklineData?: number[];
+};
 
-function useCountUp(target: number, duration = 800) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    const start = performance.now();
-    const initial = 0;
-    let raf = 0;
-    const step = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(initial + (target - initial) * eased);
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return val;
-}
+const toneMap: Record<string, { text: string; gradient: string; bg: string }> = {
+  amber:   { text: 'text-amber-400', gradient: 'from-amber-400 to-orange-600', bg: 'bg-amber-500/10' },
+  blue:    { text: 'text-blue-400', gradient: 'from-blue-400 to-indigo-600', bg: 'bg-blue-500/10' },
+  emerald: { text: 'text-emerald-400', gradient: 'from-emerald-400 to-teal-600', bg: 'bg-emerald-500/10' },
+  red:     { text: 'text-red-300', gradient: 'from-red-400 to-rose-700', bg: 'bg-red-500/10' },
+  orange:  { text: 'text-orange-400', gradient: 'from-orange-400 to-red-600', bg: 'bg-orange-500/10' },
+  purple:  { text: 'text-purple-400', gradient: 'from-purple-400 to-fuchsia-700', bg: 'bg-purple-500/10' },
+  slate:   { text: 'text-slate-300', gradient: 'from-slate-400 to-slate-600', bg: 'bg-slate-500/10' },
+};
 
-function formatVal(n: number, format?: 'short' | 'full'): string {
-  if (format === 'short') {
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'م';
-    if (n >= 10_000) return (n / 1000).toFixed(1) + 'ك';
-    return Math.round(n).toLocaleString('en-US');
-  }
-  return Math.round(n).toLocaleString('en-US');
-}
-
-function MiniSparkline({ data, color = '#F59E0B' }: { data: number[]; color?: string }) {
-  if (!data || data.length < 2) return null;
-  const w = 80, h = 30;
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * h;
-    return `${x},${y}`;
-  }).join(' ');
+function KpiCardBase({ label, value, icon: Icon, trend = 0, tone = 'amber', size = 'sm', borderGlow }: Props) {
+  const t = toneMap[tone] || toneMap.amber;
+  const trendUp = trend > 0;
+  const trendDown = trend < 0;
   return (
-    <svg width={w} height={h} className="overflow-visible">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx={w}
-        cy={h - ((data[data.length - 1] - min) / range) * h}
-        r="2"
-        fill={color}
-      />
-    </svg>
+    <div className={`relative bg-[#111827] border border-[#1E293B] rounded-xl p-3 overflow-hidden ${borderGlow ? 'ring-1 ring-amber-500/20' : ''}`}>
+      <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${t.gradient}`} />
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="text-[11px] text-slate-400 truncate">{label}</div>
+        <div className={`w-7 h-7 rounded-lg ${t.bg} flex items-center justify-center ${t.text}`}>
+          <Icon className="w-3.5 h-3.5" />
+        </div>
+      </div>
+      <div className={`kpi-number ${size==='lg' ? 'text-2xl' : 'text-xl'} ${t.text}`}>{formatNumber(value)}</div>
+      {!!trend && (
+        <div className={`text-[10px] mt-1 ${trendUp ? 'text-emerald-400' : trendDown ? 'text-red-400' : 'text-slate-500'}`}>
+          {trendUp ? '▲' : trendDown ? '▼' : '—'} {Math.abs(trend).toFixed(1)}%
+        </div>
+      )}
+    </div>
   );
 }
 
-export default function KpiCard({ label, value, icon: Icon, iconColor, bgColor, trend, format, sparklineData, size = 'md', suffix, borderGlow, tone = 'amber' }: Props) {
-  const animated = useCountUp(value);
-  const trendIcon = trend == null || trend === 0 ? Minus : trend > 0 ? TrendingUp : TrendingDown;
-  const trendColor = trend == null || trend === 0 ? 'text-slate-500' : trend > 0 ? 'text-emerald-400' : 'text-red-400';
-  const TrendIcon = trendIcon;
-  const g = GRADIENTS[tone] ?? GRADIENTS.amber;
-  const finalIconColor = iconColor ?? g.text;
-  const finalBgColor = bgColor ?? `bg-gradient-to-br ${g.from} ${g.to} bg-opacity-10`;
-
-  const sizeClasses = {
-    sm: 'p-3',
-    md: 'p-4',
-    lg: 'p-5',
-    xl: 'p-6',
-  };
-  const valueClasses = {
-    sm: 'text-2xl',
-    md: 'text-3xl',
-    lg: 'text-4xl',
-    xl: 'text-5xl',
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`relative bg-gradient-to-br from-[#111827] to-[#0B0F19] border ${borderGlow ? `border-amber-500/30 ${g.glow}` : 'border-[#1E293B]'} rounded-xl ${sizeClasses[size]} overflow-hidden`}
-    >
-      <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${g.from} ${g.to} opacity-50`} />
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="text-xs text-slate-400 font-semibold">{label}</div>
-        {Icon && (
-          <div className={`w-7 h-7 rounded-lg ${finalBgColor} flex items-center justify-center ${finalIconColor} opacity-90`}>
-            <Icon size={14} />
-          </div>
-        )}
-      </div>
-
-      <div className={`kpi-number bg-gradient-to-l ${g.from} ${g.to} bg-clip-text text-transparent ${valueClasses[size]} leading-none`}>
-        {formatVal(animated, format)}
-        {suffix && <span className="text-base text-slate-400 mr-1">{suffix}</span>}
-      </div>
-
-      <div className="flex items-end justify-between mt-2 gap-2">
-        {trend != null && (
-          <div className={`flex items-center gap-1 text-xs font-bold ${trendColor}`}>
-            <TrendIcon className="w-3 h-3" />
-            <span>{trend > 0 ? '+' : ''}{trend.toFixed(1)}%</span>
-            <span className="text-slate-500 text-[10px]">عن أمس</span>
-          </div>
-        )}
-        {sparklineData && (
-          <div className="shrink-0 -mb-1">
-            <MiniSparkline data={sparklineData} color={g.text.replace('text-', '#') === 'text-amber-400' ? '#F59E0B' : g.text.replace('text-', '#') === 'text-emerald-400' ? '#10B981' : g.text.replace('text-', '#') === 'text-red-400' ? '#EF4444' : g.text.replace('text-', '#') === 'text-blue-400' ? '#3B82F6' : g.text.replace('text-', '#') === 'text-purple-400' ? '#A855F7' : '#F97316'} />
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
+export default React.memo(KpiCardBase);

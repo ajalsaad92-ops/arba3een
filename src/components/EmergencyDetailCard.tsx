@@ -3,7 +3,7 @@ import {
   X, AlertOctagon, MapPin, User, Clock, FileText, CheckCircle2,
   ShieldCheck, ExternalLink, Building2,
 } from 'lucide-react';
-import { officeById } from '../data/offices';
+import { useOffices } from '../lib/offices';
 import type { Emergency, Profile } from '../data/types';
 
 const STATUS_META: Record<Emergency['status'], { label: string; cls: string; dot: string }> = {
@@ -31,6 +31,7 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
 
 export default function EmergencyDetailCard({ emergency, users = [], onClose }: { emergency: Emergency; users?: Profile[]; onClose: () => void }) {
   const em = emergency;
+  const { officeById } = useOffices();
   const office = officeById(em.officeId);
   const meta = STATUS_META[em.status];
   const nameById = (id?: string) => (id ? users.find(u => u.id === id)?.fullNameAr : undefined);
@@ -39,16 +40,9 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
   const hasCoords = typeof em.lat === 'number' && typeof em.lng === 'number';
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
-      onClick={onClose}
-      dir="rtl"
-    >
-      <div
-        className="w-full max-w-md bg-[#0B0F19] border-2 border-red-500/40 rounded-2xl shadow-2xl glow-crimson overflow-hidden max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose} dir="rtl">
+      <div className="w-full max-w-md bg-[#0B0F19] border-2 border-red-500/40 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 p-4 bg-gradient-to-l from-red-900/40 to-[#0B0F19] border-b border-red-500/30">
           <div className="w-11 h-11 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
             <AlertOctagon className="w-6 h-6" />
@@ -61,44 +55,27 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
               </span>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 shrink-0">
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 shrink-0"><X className="w-5 h-5" /></button>
         </div>
-
-        {/* Body */}
         <div className="p-4 overflow-y-auto">
           <Row icon={<Building2 className="w-4 h-4" />} label="المكتب / المحافظة" value={`${office?.nameAr ?? em.officeId} — ${office?.governorateAr ?? ''}`} />
           <Row icon={<User className="w-4 h-4" />} label="مُبلِّغ الحالة" value={em.reportedByName || nameById(em.reportedById) || '—'} />
           <Row icon={<FileText className="w-4 h-4" />} label="الوصف التفصيلي" value={em.description || '—'} />
-          <Row
-            icon={<MapPin className="w-4 h-4" />}
-            label="الموقع"
-            value={
-              <div className="space-y-1">
-                {em.locationMgrs && <div className="font-mono text-xs">{em.locationMgrs}</div>}
-                {hasCoords && (
-                  <a
-                    href={`https://www.google.com/maps?q=${em.lat},${em.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-                  >
-                    {em.lat!.toFixed(5)}, {em.lng!.toFixed(5)}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-                {!em.locationMgrs && !hasCoords && '—'}
-              </div>
-            }
-          />
+          <Row icon={<MapPin className="w-4 h-4" />} label="الموقع" value={
+            <div className="space-y-1">
+              {em.locationMgrs && <div className="font-mono text-xs">{em.locationMgrs}</div>}
+              {hasCoords && (
+                <a href={`https://www.google.com/maps?q=${em.lat},${em.lng}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300">
+                  {em.lat!.toFixed(5)}, {em.lng!.toFixed(5)} <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+              {!em.locationMgrs && !hasCoords && '—'}
+            </div>
+          } />
           <Row icon={<Clock className="w-4 h-4" />} label="وقت الإنشاء" value={fmt(em.createdAt)} />
-          {em.acknowledgedAt && (
-            <Row icon={<ShieldCheck className="w-4 h-4" />} label="تم الاستلام" value={`${fmt(em.acknowledgedAt)}${ackBy ? ` — ${ackBy}` : ''}`} />
-          )}
-          {em.resolvedAt && (
-            <Row icon={<CheckCircle2 className="w-4 h-4" />} label="تم الحل" value={`${fmt(em.resolvedAt)}${resolvedBy ? ` — ${resolvedBy}` : ''}`} />
-          )}
+          {em.acknowledgedAt && <Row icon={<ShieldCheck className="w-4 h-4" />} label="تم الاستلام" value={`${fmt(em.acknowledgedAt)}${ackBy ? ` — ${ackBy}` : ''}`} />}
+          {em.resolvedAt && <Row icon={<CheckCircle2 className="w-4 h-4" />} label="تم الحل" value={`${fmt(em.resolvedAt)}${resolvedBy ? ` — ${resolvedBy}` : ''}`} />}
         </div>
       </div>
     </div>,

@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, useEffect, useReducer, useRef, useState, useMemo, type ReactNode } from 'react';
 import type {
   Profile, DailyReport, Emergency, ExtensionRequest,
   AgentLocation, VisitorFlowPath, TimeWindow, TimeWindowStatus,
@@ -11,19 +11,15 @@ import { fireAlert } from '../lib/notify';
 import { operationalDate, baghdadMinutes } from '../lib/opDate';
 
 interface OpsState {
-  // Auth
   currentUser: Profile | null;
   authLoading: boolean;
-
-  // Server time
   serverTime: Date;
   timeWindow: TimeWindow;
   timeWindowStatus: TimeWindowStatus;
-
-  // Data
   users: Profile[];
   todayReports: DailyReport[];
   historicalReports: DailyReport[];
+  historicalMeta: { total: number; page: number; pageSize: number };
   emergencies: Emergency[];
   extensions: ExtensionRequest[];
   agentLocations: AgentLocation[];
@@ -31,18 +27,14 @@ interface OpsState {
   borderCrossings: any[];
   fieldGroups: ReportFieldGroup[];
   fieldDefinitions: ReportFieldDefinition[];
-
-  // UI
   selectedOfficeId: string | null;
   activeMapLayers: Set<string>;
   officeFilter: string[];
-  visibleProvinces: Set<string>; // empty = show all
-  customKpis: string[]; // ordered list of KPI ids visible in dashboards
-  dateRange: { from: string; to: string } | null; // null = cumulative-today
+  visibleProvinces: Set<string>;
+  customKpis: string[];
+  dateRange: { from: string; to: string } | null;
   unreadNotifications: number;
   lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'system'; text: string; officeId?: string; createdAt: string }[];
-
-  // Per-action loading/error
   loadingFlags: Record<string, boolean>;
   errors: Record<string, string | null>;
 }
@@ -55,6 +47,7 @@ type Action =
   | { type: 'SET_LOADING'; key: string; loading: boolean }
   | { type: 'SET_ERROR'; key: string; error: string | null }
   | { type: 'SET_DATA'; users?: Profile[]; todayReports?: DailyReport[]; historicalReports?: DailyReport[]; emergencies?: Emergency[]; extensions?: ExtensionRequest[]; agentLocations?: AgentLocation[]; flowPaths?: VisitorFlowPath[]; borderCrossings?: any[]; timeWindow?: TimeWindow }
+  | { type: 'SET_HISTORICAL'; reports: DailyReport[]; total: number; page: number; pageSize: number }
   | { type: 'SET_FIELD_DEFS'; groups: ReportFieldGroup[]; definitions: ReportFieldDefinition[] }
   | { type: 'SET_SERVER_TIME'; time: Date }
   | { type: 'SET_TIME_WINDOW'; window: Partial<TimeWindow> }
@@ -69,6 +62,7 @@ type Action =
   | { type: 'ADD_EXTENSION'; extension: ExtensionRequest }
   | { type: 'UPDATE_EXTENSION'; id: string; patch: Partial<ExtensionRequest> }
   | { type: 'UPDATE_AGENT_LOCATION'; location: AgentLocation }
+  | { type: 'SET_AGENT_LOCATIONS'; locations: AgentLocation[] }
   | { type: 'SELECT_OFFICE'; id: string | null }
   | { type: 'TOGGLE_LAYER'; layer: string }
   | { type: 'SET_OFFICE_FILTER'; ids: string[] }
@@ -80,37 +74,22 @@ type Action =
   | { type: 'UPDATE_USER'; id: string; patch: Partial<Profile> }
   | { type: 'ADD_BORDER_CROSSING'; crossing: any }
   | { type: 'ADD_ACTIVITY'; activity: OpsState['lastActivity'][number] }
-  | { type: 'CLEAR_UNREAD' }
-  | { type: 'MARK_NOTIFICATION_READ'; id: string }
-  | { type: 'MARK_ALL_NOTIFICATIONS_READ' };
+  | { type: 'CLEAR_UNREAD' };
 
-// ─── User UI preferences persistence (per-browser session) ─────────
 const PREFS_KEY = 'ops:uiPrefs';
-interface UiPrefs {
-  activeMapLayers?: string[];
-  officeFilter?: string[];
-  visibleProvinces?: string[];
-  dateRange?: { from: string; to: string } | null;
-  selectedOfficeId?: string | null;
-}
-function loadPrefs(): UiPrefs {
-  try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(PREFS_KEY) : null;
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+function loadPrefs() {
+  try { const raw = localStorage.getItem(PREFS_KEY); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
 }
 function savePrefs(state: OpsState) {
   try {
-    if (typeof localStorage === 'undefined') return;
-    const prefs: UiPrefs = {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
       activeMapLayers: Array.from(state.activeMapLayers),
       officeFilter: state.officeFilter,
       visibleProvinces: Array.from(state.visibleProvinces),
       dateRange: state.dateRange,
       selectedOfficeId: state.selectedOfficeId,
-    };
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-  } catch { /* ignore */ }
+    }));
+  } catch {}
 }
 const _prefs = loadPrefs();
 
@@ -123,6 +102,7 @@ const initialState: OpsState = {
   users: [],
   todayReports: [],
   historicalReports: [],
+  historicalMeta: { total: 0, page: 1, pageSize: 50 },
   emergencies: [],
   extensions: [],
   agentLocations: [],
@@ -134,12 +114,7 @@ const initialState: OpsState = {
   activeMapLayers: new Set(_prefs.activeMapLayers ?? ['offices', 'borderCrossings', 'agentGPS', 'flowPaths']),
   officeFilter: _prefs.officeFilter ?? [],
   visibleProvinces: new Set(_prefs.visibleProvinces ?? []),
-  customKpis: (() => {
-    try {
-      const v = typeof localStorage !== 'undefined' ? localStorage.getItem('ops:customKpis') : null;
-      return v ? JSON.parse(v) : ['visitors', 'vehicles', 'processions', 'emergencies'];
-    } catch { return ['visitors', 'vehicles', 'processions', 'emergencies']; }
-  })(),
+  customKpis: (() => { try { const v = localStorage.getItem('ops:customKpis'); return v ? JSON.parse(v) : ['visitors', 'vehicles', 'processions', 'emergencies']; } catch { return ['visitors','vehicles','processions','emergencies']; } })(),
   dateRange: _prefs.dateRange ?? null,
   unreadNotifications: 0,
   lastActivity: [],
@@ -152,8 +127,6 @@ function computeTimeWindowStatus(serverTime: Date, window: TimeWindow): TimeWind
   if (window.isManuallyOpen) return 'open';
   const [openH, openM] = window.openTime.split(':').map(Number);
   const [closeH, closeM] = window.closeTime.split(':').map(Number);
-  // Use Baghdad wall-clock time so the window is identical for every user
-  // regardless of their device timezone.
   const nowMin = baghdadMinutes(serverTime);
   const openMin = openH * 60 + openM;
   const closeMin = closeH * 60 + closeM;
@@ -166,21 +139,14 @@ function computeTimeWindowStatus(serverTime: Date, window: TimeWindow): TimeWind
 
 function reducer(state: OpsState, action: Action): OpsState {
   switch (action.type) {
-    case 'AUTH_START':
-      return { ...state, authLoading: true, errors: { ...state.errors, auth: null } };
-    case 'AUTH_SUCCESS':
-      return { ...state, currentUser: action.user, authLoading: false, unreadNotifications: 0, errors: { ...state.errors, auth: null } };
-    case 'AUTH_FAIL':
-      return { ...state, authLoading: false };
-    case 'AUTH_LOGOUT':
-      return { ...initialState, authLoading: false };
-    case 'SET_LOADING':
-      return { ...state, loadingFlags: { ...state.loadingFlags, [action.key]: action.loading } };
-    case 'SET_ERROR':
-      return { ...state, errors: { ...state.errors, [action.key]: action.error } };
+    case 'AUTH_START': return { ...state, authLoading: true, errors: { ...state.errors, auth: null } };
+    case 'AUTH_SUCCESS': return { ...state, currentUser: action.user, authLoading: false, unreadNotifications: 0, errors: { ...state.errors, auth: null } };
+    case 'AUTH_FAIL': return { ...state, authLoading: false };
+    case 'AUTH_LOGOUT': return { ...initialState, authLoading: false };
+    case 'SET_LOADING': return { ...state, loadingFlags: { ...state.loadingFlags, [action.key]: action.loading } };
+    case 'SET_ERROR': return { ...state, errors: { ...state.errors, [action.key]: action.error } };
     case 'SET_DATA':
-      return {
-        ...state,
+      return { ...state,
         users: action.users ?? state.users,
         todayReports: action.todayReports ?? state.todayReports,
         historicalReports: action.historicalReports ?? state.historicalReports,
@@ -191,8 +157,9 @@ function reducer(state: OpsState, action: Action): OpsState {
         borderCrossings: action.borderCrossings ?? state.borderCrossings,
         timeWindow: action.timeWindow ?? state.timeWindow,
       };
-    case 'SET_FIELD_DEFS':
-      return { ...state, fieldGroups: action.groups, fieldDefinitions: action.definitions };
+    case 'SET_HISTORICAL':
+      return { ...state, historicalReports: action.reports, historicalMeta: { total: action.total, page: action.page, pageSize: action.pageSize } };
+    case 'SET_FIELD_DEFS': return { ...state, fieldGroups: action.groups, fieldDefinitions: action.definitions };
     case 'SET_SERVER_TIME': {
       const status = computeTimeWindowStatus(action.time, state.timeWindow);
       return { ...state, serverTime: action.time, timeWindowStatus: status };
@@ -212,106 +179,50 @@ function reducer(state: OpsState, action: Action): OpsState {
     }
     case 'ADD_REPORT': {
       const todayReports = state.todayReports.filter(r => r.officeId !== action.report.officeId);
-      const newAct = { id: `a-${Date.now()}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد مُرسل`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
+      const newAct = { id: `a-${Date.now()}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
       return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
-    case 'REMOVE_REPORT':
-      return { ...state, todayReports: state.todayReports.filter(r => r.id !== action.id) };
+    case 'REMOVE_REPORT': return { ...state, todayReports: state.todayReports.filter(r => r.id !== action.id) };
     case 'ADD_EMERGENCY': {
       const newAct = { id: `a-${Date.now()}`, type: 'emergency' as const, text: `حالة طارئة: ${action.emergency.emergencyType}`, officeId: action.emergency.officeId, createdAt: action.emergency.createdAt };
-      // Viewers must not receive critical/emergency notifications, so skip the
-      // unread badge bump and the activity-feed entry for them.
-      if (action.silent) {
-        return { ...state, emergencies: [action.emergency, ...state.emergencies] };
-      }
+      if (action.silent) return { ...state, emergencies: [action.emergency, ...state.emergencies] };
       return { ...state, emergencies: [action.emergency, ...state.emergencies], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
     case 'ACK_EMERGENCY':
-      return {
-        ...state,
-        emergencies: state.emergencies.map(e =>
-          e.id === action.id ? { ...e, status: 'acknowledged', acknowledgedById: action.userId, acknowledgedAt: new Date().toISOString() } : e
-        ),
-      };
+      return { ...state, emergencies: state.emergencies.map(e => e.id === action.id ? { ...e, status: 'acknowledged', acknowledgedById: action.userId, acknowledgedAt: new Date().toISOString() } : e) };
     case 'RESOLVE_EMERGENCY':
-      return {
-        ...state,
-        emergencies: state.emergencies.map(e =>
-          e.id === action.id ? { ...e, status: 'resolved', resolvedById: action.userId ?? e.resolvedById, resolvedAt: new Date().toISOString() } : e
-        ),
-      };
-    case 'REMOVE_EMERGENCY':
-      return { ...state, emergencies: state.emergencies.filter(e => e.id !== action.id) };
+      return { ...state, emergencies: state.emergencies.map(e => e.id === action.id ? { ...e, status: 'resolved', resolvedById: action.userId ?? e.resolvedById, resolvedAt: new Date().toISOString() } : e) };
+    case 'REMOVE_EMERGENCY': return { ...state, emergencies: state.emergencies.filter(e => e.id !== action.id) };
     case 'ADD_EXTENSION': {
       const newAct = { id: `a-${Date.now()}`, type: 'extension' as const, text: `طلب تمديد من ${action.extension.requestedByName}`, officeId: action.extension.officeId, createdAt: action.extension.requestTime };
       return { ...state, extensions: [action.extension, ...state.extensions], unreadNotifications: state.unreadNotifications + 1, lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
     }
     case 'UPDATE_EXTENSION':
-      return {
-        ...state,
-        extensions: state.extensions.map(e => e.id === action.id ? { ...e, ...action.patch } : e),
-      };
+      return { ...state, extensions: state.extensions.map(e => e.id === action.id ? { ...e, ...action.patch } : e) };
     case 'UPDATE_AGENT_LOCATION': {
       const exists = state.agentLocations.find(a => a.agentId === action.location.agentId);
+      if (exists) {
+        const dt = new Date(action.location.updatedAt).getTime() - new Date(exists.updatedAt).getTime();
+        const dist = Math.hypot(action.location.lat - exists.lat, action.location.lng - exists.lng);
+        if (dt < 2000 && dist < 0.00005) return state;
+      }
       const updated = exists ? state.agentLocations.map(a => a.agentId === action.location.agentId ? action.location : a) : [...state.agentLocations, action.location];
       return { ...state, agentLocations: updated };
     }
-    case 'SELECT_OFFICE': {
-      const next = { ...state, selectedOfficeId: action.id };
-      savePrefs(next);
-      return next;
-    }
-    case 'TOGGLE_LAYER': {
-      const layers = new Set(state.activeMapLayers);
-      if (layers.has(action.layer)) layers.delete(action.layer);
-      else layers.add(action.layer);
-      const next = { ...state, activeMapLayers: layers };
-      savePrefs(next);
-      return next;
-    }
-    case 'SET_OFFICE_FILTER': {
-      const next = { ...state, officeFilter: action.ids };
-      savePrefs(next);
-      return next;
-    }
-    case 'TOGGLE_PROVINCE': {
-      const provinces = new Set(state.visibleProvinces);
-      if (provinces.has(action.code)) provinces.delete(action.code);
-      else provinces.add(action.code);
-      const next = { ...state, visibleProvinces: provinces };
-      savePrefs(next);
-      return next;
-    }
-    case 'SET_PROVINCES': {
-      const next = { ...state, visibleProvinces: new Set(action.codes) };
-      savePrefs(next);
-      return next;
-    }
-    case 'SET_CUSTOM_KPIS': {
-      try { localStorage.setItem('ops:customKpis', JSON.stringify(action.ids)); } catch {}
-      return { ...state, customKpis: action.ids };
-    }
-    case 'SET_DATE_RANGE': {
-      const next = { ...state, dateRange: action.range };
-      savePrefs(next);
-      return next;
-    }
-    case 'ADD_USER':
-      return { ...state, users: [...state.users, action.user] };
-    case 'UPDATE_USER':
-      return { ...state, users: state.users.map(u => u.id === action.id ? { ...u, ...action.patch } : u) };
-    case 'ADD_BORDER_CROSSING':
-      return { ...state, borderCrossings: [...state.borderCrossings, action.crossing] };
-    case 'ADD_ACTIVITY':
-      return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50) };
-    case 'CLEAR_UNREAD':
-      return { ...state, unreadNotifications: 0 };
-    case 'MARK_NOTIFICATION_READ':
-      return { ...state, lastActivity: state.lastActivity.map(a => a.id === action.id ? { ...a, read: true } : a) };
-    case 'MARK_ALL_NOTIFICATIONS_READ':
-      return { ...state, lastActivity: state.lastActivity.map(a => ({ ...a, read: true })), unreadNotifications: 0 };
-    default:
-      return state;
+    case 'SET_AGENT_LOCATIONS': return { ...state, agentLocations: action.locations };
+    case 'SELECT_OFFICE': { const next = { ...state, selectedOfficeId: action.id }; savePrefs(next); return next; }
+    case 'TOGGLE_LAYER': { const layers = new Set(state.activeMapLayers); layers.has(action.layer) ? layers.delete(action.layer) : layers.add(action.layer); const next = { ...state, activeMapLayers: layers }; savePrefs(next); return next; }
+    case 'SET_OFFICE_FILTER': { const next = { ...state, officeFilter: action.ids }; savePrefs(next); return next; }
+    case 'TOGGLE_PROVINCE': { const provinces = new Set(state.visibleProvinces); provinces.has(action.code) ? provinces.delete(action.code) : provinces.add(action.code); const next = { ...state, visibleProvinces: provinces }; savePrefs(next); return next; }
+    case 'SET_PROVINCES': { const next = { ...state, visibleProvinces: new Set(action.codes) }; savePrefs(next); return next; }
+    case 'SET_CUSTOM_KPIS': { try { localStorage.setItem('ops:customKpis', JSON.stringify(action.ids)); } catch {} return { ...state, customKpis: action.ids }; }
+    case 'SET_DATE_RANGE': { const next = { ...state, dateRange: action.range }; savePrefs(next); return next; }
+    case 'ADD_USER': return { ...state, users: [...state.users, action.user] };
+    case 'UPDATE_USER': return { ...state, users: state.users.map(u => u.id === action.id ? { ...u, ...action.patch } : u) };
+    case 'ADD_BORDER_CROSSING': return { ...state, borderCrossings: [...state.borderCrossings, action.crossing] };
+    case 'ADD_ACTIVITY': return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50) };
+    case 'CLEAR_UNREAD': return { ...state, unreadNotifications: 0 };
+    default: return state;
   }
 }
 
@@ -321,314 +232,231 @@ const OpsContext = createContext<{
   actions: typeof actions;
 } | null>(null);
 
-// ─── Action API (side-effectful operations) ───────────────────────
 const actions = {
-  async signIn(email: string, password: string) {
-    const { user, error } = await api.signIn(email, password);
-    return { user, error };
-  },
-  async signUp(input: { fullNameAr: string; email: string; password: string; role: Profile['role']; officeId: string }) {
-    const { user, error } = await api.signUp(input);
-    return { user, error };
-  },
-  async signOut() {
-    await api.signOut();
-  },
-  async submitReport(report: DailyReport) {
-    await api.insertReport(report);
-  },
-  async submitEmergency(em: Emergency) {
-    await api.insertEmergency(em);
-  },
-  async ackEmergency(id: string, userId: string) {
-    await api.updateEmergency(id, { status: 'acknowledged', acknowledgedById: userId, acknowledgedAt: new Date().toISOString() });
-  },
-  async resolveEmergency(id: string, userId?: string) {
-    await api.updateEmergency(id, { status: 'resolved', resolvedById: userId, resolvedAt: new Date().toISOString() });
-  },
-  async submitExtension(ex: ExtensionRequest) {
-    await api.insertExtension(ex);
-  },
-  async updateExtension(id: string, patch: Partial<ExtensionRequest>) {
-    await api.updateExtension(id, patch);
-  },
-  async updateTimeWindow(patch: Partial<TimeWindow>) {
-    const updated = await api.updateTimeWindow(patch);
-    return updated;
-  },
-  async updateAgentLocation(loc: AgentLocation) {
-    await api.upsertAgentLocation(loc);
-  },
-  async updateUser(id: string, patch: Partial<Profile>) {
-    return api.updateUser(id, patch);
-  },
-  async addBorderCrossing(crossing: any) {
-    return api.insertBorderCrossing(crossing);
-  },
-  async seedDemoData() {
-    return api.seedDemoData();
+  async signIn(email: string, password: string) { const { user, error } = await api.signIn(email, password); return { user, error }; },
+  async signUp(input: { fullNameAr: string; email: string; password: string; role: Profile['role']; officeId: string }) { const { user, error } = await api.signUp(input); return { user, error }; },
+  async signOut() { await api.signOut(); },
+  async submitReport(report: DailyReport) { await api.insertReport(report); },
+  async submitEmergency(em: Emergency) { await api.insertEmergency(em); },
+  async ackEmergency(id: string, userId: string) { await api.updateEmergency(id, { status: 'acknowledged', acknowledgedById: userId, acknowledgedAt: new Date().toISOString() }); },
+  async resolveEmergency(id: string, userId?: string) { await api.updateEmergency(id, { status: 'resolved', resolvedById: userId, resolvedAt: new Date().toISOString() }); },
+  async submitExtension(ex: ExtensionRequest) { await api.insertExtension(ex); },
+  async updateExtension(id: string, patch: Partial<ExtensionRequest>) { await api.updateExtension(id, patch); },
+  async updateTimeWindow(patch: Partial<TimeWindow>) { return api.updateTimeWindow(patch); },
+  async updateAgentLocation(loc: AgentLocation) { await api.upsertAgentLocation(loc); },
+  async updateUser(id: string, patch: Partial<Profile>) { return api.updateUser(id, patch); },
+  async addBorderCrossing(crossing: any) { return api.insertBorderCrossing(crossing); },
+  async seedDemoData() { return api.seedDemoData(); },
+  async loadHistoricalPage(page: number, pageSize = 50, filters?: any, dispatch?: React.Dispatch<Action>) {
+    if (dispatch) dispatch({ type: 'SET_LOADING', key: 'historical', loading: true });
+    try {
+      const res = await api.getHistoricalReports(page, pageSize, filters);
+      dispatch?.({ type: 'SET_HISTORICAL', reports: res.data, total: res.total, page: res.page, pageSize: res.pageSize });
+      return res;
+    } finally { dispatch?.({ type: 'SET_LOADING', key: 'historical', loading: false }); }
   },
   async reloadFieldDefs(dispatch?: React.Dispatch<Action>) {
     const [groups, definitions] = await Promise.all([api.getFieldGroups(), api.getFieldDefinitions()]);
     dispatch?.({ type: 'SET_FIELD_DEFS', groups, definitions });
     return { groups, definitions };
   },
-  async upsertFieldGroup(g: Partial<ReportFieldGroup> & { titleAr: string }) {
-    return api.upsertFieldGroup(g);
-  },
-  async deleteFieldGroup(id: string) {
-    return api.deleteFieldGroup(id);
-  },
-  async upsertFieldDefinition(f: Partial<ReportFieldDefinition> & { fieldKey: string; labelAr: string; groupId: string }) {
-    return api.upsertFieldDefinition(f);
-  },
-  async deleteFieldDefinition(id: string) {
-    return api.deleteFieldDefinition(id);
-  },
+  async upsertFieldGroup(g: Partial<ReportFieldGroup> & { titleAr: string }) { return api.upsertFieldGroup(g); },
+  async deleteFieldGroup(id: string) { return api.deleteFieldGroup(id); },
+  async upsertFieldDefinition(f: Partial<ReportFieldDefinition> & { fieldKey: string; labelAr: string; groupId: string }) { return api.upsertFieldDefinition(f); },
+  async deleteFieldDefinition(id: string) { return api.deleteFieldDefinition(id); },
 };
+
+// Offline queue
+const OFFLINE_Q_KEY = 'ops:offlineQueue';
+function pushOffline(kind: string, payload: any) {
+  try {
+    const q = JSON.parse(localStorage.getItem(OFFLINE_Q_KEY) || '[]');
+    q.push({ kind, payload, ts: Date.now() });
+    localStorage.setItem(OFFLINE_Q_KEY, JSON.stringify(q.slice(-50)));
+  } catch {}
+}
+async function flushOffline() {
+  try {
+    const raw = localStorage.getItem(OFFLINE_Q_KEY);
+    if (!raw) return;
+    const q = JSON.parse(raw);
+    if (!q.length) return;
+    const remaining = [];
+    for (const item of q) {
+      try {
+        if (item.kind === 'report') await api.insertReport(item.payload);
+        else if (item.kind === 'emergency') await api.insertEmergency(item.payload);
+        else if (item.kind === 'extension') await api.insertExtension(item.payload);
+      } catch { remaining.push(item); }
+    }
+    localStorage.setItem(OFFLINE_Q_KEY, JSON.stringify(remaining));
+  } catch {}
+}
 
 export function OpsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [ready, setReady] = useState(false);
-
-  // Keep a live ref to the current user so the realtime subscription (which is
-  // set up once) can read the latest role/id without re-subscribing.
   const currentUserRef = useRef(state.currentUser);
   useEffect(() => { currentUserRef.current = state.currentUser; }, [state.currentUser]);
-
-  // Keep a live ref to the full state so realtime callbacks can resolve names
-  // (e.g. who resolved an emergency) without re-subscribing.
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
 
-  // Reusable loader for all dashboard data (used on first load and whenever
-  // the auth session becomes available/refreshes).
   const loadAllData = useCallback(async () => {
-    const [users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow, serverTime] = await Promise.all([
-      api.getUsers(),
-      api.getTodayReports(),
-      api.getHistoricalReports(),
-      api.getEmergencies(),
-      api.getExtensions(),
-      api.getAgentLocations(),
-      api.getFlowPaths(),
-      api.getBorderCrossings(),
-      api.getTimeWindow(),
-      api.getServerTime(),
+    const [users, todayReports, histRes, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow, serverTime] = await Promise.all([
+      api.getUsers(), api.getTodayReports(), api.getHistoricalReports(1, 50),
+      api.getEmergencies(), api.getExtensions(), api.getAgentLocations(),
+      api.getFlowPaths(), api.getBorderCrossings(), api.getTimeWindow(), api.getServerTime(),
     ]);
-    dispatch({ type: 'SET_DATA', users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow });
+    dispatch({ type: 'SET_DATA', users, todayReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow });
+    dispatch({ type: 'SET_HISTORICAL', reports: histRes.data, total: histRes.total, page: histRes.page, pageSize: histRes.pageSize });
     dispatch({ type: 'SET_SERVER_TIME', time: serverTime });
-    // Load dynamic report-field definitions; fail silently so a permission
-    // issue doesn't block the rest of the dashboard.
     try {
       const [fg, fd] = await Promise.all([api.getFieldGroups(), api.getFieldDefinitions()]);
       dispatch({ type: 'SET_FIELD_DEFS', groups: fg, definitions: fd });
-    } catch (e) { console.warn('[opsStore] field defs load failed', e); }
+    } catch {}
   }, []);
 
-  // Initial load
   useEffect(() => {
     (async () => {
       dispatch({ type: 'AUTH_START' });
       try {
         const user = await api.getSession();
         await loadAllData();
-        if (user) dispatch({ type: 'AUTH_SUCCESS', user });
-        else dispatch({ type: 'AUTH_FAIL' });
-      } catch (e) {
-        console.error('Failed to load initial data', e);
-        dispatch({ type: 'AUTH_FAIL' });
-      } finally {
-        setReady(true);
-      }
+        if (user) dispatch({ type: 'AUTH_SUCCESS', user }); else dispatch({ type: 'AUTH_FAIL' });
+        flushOffline();
+      } catch { dispatch({ type: 'AUTH_FAIL' }); } finally { setReady(true); }
     })();
   }, [loadAllData]);
 
-  // Auto-reload once the auth session is truly ready. On a cold open the very
-  // first queries can race ahead of the restored session token, so RLS returns
-  // empty rows and the dashboard shows 0 until a manual refresh. Listening for
-  // the session here re-fetches automatically. Supabase calls are deferred with
-  // setTimeout to avoid the known deadlock inside the auth callback.
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session?.user) return;
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        setTimeout(() => {
-          (async () => {
-            try {
-              const user = await api.getSession();
-              await loadAllData();
-              if (user) dispatch({ type: 'AUTH_SUCCESS', user });
-            } catch (e) { console.warn('[opsStore] auth-change reload failed', e); }
-          })();
+      if (['SIGNED_IN','TOKEN_REFRESHED','INITIAL_SESSION'].includes(event)) {
+        setTimeout(async () => {
+          try { const user = await api.getSession(); await loadAllData(); if (user) dispatch({ type: 'AUTH_SUCCESS', user }); } catch {}
         }, 0);
       }
     });
     return () => sub.subscription.unsubscribe();
   }, [loadAllData]);
 
-  // Server time sync every 60s
+  // server time
   useEffect(() => {
-    const tick = async () => {
-      const t = await api.getServerTime();
-      dispatch({ type: 'SET_SERVER_TIME', time: t });
-    };
-    const interval = setInterval(tick, 60_000);
-    return () => clearInterval(interval);
+    const tick = async () => { const t = await api.getServerTime(); dispatch({ type: 'SET_SERVER_TIME', time: t }); };
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
   }, []);
 
-  // H4: refresh timeWindow.date at midnight so reports submitted after 00:00
-  // don't get tagged with yesterday's date. Runs every 60s and compares the
-  // current YYYY-MM-DD against the one in state; updates only if changed.
+  // midnight roll
   useEffect(() => {
-    const rollIfNewDay = async () => {
+    const roll = async () => {
       const today = operationalDate();
       if (today !== state.timeWindow.windowDate) {
         const tw = await api.getTimeWindow();
         dispatch({ type: 'SET_TIME_WINDOW', window: { ...tw, windowDate: today } });
       }
     };
-    const id = setInterval(rollIfNewDay, 60_000);
+    const id = setInterval(roll, 60_000);
     return () => clearInterval(id);
   }, [state.timeWindow.windowDate]);
 
-  // Live subscriptions (Supabase realtime).
-  //
-  // CRITICAL: postgres_changes evaluates RLS against the JWT that was active
-  // when the channel SUBSCRIBED. If we open the channel before the auth session
-  // is restored, it binds as the anon role → RLS hides every row → NO realtime
-  // events reach anyone (managers/supervisors never see new emergencies, time
-  // window changes don't propagate, etc.). So we (re)create the channel keyed
-  // on the logged-in user id and push the fresh access token into the realtime
-  // socket via setAuth BEFORE subscribing.
+  // online flush
+  useEffect(() => {
+    const h = () => flushOffline();
+    window.addEventListener('online', h);
+    return () => window.removeEventListener('online', h);
+  }, []);
+
+  // granular realtime
   const userId = state.currentUser?.id;
   useEffect(() => {
     if (!userId) return;
     let unsub = () => {};
     let cancelled = false;
-
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
-        // Bind the realtime socket to the authenticated user so RLS lets the
-        // right rows through to this subscriber.
-        if (token) {
-          try { await (supabase.realtime as any).setAuth(token); } catch { /* noop */ }
-        }
-      } catch { /* noop */ }
+        if (token) { try { await (supabase.realtime as any).setAuth(token); } catch {} }
+      } catch {}
       if (cancelled) return;
-
-      unsub = api.subscribe((event) => {
-      // Viewers must never hear any sound or receive any alert. Route every
-      // alert through this helper so a single role check silences them entirely.
       const alert = (kind: Parameters<typeof fireAlert>[0], title: string, body: string) => {
         if (currentUserRef.current?.role === 'viewer') return;
         fireAlert(kind, title, body);
       };
-      // Resolve a user id → Arabic name from the loaded users list.
-      const nameOf = (id?: string) => {
-        if (!id) return '';
-        return stateRef.current.users.find(u => u.id === id)?.fullNameAr ?? '';
-      };
-      if (event.table === '*') {
-        // Full refresh signal
-        (async () => {
-          const [users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow] = await Promise.all([
-            api.getUsers(), api.getTodayReports(), api.getHistoricalReports(),
-            api.getEmergencies(), api.getExtensions(), api.getAgentLocations(),
-            api.getFlowPaths(), api.getBorderCrossings(), api.getTimeWindow(),
-          ]);
-          dispatch({ type: 'SET_DATA', users, todayReports, historicalReports, emergencies, extensions, agentLocations, flowPaths, borderCrossings, timeWindow });
-        })();
-        return;
-      }
-      if (event.table === 'daily_reports') {
-        if (event.type === 'DELETE' && event.payload?.old?.id) {
-          dispatch({ type: 'REMOVE_REPORT', id: event.payload.old.id });
-        } else if (event.payload?.new) {
-          dispatch({ type: 'ADD_REPORT', report: event.payload.new });
-          const r = event.payload.new;
-          // The author of the report shouldn't be alerted about their own submit.
-          if (currentUserRef.current?.id !== r.submittedBy) {
-            alert('report', 'تقرير جديد', `${r.officeId} — تم استلام تقرير جديد`);
+      const nameOf = (id?: string) => !id ? '' : stateRef.current.users.find(u => u.id === id)?.fullNameAr ?? '';
+      unsub = api.subscribe({
+        onReportChange: ev => {
+          if (ev.type === 'DELETE' && ev.old?.id) dispatch({ type: 'REMOVE_REPORT', id: ev.old.id });
+          else if (ev.new) {
+            dispatch({ type: 'ADD_REPORT', report: ev.new });
+            if (currentUserRef.current?.id !== ev.new.submittedBy) alert('report', 'تقرير جديد', `${ev.new.officeId} — تم استلام تقرير`);
           }
-        }
-      } else if (event.table === 'emergencies') {
-        if (event.type === 'DELETE' && event.payload?.old?.id) {
-          dispatch({ type: 'REMOVE_EMERGENCY', id: event.payload.old.id });
-        } else if (event.type === 'INSERT' && event.payload?.new) {
-          const e = event.payload.new;
-          const me = currentUserRef.current;
-          const isViewer = me?.role === 'viewer';
-          // The person who raised the emergency gets a confirmation toast from
-          // the form itself — don't blast them with the incoming-emergency siren
-          // for their own action. Viewers never get critical alerts either.
-          const isOwn = !!me && e.reportedById === me.id;
-          dispatch({ type: 'ADD_EMERGENCY', emergency: e, silent: isViewer || isOwn });
-          if (!isViewer && !isOwn) {
-            alert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
-          }
-        }
-        else if (event.type === 'UPDATE' && event.payload?.new) {
-          const e = event.payload.new;
-          if (e.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: e.id, userId: e.resolvedById });
-          else if (e.status === 'acknowledged') dispatch({ type: 'ACK_EMERGENCY', id: e.id, userId: e.acknowledgedById || '' });
-          // Notify the person who created the emergency when it's acknowledged/resolved,
-          // naming who handled it.
-          const me = currentUserRef.current;
-          if (me && e.reportedById === me.id) {
-            if (e.status === 'acknowledged' && me.id !== e.acknowledgedById) {
-              const who = nameOf(e.acknowledgedById);
-              alert('extension', '✅ تم استلام حالتك الطارئة', `${e.emergencyType} — تم تأكيد الاستلام${who ? ` من ${who}` : ' من القيادة'}`);
-            } else if (e.status === 'resolved' && me.id !== e.resolvedById) {
-              const who = nameOf(e.resolvedById);
-              alert('report', '✔ تم حل حالتك الطارئة', `${e.emergencyType} — تم حل الحالة${who ? ` بواسطة ${who}` : ''}`);
+        },
+        onEmergencyChange: ev => {
+          const e = ev.new; if (!e) return;
+          if (ev.type === 'INSERT') {
+            const me = currentUserRef.current;
+            const silent = me?.role === 'viewer' || e.reportedById === me?.id;
+            dispatch({ type: 'ADD_EMERGENCY', emergency: e, silent });
+            if (!silent) alert('emergency', '🚨 حالة طارئة', `${e.emergencyType} — ${e.reportedByName || e.officeId}`);
+          } else if (ev.type === 'UPDATE') {
+            if (e.status === 'resolved') dispatch({ type: 'RESOLVE_EMERGENCY', id: e.id, userId: e.resolvedById });
+            else if (e.status === 'acknowledged') dispatch({ type: 'ACK_EMERGENCY', id: e.id, userId: e.acknowledgedById || '' });
+            const me = currentUserRef.current;
+            if (me && e.reportedById === me.id) {
+              if (e.status === 'acknowledged') alert('extension', '✅ تم استلام حالتك', `${e.emergencyType} — ${nameOf(e.acknowledgedById) || 'القيادة'}`);
+              else if (e.status === 'resolved') alert('report', '✔ تم حل حالتك', `${e.emergencyType}`);
             }
           }
-        }
-      } else if (event.table === 'extension_requests') {
-        if (event.type === 'INSERT' && event.payload?.new) {
-          dispatch({ type: 'ADD_EXTENSION', extension: event.payload.new });
-          const x = event.payload.new;
-          if (currentUserRef.current?.id !== x.requestedById) {
-            alert('extension', 'طلب تمديد جديد', `${x.requestedByName || x.officeId} يطلب تمديد الوقت`);
+        },
+        onExtensionChange: ev => {
+          const x = ev.new; if (!x) return;
+          if (ev.type === 'INSERT') {
+            dispatch({ type: 'ADD_EXTENSION', extension: x });
+            if (currentUserRef.current?.id !== x.requestedById) alert('extension', 'طلب تمديد', `${x.requestedByName || x.officeId}`);
+          } else if (ev.type === 'UPDATE') {
+            dispatch({ type: 'UPDATE_EXTENSION', id: x.id, patch: x });
+            const me = currentUserRef.current;
+            if (me && x.requestedById === me.id) {
+              if (x.status === 'approved') alert('extension', '✅ تمت الموافقة', 'تم فتح نافذة إضافية');
+              else if (x.status === 'rejected') alert('system', '❌ تم الرفض', 'لم تتم الموافقة');
+            }
           }
+        },
+        onTimeWindowChange: tw => dispatch({ type: 'SET_TIME_WINDOW', window: tw }),
+        onAgentLocationChange: loc => dispatch({ type: 'UPDATE_AGENT_LOCATION', location: loc }),
+        onBorderCrossingChange: bc => dispatch({ type: 'ADD_BORDER_CROSSING', crossing: bc }),
+        onProfileChange: p => {
+          const upd = p.new;
+          if (upd?.id) dispatch({ type: 'UPDATE_USER', id: upd.id, patch: {
+            fullNameAr: upd.full_name_ar, officeId: upd.office_id ?? '',
+            permittedOfficeIds: upd.permitted_office_ids ?? [],
+            specialPermissions: upd.special_permissions ?? undefined,
+            isActive: upd.is_active,
+          }});
         }
-        else if (event.type === 'UPDATE' && event.payload?.new) {
-          const x = event.payload.new;
-          dispatch({ type: 'UPDATE_EXTENSION', id: x.id, patch: x });
-          // Tell the requester when their extension is approved/rejected.
-          const me = currentUserRef.current;
-          if (me && x.requestedById === me.id) {
-            if (x.status === 'approved') alert('extension', '✅ تمت الموافقة على التمديد', 'تم فتح نافذة إضافية للإرسال');
-            else if (x.status === 'rejected') alert('system', '❌ تم رفض طلب التمديد', 'لم تتم الموافقة على طلبك');
-          }
-        }
-      } else if (event.table === 'time_windows' && event.payload?.new) {
-        // Row is already mapped to camelCase by api.subscribe → use it directly.
-        dispatch({ type: 'SET_TIME_WINDOW', window: event.payload.new as TimeWindow });
-      } else if (event.table === 'agent_locations' && event.payload?.new) {
-        dispatch({ type: 'UPDATE_AGENT_LOCATION', location: event.payload.new });
-      } else if (event.table === 'border_crossings' && event.type === 'INSERT' && event.payload?.new) {
-        dispatch({ type: 'ADD_BORDER_CROSSING', crossing: event.payload.new });
-      } else if (event.table === 'profiles' && event.type === 'UPDATE' && event.payload?.new) {
-        // profiles is NOT mapped by api.subscribe (needs role row) → map the
-        // snake_case fields we care about here so UPDATE_USER gets camelCase.
-        const p = event.payload.new;
-        dispatch({ type: 'UPDATE_USER', id: p.id, patch: {
-          fullNameAr: p.full_name_ar,
-          officeId: p.office_id ?? '',
-          permittedOfficeIds: p.permitted_office_ids ?? [],
-          specialPermissions: p.special_permissions ?? undefined,
-          isActive: p.is_active,
-        } as Partial<Profile> });
-      }
       });
     })();
-
     return () => { cancelled = true; unsub(); };
   }, [userId]);
+
+  const contextValue = useMemo(() => ({ state, dispatch, actions: {
+    ...actions,
+    // wrap submit with offline queue
+    submitReport: async (report: DailyReport) => {
+      if (!navigator.onLine) { pushOffline('report', report); throw new Error('غير متصل — تم حفظ التقرير محلياً وسيُرسل تلقائياً'); }
+      return actions.submitReport(report);
+    },
+    submitEmergency: async (em: Emergency) => {
+      if (!navigator.onLine) { pushOffline('emergency', em); throw new Error('غير متصل — تم حفظ البلاغ محلياً'); }
+      return actions.submitEmergency(em);
+    },
+    submitExtension: async (ex: ExtensionRequest) => {
+      if (!navigator.onLine) { pushOffline('extension', ex); throw new Error('غير متصل — تم حفظ الطلب محلياً'); }
+      return actions.submitExtension(ex);
+    },
+  } }), [state]);
 
   if (!ready) {
     return (
@@ -640,14 +468,8 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       </div>
     );
   }
-
-  // C1: show clear env-var error instead of an infinite spinner when the
-  // project is missing Supabase config.
-  if (!isSupabaseConfigured) {
-    return <EnvErrorPage />;
-  }
-
-  return <OpsContext.Provider value={{ state, dispatch, actions }}>{children}</OpsContext.Provider>;
+  if (!isSupabaseConfigured) return <EnvErrorPage />;
+  return <OpsContext.Provider value={contextValue}>{children}</OpsContext.Provider>;
 }
 
 export function useOps() {
@@ -656,7 +478,36 @@ export function useOps() {
   return ctx;
 }
 
+// ─── Selectors — لتقليل re-renders ───────────────────────────
 export function useAuth() {
   const { state } = useOps();
-  return { user: state.currentUser, authLoading: state.authLoading };
+  return useMemo(() => ({ user: state.currentUser, authLoading: state.authLoading }), [state.currentUser, state.authLoading]);
+}
+export function useReports() {
+  const { state } = useOps();
+  return useMemo(() => ({ today: state.todayReports, historical: state.historicalReports, meta: state.historicalMeta }), [state.todayReports, state.historicalReports, state.historicalMeta]);
+}
+export function useEmergencies() {
+  const { state } = useOps();
+  return useMemo(() => state.emergencies, [state.emergencies]);
+}
+export function useMapData() {
+  const { state } = useOps();
+  return useMemo(() => ({
+    agentLocations: state.agentLocations,
+    borderCrossings: state.borderCrossings,
+    flowPaths: state.flowPaths,
+    activeMapLayers: state.activeMapLayers,
+    fieldDefinitions: state.fieldDefinitions,
+  }), [state.agentLocations, state.borderCrossings, state.flowPaths, state.activeMapLayers, state.fieldDefinitions]);
+}
+export function useUI() {
+  const { state, dispatch } = useOps();
+  return useMemo(() => ({
+    officeFilter: state.officeFilter,
+    selectedOfficeId: state.selectedOfficeId,
+    customKpis: state.customKpis,
+    dateRange: state.dateRange,
+    dispatch
+  }), [state.officeFilter, state.selectedOfficeId, state.customKpis, state.dateRange, dispatch]);
 }
