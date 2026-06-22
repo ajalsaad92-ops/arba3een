@@ -131,7 +131,7 @@ const initialState: OpsState = {
   fieldGroups: [],
   fieldDefinitions: [],
   selectedOfficeId: _prefs.selectedOfficeId ?? null,
-  activeMapLayers: new Set(_prefs.activeMapLayers ?? ['offices', 'borderCrossings', 'agentGPS']),
+  activeMapLayers: new Set(_prefs.activeMapLayers ?? ['offices', 'borderCrossings', 'agentGPS', 'flowPaths']),
   officeFilter: _prefs.officeFilter ?? [],
   visibleProvinces: new Set(_prefs.visibleProvinces ?? []),
   customKpis: (() => {

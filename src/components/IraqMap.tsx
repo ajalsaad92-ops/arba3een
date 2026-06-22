@@ -208,6 +208,35 @@ export default function IraqMap({ onSelectOffice, selectedOfficeId, height = '10
     [state.todayReports]
   );
 
+  // ── Visitor flow paths ──────────────────────────────────────────────
+  // Use real DB paths when present; otherwise derive them from today's
+  // reports: every office that received visitors becomes a route flowing
+  // toward Karbala (the Arba'een destination), with density classified by
+  // visitor count so heavier flows render thicker / hotter.
+  const flowPaths = useMemo(() => {
+    if (state.flowPaths.length > 0) return state.flowPaths;
+    const dest = officeById('KRB');
+    if (!dest) return [];
+    const reports = state.todayReports.filter(r => r.officeId !== 'KRB' && (r.visitorsIn ?? 0) > 0);
+    const max = Math.max(1, ...reports.map(r => r.visitorsIn ?? 0));
+    return reports.map(r => {
+      const o = officeById(r.officeId);
+      if (!o) return null;
+      const ratio = (r.visitorsIn ?? 0) / max;
+      const density: 'high' | 'medium' | 'normal' = ratio >= 0.66 ? 'high' : ratio >= 0.33 ? 'medium' : 'normal';
+      return {
+        id: `flow-${r.officeId}`,
+        officeId: r.officeId,
+        fromLat: o.lat, fromLng: o.lng,
+        toLat: dest.lat, toLng: dest.lng,
+        visitorCount: r.visitorsIn ?? 0,
+        density,
+        pathNameAr: `${o.governorateAr} ← كربلاء`,
+      };
+    }).filter(Boolean) as typeof state.flowPaths;
+  }, [state.flowPaths, state.todayReports]);
+
+
   const getOfficeIcon = (office: Office) => {
     const key = `${office.id}-${submittedOfficeIds.has(office.id) ? 1 : 0}-${selectedOfficeId === office.id ? 1 : 0}`;
     if (!officeIconCache.current.has(key)) {
@@ -388,10 +417,11 @@ export default function IraqMap({ onSelectOffice, selectedOfficeId, height = '10
           </Marker>
         ))}
 
-        {/* Visitor flow paths */}
-        {layers.has('flowPaths') && state.flowPaths.map(fp => {
+        {/* Visitor flow paths (colour + thickness scale with visitor count) */}
+        {layers.has('flowPaths') && flowPaths.map(fp => {
           const color = fp.density === 'high' ? '#EF4444' : fp.density === 'medium' ? '#F97316' : '#10B981';
           const weight = fp.density === 'high' ? 5 : fp.density === 'medium' ? 3.5 : 2;
+          const label = fp.density === 'high' ? 'كثافة عالية' : fp.density === 'medium' ? 'كثافة متوسطة' : 'كثافة عادية';
           return (
             <Polyline
               key={fp.id}
@@ -399,12 +429,21 @@ export default function IraqMap({ onSelectOffice, selectedOfficeId, height = '10
               pathOptions={{
                 color,
                 weight,
-                opacity: 0.7,
+                opacity: 0.75,
                 className: fp.density === 'high' ? 'animate-flow' : '',
               }}
-            />
+            >
+              <Popup>
+                <div className="text-right font-tajawal" dir="rtl" style={{ minWidth: 170 }}>
+                  <div className="font-bold text-cyan-600 text-xs mb-1">{fp.pathNameAr}</div>
+                  <div className="flex justify-between text-xs"><span>الزوار:</span><span className="font-bold text-emerald-600">{fp.visitorCount.toLocaleString()}</span></div>
+                  <div className="text-[10px] text-slate-500 mt-1">{label}</div>
+                </div>
+              </Popup>
+            </Polyline>
           );
         })}
+
 
         {/* Events */}
         {layers.has('events') && state.todayReports.flatMap(r => r.eventsCoordinates.map((c, i) => (
