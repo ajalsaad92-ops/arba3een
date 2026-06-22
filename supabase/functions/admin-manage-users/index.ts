@@ -195,6 +195,17 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    if (body.action === "updateRole") {
+      const { userId, role } = body as any;
+      if (!userId || !role) return json({ error: "userId and role are required" }, 400);
+      const validRoles = ["director", "supervisor", "manager", "agent", "viewer"];
+      if (!validRoles.includes(role)) return json({ error: "Invalid role" }, 400);
+      await admin.from("user_roles").delete().eq("user_id", userId);
+      const { error: insertErr } = await admin.from("user_roles").insert({ user_id: userId, role });
+      if (insertErr) return json({ error: insertErr.message }, 400);
+      return json({ success: true });
+    }
+
     return json({ error: "Unknown action" }, 400);
   } catch (e) {
     return json({ error: String(e) }, 500);

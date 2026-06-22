@@ -114,7 +114,27 @@ export default function AdminPage() {
         dispatch({ type: 'ADD_USER', user: (data as any).user });
         toast.success(`تم إنشاء المستخدم — ${(data as any).user.email}`);
       } else if (editing) {
-        await actions.updateUser(editing.id, draft);
+        // Build a clean profile patch (exclude password/confirmPassword/role/id/createdAt)
+        const profilePatch: Partial<Profile> = {
+          fullNameAr: draft.fullNameAr?.trim(),
+          officeId: draft.officeId,
+          permittedOfficeIds: draft.permittedOfficeIds,
+          specialPermissions: draft.specialPermissions,
+          isActive: draft.isActive,
+        };
+        await actions.updateUser(editing.id, profilePatch);
+
+        // Update role if it changed
+        if (draft.role && draft.role !== editing.role) {
+          const { data: roleData, error: roleErr } = await supabase.functions.invoke('admin-manage-users', {
+            body: { action: 'updateRole', userId: editing.id, role: draft.role },
+          });
+          if (roleErr || (roleData as any)?.error) { toast.error((roleData as any)?.error || roleErr?.message || 'تعذّر تغيير الدور'); return; }
+        }
+
+        // Dispatch local state update so the UI reflects changes immediately
+        dispatch({ type: 'UPDATE_USER', id: editing.id, patch: { ...profilePatch, role: draft.role ?? editing.role } });
+
         const cleanUser = username.toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '');
         if (cleanUser) {
           const { data, error } = await supabase.functions.invoke('admin-manage-users', {
@@ -127,9 +147,9 @@ export default function AdminPage() {
             body: { action: 'resetPassword', userId: editing.id, password: draft.password },
           });
           if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || 'تعذّر تغيير كلمة المرور'); return; }
-          toast.success('تم تحديث المستخدم وكلمة المرور');
+          toast.success('تم حفظ التعديلات بنجاح (مع كلمة المرور)');
         } else {
-          toast.success('تم تحديث المستخدم');
+          toast.success('تم حفظ التعديلات بنجاح');
         }
       }
       setCreating(false); setEditing(null); setDraft({}); setUsername('');
@@ -137,7 +157,9 @@ export default function AdminPage() {
   };
 
   const toggleActive = async (u: Profile) => {
-    await actions.updateUser(u.id, { isActive: !u.isActive });
+    const newActive = !u.isActive;
+    await actions.updateUser(u.id, { isActive: newActive });
+    dispatch({ type: 'UPDATE_USER', id: u.id, patch: { isActive: newActive } });
     toast.success(u.isActive ? 'تم تعطيل المستخدم' : 'تم تفعيل المستخدم');
   };
 
