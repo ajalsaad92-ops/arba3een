@@ -99,9 +99,12 @@ Deno.serve(async (req) => {
     const route = data?.routes?.[0];
     const encoded = route?.polyline?.encodedPolyline;
     if (!encoded) {
-      return new Response(JSON.stringify({ error: "No route found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // No drivable route (e.g. points over water/borders). Degrade gracefully
+      // with a straight-line through the waypoints so the UI keeps working.
+      return new Response(
+        JSON.stringify({ polyline: waypoints, distanceMeters: null, duration: null, fallback: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     return new Response(
