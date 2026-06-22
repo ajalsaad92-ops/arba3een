@@ -96,7 +96,7 @@ function createOfficeIcon(submitted: boolean, selected: boolean, kurdistan: bool
   return L.divIcon({
     className: 'office-marker',
     html: `
-      <div style="position:relative; width:36px; height:36px; transform:translate(-50%,-50%);">
+      <div style="position:relative; width:36px; height:36px;">
         ${submitted ? `<div style="position:absolute; inset:0; border-radius:50%; border:2px solid ${ringColor}; animation:ripple 1.8s ease-out infinite;"></div>` : ''}
         <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
           <svg width="28" height="28" viewBox="0 0 28 28" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
@@ -115,7 +115,7 @@ function createBorderIcon(): L.DivIcon {
   return L.divIcon({
     className: 'border-marker',
     html: `
-      <div style="width:24px; height:24px; transform:translate(-50%,-50%); position:relative;">
+      <div style="width:24px; height:24px; position:relative;">
         <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
           <svg width="22" height="22" viewBox="0 0 22 22">
             <polygon points="11,1 21,11 11,21 1,11" fill="#10B981" stroke="#0B0F19" stroke-width="1.5" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));"/>
@@ -133,7 +133,7 @@ function createAgentIcon(): L.DivIcon {
   return L.divIcon({
     className: 'agent-marker',
     html: `
-      <div style="position:relative; width:28px; height:28px; transform:translate(-50%,-50%);">
+      <div style="position:relative; width:28px; height:28px;">
         <div style="position:absolute; inset:0; border-radius:50%; background:rgba(59,130,246,0.3); animation:ripple 1.5s ease-out infinite;"></div>
         <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:10px; height:10px; border-radius:50%; background:#3B82F6; border:2px solid #fff; box-shadow:0 0 6px rgba(59,130,246,0.8);"></div>
       </div>
@@ -146,7 +146,7 @@ function createAgentIcon(): L.DivIcon {
 function createEventIcon(): L.DivIcon {
   return L.divIcon({
     className: 'event-marker',
-    html: `<div style="width:14px; height:14px; transform:translate(-50%,-50%); border-radius:50%; background:#3B82F6; border:2px solid #fff; box-shadow:0 0 8px rgba(59,130,246,0.5);"></div>`,
+    html: `<div style="width:14px; height:14px; border-radius:50%; background:#3B82F6; border:2px solid #fff; box-shadow:0 0 8px rgba(59,130,246,0.5);"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   });
@@ -155,7 +155,7 @@ function createEventIcon(): L.DivIcon {
 function createProcessionIcon(): L.DivIcon {
   return L.divIcon({
     className: 'proc-marker',
-    html: `<div style="width:14px; height:14px; transform:translate(-50%,-50%); background:#F59E0B; border:2px solid #0B0F19; box-shadow:0 0 6px rgba(245,158,11,0.5); clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></div>`,
+    html: `<div style="width:14px; height:14px; background:#F59E0B; border:2px solid #0B0F19; box-shadow:0 0 6px rgba(245,158,11,0.5); clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   });
