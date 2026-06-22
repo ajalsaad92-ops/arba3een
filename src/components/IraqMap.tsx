@@ -8,6 +8,7 @@ import iraqAdm0 from '../data/iraq-adm0.json';
 import { useOps } from '../store/opsStore';
 import { officeById } from '../data/offices';
 import type { Office } from '../data/offices';
+import { isFieldLayerOn } from '../lib/mapLayers';
 
 // ─── Province ISO ↔ internal office code mapping ───
 const ISO_TO_CODE: Record<string, string> = {
