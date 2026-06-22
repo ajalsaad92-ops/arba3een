@@ -87,7 +87,7 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
         <Layers className="w-4 h-4 text-amber-500" />
         <span className="flex-1 text-right">طبقات الخريطة</span>
         <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold tabular-nums">
-          {activeCount}/{LAYERS.length}
+          {activeCount}/{allLayers.length}
         </span>
         <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold tabular-nums" title="المحافظات الظاهرة">
           {provCount}/{PROVINCES.length}
@@ -113,14 +113,14 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
           </div>
 
           {tab === 'layers' && (
-            <div className="p-1">
-              {LAYERS.map(l => {
+            <div className="p-1 max-h-72 overflow-y-auto">
+              {allLayers.map(l => {
                 const Icon = l.icon;
-                const on = active.has(l.id);
+                const on = l.on;
                 return (
                   <button
-                    key={l.id}
-                    onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.id })}
+                    key={l.toggleKey}
+                    onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey })}
                     className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs transition-colors text-right ${
                       on ? 'bg-amber-50 text-slate-900' : 'text-slate-600 hover:bg-slate-100'
                     }`}
