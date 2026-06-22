@@ -92,9 +92,7 @@ Deno.serve(async (req) => {
       const isDirector = body.role === "director";
 
       const sanitizeLocal = (s: string) =>
-        s
-          .toLowerCase()
-          .trim()
+        s.toLowerCase().trim()
           .replace(/[^a-z0-9._-]+/g, "")
           .replace(/^[._-]+|[._-]+$/g, "");
 
@@ -167,9 +165,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "updateEmail") {
-      const local = (body.username ?? "")
-        .toLowerCase()
-        .trim()
+      const local = (body.username ?? "").toLowerCase().trim()
         .replace(/[^a-z0-9._-]+/g, "")
         .replace(/^[._-]+|[._-]+$/g, "");
       if (!body.userId || !local) {
@@ -197,7 +193,7 @@ Deno.serve(async (req) => {
       if (!userId || !role) return json({ error: "userId and role are required" }, 400);
       const validRoles = ["director", "supervisor", "manager", "agent", "viewer"];
       if (!validRoles.includes(role)) return json({ error: "Invalid role" }, 400);
-
+      
       await admin.from("user_roles").delete().eq("user_id", userId);
       const { error: insertErr } = await admin.from("user_roles").insert({ user_id: userId, role });
       if (insertErr) return json({ error: insertErr.message }, 400);
