@@ -395,8 +395,16 @@ export const api = {
 
   // ─── Server time ────────────────────────────────────────────────
   async getServerTime(): Promise<Date> {
-    // Supabase doesn't expose a server time endpoint; client clock is fine.
-    return new Date();
+    // Authoritative server clock so a wrong device clock cannot bypass
+    // time-window locks. Falls back to the local clock only on failure.
+    try {
+      const { data, error } = await supabase.rpc('get_server_time');
+      if (error || !data) throw error ?? new Error('no data');
+      return new Date(data as string);
+    } catch (e) {
+      console.warn('[api] getServerTime fallback to local clock', e);
+      return new Date();
+    }
   },
 
   // ─── Demo credentials hint (consumed by LoginPage quick-access) ──
