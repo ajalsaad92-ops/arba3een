@@ -417,10 +417,11 @@ export default function IraqMap({ onSelectOffice, selectedOfficeId, height = '10
           </Marker>
         ))}
 
-        {/* Visitor flow paths */}
-        {layers.has('flowPaths') && state.flowPaths.map(fp => {
+        {/* Visitor flow paths (colour + thickness scale with visitor count) */}
+        {layers.has('flowPaths') && flowPaths.map(fp => {
           const color = fp.density === 'high' ? '#EF4444' : fp.density === 'medium' ? '#F97316' : '#10B981';
           const weight = fp.density === 'high' ? 5 : fp.density === 'medium' ? 3.5 : 2;
+          const label = fp.density === 'high' ? 'كثافة عالية' : fp.density === 'medium' ? 'كثافة متوسطة' : 'كثافة عادية';
           return (
             <Polyline
               key={fp.id}
@@ -428,12 +429,21 @@ export default function IraqMap({ onSelectOffice, selectedOfficeId, height = '10
               pathOptions={{
                 color,
                 weight,
-                opacity: 0.7,
+                opacity: 0.75,
                 className: fp.density === 'high' ? 'animate-flow' : '',
               }}
-            />
+            >
+              <Popup>
+                <div className="text-right font-tajawal" dir="rtl" style={{ minWidth: 170 }}>
+                  <div className="font-bold text-cyan-600 text-xs mb-1">{fp.pathNameAr}</div>
+                  <div className="flex justify-between text-xs"><span>الزوار:</span><span className="font-bold text-emerald-600">{fp.visitorCount.toLocaleString()}</span></div>
+                  <div className="text-[10px] text-slate-500 mt-1">{label}</div>
+                </div>
+              </Popup>
+            </Polyline>
           );
         })}
+
 
         {/* Events */}
         {layers.has('events') && state.todayReports.flatMap(r => r.eventsCoordinates.map((c, i) => (
