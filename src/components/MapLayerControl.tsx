@@ -170,14 +170,14 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
             {tab === 'layers' ? (
               <>
                 <button
-                  onClick={() => LAYERS.forEach(l => !active.has(l.id) && dispatch({ type: 'TOGGLE_LAYER', layer: l.id }))}
+                  onClick={() => allLayers.forEach(l => !l.on && dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey }))}
                   className="flex-1 px-3 py-1.5 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50"
                 >
                   تفعيل الكل
                 </button>
                 <div className="w-px bg-slate-200" />
                 <button
-                  onClick={() => LAYERS.forEach(l => active.has(l.id) && dispatch({ type: 'TOGGLE_LAYER', layer: l.id }))}
+                  onClick={() => allLayers.forEach(l => l.on && dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey }))}
                   className="flex-1 px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-50"
                 >
                   إخفاء الكل
