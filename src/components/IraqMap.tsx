@@ -8,6 +8,7 @@ import iraqAdm0 from '../data/iraq-adm0.json';
 import { useOps } from '../store/opsStore';
 import { officeById } from '../data/offices';
 import type { Office } from '../data/offices';
+import { isFieldLayerOn } from '../lib/mapLayers';
 
 // ─── Province ISO ↔ internal office code mapping ───
 const ISO_TO_CODE: Record<string, string> = {
@@ -96,7 +97,7 @@ function createOfficeIcon(submitted: boolean, selected: boolean, kurdistan: bool
   return L.divIcon({
     className: 'office-marker',
     html: `
-      <div style="position:relative; width:36px; height:36px; transform:translate(-50%,-50%);">
+      <div style="position:relative; width:36px; height:36px;">
         ${submitted ? `<div style="position:absolute; inset:0; border-radius:50%; border:2px solid ${ringColor}; animation:ripple 1.8s ease-out infinite;"></div>` : ''}
         <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
           <svg width="28" height="28" viewBox="0 0 28 28" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
@@ -115,7 +116,7 @@ function createBorderIcon(): L.DivIcon {
   return L.divIcon({
     className: 'border-marker',
     html: `
-      <div style="width:24px; height:24px; transform:translate(-50%,-50%); position:relative;">
+      <div style="width:24px; height:24px; position:relative;">
         <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
           <svg width="22" height="22" viewBox="0 0 22 22">
             <polygon points="11,1 21,11 11,21 1,11" fill="#10B981" stroke="#0B0F19" stroke-width="1.5" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));"/>
@@ -133,7 +134,7 @@ function createAgentIcon(): L.DivIcon {
   return L.divIcon({
     className: 'agent-marker',
     html: `
-      <div style="position:relative; width:28px; height:28px; transform:translate(-50%,-50%);">
+      <div style="position:relative; width:28px; height:28px;">
         <div style="position:absolute; inset:0; border-radius:50%; background:rgba(59,130,246,0.3); animation:ripple 1.5s ease-out infinite;"></div>
         <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:10px; height:10px; border-radius:50%; background:#3B82F6; border:2px solid #fff; box-shadow:0 0 6px rgba(59,130,246,0.8);"></div>
       </div>
@@ -146,7 +147,7 @@ function createAgentIcon(): L.DivIcon {
 function createEventIcon(): L.DivIcon {
   return L.divIcon({
     className: 'event-marker',
-    html: `<div style="width:14px; height:14px; transform:translate(-50%,-50%); border-radius:50%; background:#3B82F6; border:2px solid #fff; box-shadow:0 0 8px rgba(59,130,246,0.5);"></div>`,
+    html: `<div style="width:14px; height:14px; border-radius:50%; background:#3B82F6; border:2px solid #fff; box-shadow:0 0 8px rgba(59,130,246,0.5);"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   });
@@ -155,7 +156,7 @@ function createEventIcon(): L.DivIcon {
 function createProcessionIcon(): L.DivIcon {
   return L.divIcon({
     className: 'proc-marker',
-    html: `<div style="width:14px; height:14px; transform:translate(-50%,-50%); background:#F59E0B; border:2px solid #0B0F19; box-shadow:0 0 6px rgba(245,158,11,0.5); clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></div>`,
+    html: `<div style="width:14px; height:14px; background:#F59E0B; border:2px solid #0B0F19; box-shadow:0 0 6px rgba(245,158,11,0.5); clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
   });
@@ -424,43 +425,41 @@ export default function IraqMap({ onSelectOffice, selectedOfficeId, height = '10
           for (const r of state.todayReports) {
             const ex = (r as any).extraFields;
             if (!ex) continue;
-            if (layers.has('events')) {
-              for (const f of locDefs) {
-                const v = ex[f.fieldKey];
-                if (!v) continue;
-                const pts = Array.isArray(v) ? v : [v];
-                pts.forEach((p: any, i: number) => {
-                  if (p && typeof p.lat === 'number' && typeof p.lng === 'number') {
-                    out.push(
-                      <Marker key={`xL-${r.id}-${f.id}-${i}`} position={[p.lat, p.lng]} icon={eventIcon}>
-                        <Popup>
-                          <div className="text-right font-tajawal" dir="rtl" style={{ minWidth: 160 }}>
-                            <div className="font-bold text-blue-600 text-xs mb-1">{f.labelAr}</div>
-                            <div className="text-[10px] text-slate-500">{officeById(r.officeId)?.nameAr}</div>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  }
-                });
-              }
+            for (const f of locDefs) {
+              if (!isFieldLayerOn(layers, f.fieldKey)) continue;
+              const v = ex[f.fieldKey];
+              if (!v) continue;
+              const pts = Array.isArray(v) ? v : [v];
+              pts.forEach((p: any, i: number) => {
+                if (p && typeof p.lat === 'number' && typeof p.lng === 'number') {
+                  out.push(
+                    <Marker key={`xL-${r.id}-${f.id}-${i}`} position={[p.lat, p.lng]} icon={eventIcon}>
+                      <Popup>
+                        <div className="text-right font-tajawal" dir="rtl" style={{ minWidth: 160 }}>
+                          <div className="font-bold text-blue-600 text-xs mb-1">{f.labelAr}</div>
+                          <div className="text-[10px] text-slate-500">{officeById(r.officeId)?.nameAr}</div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                }
+              });
             }
-            if (layers.has('flowPaths')) {
-              for (const f of routeDefs) {
-                const v = ex[f.fieldKey];
-                if (!Array.isArray(v) || v.length < 2) continue;
-                const positions = v
-                  .filter((p: any) => p && typeof p.lat === 'number' && typeof p.lng === 'number')
-                  .map((p: any) => [p.lat, p.lng] as [number, number]);
-                if (positions.length < 2) continue;
-                out.push(
-                  <Polyline
-                    key={`xR-${r.id}-${f.id}`}
-                    positions={positions}
-                    pathOptions={{ color: '#22D3EE', weight: 4, opacity: 0.85 }}
-                  />
-                );
-              }
+            for (const f of routeDefs) {
+              if (!isFieldLayerOn(layers, f.fieldKey)) continue;
+              const v = ex[f.fieldKey];
+              if (!Array.isArray(v) || v.length < 2) continue;
+              const positions = v
+                .filter((p: any) => p && typeof p.lat === 'number' && typeof p.lng === 'number')
+                .map((p: any) => [p.lat, p.lng] as [number, number]);
+              if (positions.length < 2) continue;
+              out.push(
+                <Polyline
+                  key={`xR-${r.id}-${f.id}`}
+                  positions={positions}
+                  pathOptions={{ color: '#22D3EE', weight: 4, opacity: 0.85 }}
+                />
+              );
             }
           }
           return out;

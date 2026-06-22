@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { Building2, Diamond, MapPin, Waves, Users, Layers, ChevronDown, Check, Map as MapIcon } from 'lucide-react';
 import { OFFICES } from '../data/offices';
+import { computeFieldLayers, fieldLayerOffKey, isFieldLayerOn } from '../lib/mapLayers';
 
 const LAYERS = [
   { id: 'offices', label: 'مواقع المكاتب', icon: Building2, color: 'text-amber-400' },
@@ -25,19 +26,43 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
   const visibleProv = state.visibleProvinces;
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'layers' | 'provinces'>('layers');
-  const activeCount = LAYERS.filter(l => active.has(l.id)).length;
+
+  // Dynamic layers: every report field that actually has location/route data
+  // becomes its own toggleable layer (default ON).
+  const fieldLayers = useMemo(
+    () => computeFieldLayers(state.fieldDefinitions, state.todayReports),
+    [state.fieldDefinitions, state.todayReports]
+  );
+
+  // Unified layer list (built-in + data-driven custom fields).
+  const allLayers = useMemo(() => {
+    const builtins = LAYERS.map(l => ({
+      label: l.label, icon: l.icon, color: l.color,
+      toggleKey: l.id, on: active.has(l.id),
+    }));
+    const dyn = fieldLayers.map(f => ({
+      label: f.label,
+      icon: f.kind === 'route' ? Waves : MapPin,
+      color: f.kind === 'route' ? 'text-cyan-400' : 'text-violet-400',
+      toggleKey: fieldLayerOffKey(f.key),
+      on: isFieldLayerOn(active, f.key),
+    }));
+    return [...builtins, ...dyn];
+  }, [active, fieldLayers]);
+
+  const activeCount = allLayers.filter(l => l.on).length;
   const provCount = visibleProv.size === 0 ? PROVINCES.length : visibleProv.size;
 
   if (variant === 'horizontal') {
     return (
       <div className={`flex items-center gap-1 flex-wrap ${className}`}>
-        {LAYERS.map(l => {
+        {allLayers.map(l => {
           const Icon = l.icon;
-          const on = active.has(l.id);
+          const on = l.on;
           return (
             <button
-              key={l.id}
-              onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.id })}
+              key={l.toggleKey}
+              onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey })}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold border transition-all ${
                 on
                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
@@ -62,7 +87,7 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
         <Layers className="w-4 h-4 text-amber-500" />
         <span className="flex-1 text-right">طبقات الخريطة</span>
         <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold tabular-nums">
-          {activeCount}/{LAYERS.length}
+          {activeCount}/{allLayers.length}
         </span>
         <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold tabular-nums" title="المحافظات الظاهرة">
           {provCount}/{PROVINCES.length}
@@ -88,14 +113,14 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
           </div>
 
           {tab === 'layers' && (
-            <div className="p-1">
-              {LAYERS.map(l => {
+            <div className="p-1 max-h-72 overflow-y-auto">
+              {allLayers.map(l => {
                 const Icon = l.icon;
-                const on = active.has(l.id);
+                const on = l.on;
                 return (
                   <button
-                    key={l.id}
-                    onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.id })}
+                    key={l.toggleKey}
+                    onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey })}
                     className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs transition-colors text-right ${
                       on ? 'bg-amber-50 text-slate-900' : 'text-slate-600 hover:bg-slate-100'
                     }`}
@@ -145,14 +170,14 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
             {tab === 'layers' ? (
               <>
                 <button
-                  onClick={() => LAYERS.forEach(l => !active.has(l.id) && dispatch({ type: 'TOGGLE_LAYER', layer: l.id }))}
+                  onClick={() => allLayers.forEach(l => !l.on && dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey }))}
                   className="flex-1 px-3 py-1.5 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50"
                 >
                   تفعيل الكل
                 </button>
                 <div className="w-px bg-slate-200" />
                 <button
-                  onClick={() => LAYERS.forEach(l => active.has(l.id) && dispatch({ type: 'TOGGLE_LAYER', layer: l.id }))}
+                  onClick={() => allLayers.forEach(l => l.on && dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey }))}
                   className="flex-1 px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-50"
                 >
                   إخفاء الكل

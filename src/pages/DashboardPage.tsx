@@ -1167,15 +1167,15 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
         رؤى لحظية
       </div>
       <div className="flex-1 overflow-hidden relative">
-        {/* Single pass over the FULL set of insights, then it loops. The
-            duration scales with the number of insights so every headline is
-            shown completely before the cycle restarts (no early repeat). */}
+        {/* Seamless right-to-left marquee: the insight set is rendered twice and
+            the strip slides left by exactly one copy, so it loops without a jump
+            and always flows in the natural Arabic right-to-left direction. */}
         <div
-          className="inline-flex items-center gap-10 px-4 animate-ticker whitespace-nowrap text-xs"
-          style={{ animationDuration: `${Math.max(30, insights.length * 7)}s` }}
+          className="flex w-max items-center animate-marquee-rtl whitespace-nowrap text-xs"
+          style={{ animationDuration: `${Math.max(25, insights.length * 6)}s` }}
         >
-          {insights.map((ins, i) => (
-            <div key={`${ins.id}-${i}`} className="flex items-center gap-2">
+          {[...insights, ...insights].map((ins, i) => (
+            <div key={`${ins.id}-${i}`} className="flex items-center gap-2 px-6 shrink-0">
               {ins.source && (
                 <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black shrink-0">
                   {ins.source}
