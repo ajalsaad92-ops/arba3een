@@ -706,6 +706,7 @@ export type Database = {
     }
     Functions: {
       current_user_office_id: { Args: never; Returns: string }
+      get_server_time: { Args: never; Returns: string }
       has_role:
         | {
             Args: {
