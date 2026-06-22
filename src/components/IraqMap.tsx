@@ -1,10 +1,10 @@
-import { useEffect, useRef, useMemo, useState, memo } from 'react';
+import React, { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, Polyline, Circle, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import { KURDISTAN_CODES } from '../data/iraqGeo';
 import iraqAdm1 from '../data/iraq-adm1.json';
 import iraqAdm0 from '../data/iraq-adm0.json';
-import { useMapData } from '../store/opsStore';
+import { useMapData, useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
 import type { Office } from '../data/offices';
 import { isFieldLayerOn } from '../lib/mapLayers';
@@ -123,7 +123,7 @@ function IraqMapInner({ onSelectOffice, selectedOfficeId, height = '100%', filte
   // reports are from OpsContext – we need submitted office ids only
   // Use a lightweight selector via useOps – but mapData doesn't include reports.
   // So we read reports separately, memoized.
-  const { state: { todayReports } } = require('../store/opsStore').useOps();
+  const { state: { todayReports } } = useOps();
   const submittedOfficeIds = useMemo(() => new Set(todayReports.map((r:any)=>r.officeId)), [todayReports]);
 
   const iconCache = useRef<Map<string, L.DivIcon>>(new Map());

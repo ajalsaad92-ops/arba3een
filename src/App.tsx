@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { OpsProvider, useOps } from './store/opsStore';
+import { WalkieProvider } from './store/walkieStore';
 import AppShell from './components/AppShell';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -115,9 +116,11 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <OpsProvider>
-          <OfflineBanner />
-          <AnimatedRoutes />
-          <Toaster richColors position="top-center" dir="rtl" />
+          <WalkieProvider>
+            <OfflineBanner />
+            <AnimatedRoutes />
+            <Toaster richColors position="top-center" dir="rtl" />
+          </WalkieProvider>
         </OpsProvider>
       </BrowserRouter>
     </ErrorBoundary>
