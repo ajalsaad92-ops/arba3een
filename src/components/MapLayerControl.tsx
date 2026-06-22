@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { Building2, Diamond, MapPin, Waves, Users, Layers, ChevronDown, Check, Map as MapIcon } from 'lucide-react';
 import { OFFICES } from '../data/offices';
+import { computeFieldLayers, fieldLayerOffKey, isFieldLayerOn } from '../lib/mapLayers';
 
 const LAYERS = [
   { id: 'offices', label: 'مواقع المكاتب', icon: Building2, color: 'text-amber-400' },
@@ -25,7 +26,31 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
   const visibleProv = state.visibleProvinces;
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'layers' | 'provinces'>('layers');
-  const activeCount = LAYERS.filter(l => active.has(l.id)).length;
+
+  // Dynamic layers: every report field that actually has location/route data
+  // becomes its own toggleable layer (default ON).
+  const fieldLayers = useMemo(
+    () => computeFieldLayers(state.fieldDefinitions, state.todayReports),
+    [state.fieldDefinitions, state.todayReports]
+  );
+
+  // Unified layer list (built-in + data-driven custom fields).
+  const allLayers = useMemo(() => {
+    const builtins = LAYERS.map(l => ({
+      label: l.label, icon: l.icon, color: l.color,
+      toggleKey: l.id, on: active.has(l.id),
+    }));
+    const dyn = fieldLayers.map(f => ({
+      label: f.label,
+      icon: f.kind === 'route' ? Waves : MapPin,
+      color: f.kind === 'route' ? 'text-cyan-400' : 'text-violet-400',
+      toggleKey: fieldLayerOffKey(f.key),
+      on: isFieldLayerOn(active, f.key),
+    }));
+    return [...builtins, ...dyn];
+  }, [active, fieldLayers]);
+
+  const activeCount = allLayers.filter(l => l.on).length;
   const provCount = visibleProv.size === 0 ? PROVINCES.length : visibleProv.size;
 
   if (variant === 'horizontal') {
