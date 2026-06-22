@@ -36,7 +36,13 @@ type ClearPayload = {
   action: "clearData";
 };
 
-type Payload = CreatePayload | ResetPayload | UpdateEmailPayload | ClearPayload;
+type UpdateRolePayload = {
+  action: "updateRole";
+  userId: string;
+  role: Role;
+};
+
+type Payload = CreatePayload | ResetPayload | UpdateEmailPayload | ClearPayload | UpdateRolePayload;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -55,7 +61,7 @@ Deno.serve(async (req) => {
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // ── 1. Authenticate the caller from their JWT ──────────────────
+    // 1. Authenticate the caller from their JWT
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader) return json({ error: "Missing authorization" }, 401);
 
@@ -67,7 +73,7 @@ Deno.serve(async (req) => {
     if (userErr || !userData.user) return json({ error: "Invalid session" }, 401);
     const callerId = userData.user.id;
 
-    // ── 2. Authorize: caller must be a director ────────────────────
+    // 2. Authorize: caller must be a director
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -81,19 +87,16 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as Payload;
 
-    // ── 3. Handle actions ──────────────────────────────────────────
+    // 3. Handle actions
     if (body.action === "create") {
       const isDirector = body.role === "director";
 
-      // Build a VALID, ASCII-only email. Arabic characters are not allowed in
-      // the local part, so we sanitize the chosen username (or fall back to a
-      // generated handle). This fixes "Unable to validate email address".
       const sanitizeLocal = (s: string) =>
         s
           .toLowerCase()
           .trim()
-          .replace(/[^a-z0-9._-]+/g, "") // drop Arabic / spaces / symbols
-          .replace(/^[._-]+|[._-]+$/g, ""); // trim leading/trailing separators
+          .replace(/[^a-z0-9._-]+/g, "")
+          .replace(/^[._-]+|[._-]+$/g, "");
 
       let email: string;
       if (body.email && body.email.includes("@")) {
@@ -125,8 +128,6 @@ Deno.serve(async (req) => {
         canEditReports: isDirector,
       };
 
-      // handle_new_user() trigger already inserts a default profile + agent role,
-      // so upsert/update to the requested values.
       await admin.from("profiles").upsert({
         id: userId,
         full_name_ar: body.fullNameAr,
@@ -192,10 +193,11 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "updateRole") {
-      const { userId, role } = body as any;
+      const { userId, role } = body as UpdateRolePayload;
       if (!userId || !role) return json({ error: "userId and role are required" }, 400);
       const validRoles = ["director", "supervisor", "manager", "agent", "viewer"];
       if (!validRoles.includes(role)) return json({ error: "Invalid role" }, 400);
+
       await admin.from("user_roles").delete().eq("user_id", userId);
       const { error: insertErr } = await admin.from("user_roles").insert({ user_id: userId, role });
       if (insertErr) return json({ error: insertErr.message }, 400);
