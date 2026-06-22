@@ -56,13 +56,13 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
   if (variant === 'horizontal') {
     return (
       <div className={`flex items-center gap-1 flex-wrap ${className}`}>
-        {LAYERS.map(l => {
+        {allLayers.map(l => {
           const Icon = l.icon;
-          const on = active.has(l.id);
+          const on = l.on;
           return (
             <button
-              key={l.id}
-              onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.id })}
+              key={l.toggleKey}
+              onClick={() => dispatch({ type: 'TOGGLE_LAYER', layer: l.toggleKey })}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold border transition-all ${
                 on
                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
