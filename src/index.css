@@ -132,6 +132,17 @@ input::placeholder, textarea::placeholder {
   animation: ticker-rtl 45s linear infinite;
 }
 
+/* Seamless right-to-left marquee. Content is duplicated, so translating the
+   strip left by exactly one copy (-50% of the doubled strip) loops with no
+   visible jump. Motion is always leftward = natural Arabic right-to-left. */
+@keyframes marquee-rtl {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee-rtl {
+  animation: marquee-rtl linear infinite;
+}
+
 @keyframes flowDash {
   to { stroke-dashoffset: -40; }
 }
