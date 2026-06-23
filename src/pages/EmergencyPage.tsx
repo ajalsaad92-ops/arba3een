@@ -10,6 +10,7 @@ import { EmptyState } from '../components/FormField';
 import type { Emergency } from '../data/types';
 import { validateText, validateMGRS, validateLatLng } from '../lib/validation';
 import { useRateLimit } from '../hooks/useUtils';
+import { requestLiveLocation } from '../lib/liveLocation';
 
 const EMERGENCY_TYPES = [
   'بحاجة عجلات مياه إضافية',
