@@ -179,7 +179,7 @@ function reportToRow(rep: DailyReport): any {
   };
 }
 
-export interface ReportExtraFields { [fieldKey: string]: string | number | boolean | null | any[]; }
+export interface ReportExtraFields { [fieldKey: string]: string | number | boolean | null | any[] | Record<string, any>; }
 
 export function validateExtraFields(
   fields: Record<string, any>,
@@ -191,14 +191,14 @@ export function validateExtraFields(
     if (value === undefined || value === null) continue;
     const def = definitions?.find(d => d.fieldKey === key);
     if (def) {
-      switch (def.field_type) {
+      switch (def.fieldType) {
         case 'number':
           const num = Number(value);
           validated[key] = isFinite(num) ? Math.max(0, Math.min(num, 999999999)) : 0;
           break;
         case 'text':
         case 'textarea':
-          validated[key] = String(value).slice(0, def.max_length || 2000);
+          validated[key] = String(value).slice(0, def.maxLength || 2000);
           break;
         case 'date':
           validated[key] = /^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? value : null;
