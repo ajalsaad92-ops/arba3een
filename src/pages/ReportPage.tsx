@@ -292,7 +292,7 @@ export default function ReportPage() {
         <div className="mt-4 bg-[#111827] border border-[#1E293B] rounded-xl p-4 space-y-3">
           <div className="text-xs text-slate-400 font-bold">بيانات الموقع</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <button onClick={()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(p=>{ setReporterLat(p.coords.latitude); setReporterLng(p.coords.longitude); toast.success('تم تحديد موقعك'); }, ()=>toast.error('فشل')); }}}
+            <button onClick={async ()=>{ const fix = await requestLiveLocation(); if(fix){ setReporterLat(fix.lat); setReporterLng(fix.lng); toast.success('تم تحديد موقعك'); } else { toast.error('فشل'); } }}
               className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-sm font-bold">
               <Crosshair className="w-4 h-4" /> تحديد تلقائي
             </button>
