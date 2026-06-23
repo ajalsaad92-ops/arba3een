@@ -375,8 +375,8 @@ export const api = {
   async getTodayReports(): Promise<DailyReport[]> {
     try {
       const today = operationalDate();
-      const { data, error } = await withRetry(() =>
-        supabase.from('daily_reports').select('*').eq('report_date', today).order('submitted_at', { ascending: false })
+      const { data, error } = await withRetry(async () =>
+        await supabase.from('daily_reports').select('*').eq('report_date', today).order('submitted_at', { ascending: false })
       );
       if (error) throw error;
       return (data ?? []).map(rowToReport);
