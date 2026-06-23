@@ -10,8 +10,6 @@ import { operationalDate } from '../lib/opDate';
 import { validateExtraFields } from '../lib/api';
 
 type Pt = { lat: number; lng: number };
-const LOC_EVENTS = 'eventsLocation';
-const ROUTE_PROC = 'processionRoute';
 
 export default function ReportPage() {
   const { state, actions } = useOps();
