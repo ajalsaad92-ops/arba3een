@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useOps, useEmergencies } from '../store/opsStore';
-import { useOffices } from '../lib/offices';
+
 import { AlertOctagon, MapPin, Send, Crosshair, Check, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import WalkieTalkie from '../components/WalkieTalkie';
@@ -24,7 +24,7 @@ const EMERGENCY_TYPES = [
 export default function EmergencyPage() {
   const { state, actions, dispatch } = useOps();
   const emergencies = useEmergencies();
-  const { officeById } = useOffices();
+  
 
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');

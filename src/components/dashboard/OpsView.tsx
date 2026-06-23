@@ -7,7 +7,7 @@ import { getEffectiveKpiCatalog } from '../../lib/kpiCatalog';
 import { buildInsights } from '../../lib/insights';
 import { AlertOctagon, TrendingUp, TrendingDown, Star, Info, Package, Activity } from 'lucide-react';
 import { formatNumber } from '../../lib/utils';
-import type { Office } from '../../data/offices';
+
 
 export const OpsView = React.memo(function OpsView({ agg, effectiveFilter, selectedOffice, setSelectedOffice, activeEmergencies }: any) {
   const { state } = useOps();
