@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { X, MapPin, Trash2, Undo2, Route as RouteIcon, Loader2, Crosshair } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { requestLiveLocation } from '../lib/liveLocation';
 
 // Default Leaflet icon fix (matches IraqMap.tsx)
 delete (L.Icon.Default.prototype as any)._getIconUrl;
