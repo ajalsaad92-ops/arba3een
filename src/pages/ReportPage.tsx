@@ -8,6 +8,7 @@ import MapPicker from '../components/MapPicker';
 import type { ReportFieldDefinition, ReportFieldGroup } from '../data/types';
 import { operationalDate } from '../lib/opDate';
 import { validateExtraFields } from '../lib/api';
+import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation';
 
 type Pt = { lat: number; lng: number };
 
