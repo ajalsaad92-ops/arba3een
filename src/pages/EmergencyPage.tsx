@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useOps, useEmergencies } from '../store/opsStore';
-import { useOffices } from '../lib/offices';
+
 import { AlertOctagon, MapPin, Send, Crosshair, Check, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import WalkieTalkie from '../components/WalkieTalkie';
@@ -10,6 +10,7 @@ import { EmptyState } from '../components/FormField';
 import type { Emergency } from '../data/types';
 import { validateText, validateMGRS, validateLatLng } from '../lib/validation';
 import { useRateLimit } from '../hooks/useUtils';
+import { requestLiveLocation } from '../lib/liveLocation';
 
 const EMERGENCY_TYPES = [
   'بحاجة عجلات مياه إضافية',
@@ -24,7 +25,7 @@ const EMERGENCY_TYPES = [
 export default function EmergencyPage() {
   const { state, actions, dispatch } = useOps();
   const emergencies = useEmergencies();
-  const { officeById } = useOffices();
+  
 
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');
@@ -50,14 +51,17 @@ export default function EmergencyPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleLocate = () => {
+  const handleLocate = async () => {
     setLocating(true);
-    if (!navigator.geolocation) { toast.error('الموقع غير مدعوم'); setLocating(false); return; }
-    navigator.geolocation.getCurrentPosition(
-      (p) => { setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); toast.success('تم تحديد موقعك'); setLocating(false); setErrors(s => { const n = {...s}; delete n.location; return n; }); },
-      () => { toast.error('فشل تحديد الموقع'); setLocating(false); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+    const fix = await requestLiveLocation();
+    if (fix) {
+      setCoords({ lat: fix.lat, lng: fix.lng });
+      toast.success('تم تحديد موقعك');
+      setErrors(s => { const n = {...s}; delete n.location; return n; });
+    } else {
+      toast.error('فشل تحديد الموقع');
+    }
+    setLocating(false);
   };
 
   const handleSubmit = async () => {

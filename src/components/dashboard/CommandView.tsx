@@ -4,7 +4,7 @@ import { useOffices } from '../../lib/offices';
 import KpiCard from '../KpiCard';
 import IraqMap from '../IraqMap';
 import { getEffectiveKpiCatalog } from '../../lib/kpiCatalog';
-import { AlertOctagon, Check, Clock, X, Timer, Eye } from 'lucide-react';
+import { AlertOctagon, Check, X, Timer, Eye } from 'lucide-react';
 import { formatNumber, relativeTime } from '../../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import type { Office } from '../../data/offices';
@@ -120,7 +120,7 @@ function CustomKpiGrid({ agg, aggYesterday, trend, activeEmergencies }: any) {
 
 function ReportStatusTable({ effectiveFilter, onSelect }: { effectiveFilter: string[]; onSelect: (o: Office)=>void }) {
   const { state } = useOps();
-  const { offices, officeById } = useOffices();
+  const { offices } = useOffices();
   const list = offices.filter(o => effectiveFilter.includes(o.id));
   return (
     <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-3">

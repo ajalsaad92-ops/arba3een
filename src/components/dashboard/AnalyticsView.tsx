@@ -1,12 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useOps } from '../../store/opsStore';
 import { useOffices } from '../../lib/offices';
 import KpiCard from '../KpiCard';
-import IraqMap from '../IraqMap';
 import { operationalDateDaysAgo } from '../../lib/opDate';
-import { formatNumber, formatFullNumber } from '../../lib/utils';
 import { Users, Truck, AlertOctagon, Activity, X, Download, BarChart3, TrendingUp, BarChart2 } from 'lucide-react';
-import { AreaChart, Area, LineChart, Line, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
 import { getHeatColor, toIntensity } from '../Heatmap';
 import { exportComprehensiveReports } from '../../lib/exportReports';
 import { toast } from 'sonner';
@@ -45,7 +43,7 @@ function computeAggregates(reports: any[], officeIds: string[], extraKeys:string
   return base;
 }
 
-export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, selectedOffice, setSelectedOffice }: any) {
+export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, aggYesterday, effectiveFilter, setSelectedOffice }: any) {
   const { state } = useOps();
   const { offices } = useOffices();
   type VisitorChartType = 'area'|'line'|'vertical'|'horizontal';

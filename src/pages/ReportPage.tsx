@@ -1,17 +1,16 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
-import { MapPin, ChevronDown, Send, MapPinned, X, AlertTriangle, Lock, Timer, Check, Crosshair, Info, Route as RouteIcon, History, User as UserIcon, Clock, Plus } from 'lucide-react';
+import { MapPin, ChevronDown, Send, MapPinned, X, Check, Crosshair, History, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import TimeLockBar from '../components/TimeLockBar';
 import MapPicker from '../components/MapPicker';
 import type { ReportFieldDefinition, ReportFieldGroup } from '../data/types';
 import { operationalDate } from '../lib/opDate';
 import { validateExtraFields } from '../lib/api';
+import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation';
 
 type Pt = { lat: number; lng: number };
-const LOC_EVENTS = 'eventsLocation';
-const ROUTE_PROC = 'processionRoute';
 
 export default function ReportPage() {
   const { state, actions } = useOps();
@@ -85,22 +84,19 @@ export default function ReportPage() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [form, locations, submitting]);
 
-  // GPS
-  const watchIdRef = useRef<number | null>(null);
+  // GPS — reuse the app-wide live location instead of a separate watch.
   useEffect(() => {
-    if (user.role === 'agent' && navigator.geolocation) {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          setReporterLat(pos.coords.latitude); setReporterLng(pos.coords.longitude);
-          actions.updateAgentLocation({
-            agentId: user.id, agentName: user.fullNameAr, officeId: user.officeId,
-            lat: pos.coords.latitude, lng: pos.coords.longitude,
-            accuracyMeters: pos.coords.accuracy, updatedAt: new Date().toISOString(),
-          }).catch(()=>{});
-        }, null, { enableHighAccuracy: true, maximumAge: 30_000, timeout: 10_000 }
-      );
-    }
-    return () => { if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current); };
+    const unsub = subscribeLiveLocation((fix) => {
+      setReporterLat(fix.lat); setReporterLng(fix.lng);
+      if (user.role === 'agent') {
+        actions.updateAgentLocation({
+          agentId: user.id, agentName: user.fullNameAr, officeId: user.officeId,
+          lat: fix.lat, lng: fix.lng,
+          accuracyMeters: fix.accuracy, updatedAt: new Date().toISOString(),
+        }).catch(()=>{});
+      }
+    });
+    return () => { unsub(); };
   }, [user.id, user.role]);
 
   const updateField = (key: string, value: any, field?: ReportFieldDefinition) => {
@@ -296,7 +292,7 @@ export default function ReportPage() {
         <div className="mt-4 bg-[#111827] border border-[#1E293B] rounded-xl p-4 space-y-3">
           <div className="text-xs text-slate-400 font-bold">بيانات الموقع</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <button onClick={()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(p=>{ setReporterLat(p.coords.latitude); setReporterLng(p.coords.longitude); toast.success('تم تحديد موقعك'); }, ()=>toast.error('فشل')); }}}
+            <button onClick={async ()=>{ const fix = await requestLiveLocation(); if(fix){ setReporterLat(fix.lat); setReporterLng(fix.lng); toast.success('تم تحديد موقعك'); } else { toast.error('فشل'); } }}
               className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-sm font-bold">
               <Crosshair className="w-4 h-4" /> تحديد تلقائي
             </button>

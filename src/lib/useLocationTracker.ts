@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useOps } from '../store/opsStore';
+import { startLiveLocation, subscribeLiveLocation } from './liveLocation';
 
 /**
  * Global, battery-aware location tracking for the signed-in user.
@@ -30,12 +31,11 @@ function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number):
 export function useLocationTracker() {
   const { state, actions } = useOps();
   const user = state.currentUser;
-  const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef<number>(0);
   const lastPosRef = useRef<{ lat: number; lng: number } | null>(null);
 
-  // Live ref so the watch callback always sees the current emergency state
-  // without having to re-create the geolocation watch.
+  // Live ref so the subscription callback always sees the current emergency
+  // state without having to re-subscribe.
   const emergencyActiveRef = useRef(false);
   useEffect(() => {
     emergencyActiveRef.current = state.emergencies.some(
@@ -45,18 +45,20 @@ export function useLocationTracker() {
 
   useEffect(() => {
     if (!user) return;
-    if (!('geolocation' in navigator)) return;
 
-    const onPos = (pos: GeolocationPosition) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
+    // Make sure the global background watch is running (already started at app
+    // open, but this is a safe no-op if so).
+    startLiveLocation();
+
+    const unsub = subscribeLiveLocation((fix) => {
+      const { lat, lng } = fix;
       const loc = {
         agentId: user.id,
         agentName: user.fullNameAr,
         officeId: user.officeId,
         lat,
         lng,
-        accuracyMeters: pos.coords.accuracy,
+        accuracyMeters: fix.accuracy,
         updatedAt: new Date().toISOString(),
       };
       // Cache locally so the last-known position/time persists even offline.
@@ -77,17 +79,9 @@ export function useLocationTracker() {
       lastSentRef.current = now;
       lastPosRef.current = { lat, lng };
       actions.updateAgentLocation(loc).catch(() => { /* offline — kept in cache */ });
-    };
+    });
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      onPos,
-      () => { /* permission denied / unavailable — silent */ },
-      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 20_000 },
-    );
-
-    return () => {
-      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    };
+    return () => { unsub(); };
   }, [user?.id]);
 }
+

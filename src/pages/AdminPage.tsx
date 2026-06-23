@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
 import { supabase } from '../lib/supabase';
-import { UserPlus, Edit2, Power, PowerOff, Shield, Save, X, Database, Check, Search, Timer, FileText, MapPinned, Eye, Navigation, MapPin, WifiOff } from 'lucide-react';
+import { UserPlus, Shield, Save, X, Check, Search, Navigation, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { relativeTime } from '../lib/utils';
 import LiveTrackingMap from '../components/LiveTrackingMap';

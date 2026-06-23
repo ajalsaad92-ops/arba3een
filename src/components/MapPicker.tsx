@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { X, MapPin, Trash2, Undo2, Route as RouteIcon, Loader2, Crosshair } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { requestLiveLocation } from '../lib/liveLocation';
 
 // Default Leaflet icon fix (matches IraqMap.tsx)
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -130,17 +131,17 @@ export default function MapPicker({
   // GPS is OPT-IN only. We never auto-request location when the picker opens,
   // because the permission prompt (and Android's overlay error) blocks the user
   // from simply tapping the map to drop a point. The map works fully without it.
-  const locateMe = () => {
-    if (!navigator.geolocation) {
-      toast.error('الموقع الجغرافي غير مدعوم على هذا الجهاز');
-      return;
-    }
+  // When tapped, we reuse the app's already-tracked live location instead of
+  // firing a brand-new permission prompt every time.
+  const locateMe = async () => {
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      p => { setLivePos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
-      () => { toast.error('تعذّر تحديد موقعك — يمكنك تحديد النقطة يدوياً على الخريطة'); setLocating(false); },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 }
-    );
+    const fix = await requestLiveLocation();
+    if (fix) {
+      setLivePos({ lat: fix.lat, lng: fix.lng });
+    } else {
+      toast.error('تعذّر تحديد موقعك — يمكنك تحديد النقطة يدوياً على الخريطة');
+    }
+    setLocating(false);
   };
 
   // close on ESC

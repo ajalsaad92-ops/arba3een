@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { OpsProvider, useOps } from './store/opsStore';
 import { WalkieProvider } from './store/walkieStore';
@@ -6,6 +6,7 @@ import AppShell from './components/AppShell';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OfflineBanner } from './components/OfflineBanner';
+import { startLiveLocation } from './lib/liveLocation';
 
 // lazy pages – code splitting
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -112,6 +113,10 @@ function AnimatedRoutes() {
 }
 
 export default function App() {
+  // Request location once on app open (all devices) and keep tracking in the
+  // background so any feature can read the live position without re-prompting.
+  useEffect(() => { startLiveLocation(); }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>

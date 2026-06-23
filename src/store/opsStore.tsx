@@ -34,7 +34,7 @@ interface OpsState {
   customKpis: string[];
   dateRange: { from: string; to: string } | null;
   unreadNotifications: number;
-  lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'system'; text: string; officeId?: string; createdAt: string }[];
+  lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'system'; text: string; officeId?: string; createdAt: string; read?: boolean }[];
   loadingFlags: Record<string, boolean>;
   errors: Record<string, string | null>;
 }
@@ -74,6 +74,8 @@ type Action =
   | { type: 'UPDATE_USER'; id: string; patch: Partial<Profile> }
   | { type: 'ADD_BORDER_CROSSING'; crossing: any }
   | { type: 'ADD_ACTIVITY'; activity: OpsState['lastActivity'][number] }
+  | { type: 'MARK_NOTIFICATION_READ'; id: string }
+  | { type: 'MARK_ALL_NOTIFICATIONS_READ' }
   | { type: 'CLEAR_UNREAD' };
 
 const PREFS_KEY = 'ops:uiPrefs';
@@ -221,6 +223,8 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'UPDATE_USER': return { ...state, users: state.users.map(u => u.id === action.id ? { ...u, ...action.patch } : u) };
     case 'ADD_BORDER_CROSSING': return { ...state, borderCrossings: [...state.borderCrossings, action.crossing] };
     case 'ADD_ACTIVITY': return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50) };
+    case 'MARK_NOTIFICATION_READ': return { ...state, lastActivity: state.lastActivity.map(a => a.id === action.id ? { ...a, read: true } : a), unreadNotifications: Math.max(0, state.unreadNotifications - 1) };
+    case 'MARK_ALL_NOTIFICATIONS_READ': return { ...state, lastActivity: state.lastActivity.map(a => ({ ...a, read: true })), unreadNotifications: 0 };
     case 'CLEAR_UNREAD': return { ...state, unreadNotifications: 0 };
     default: return state;
   }

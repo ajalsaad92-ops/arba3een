@@ -7,7 +7,7 @@ import { Search, Map, Activity, BarChart3 } from 'lucide-react';
 import { CommandView } from '../components/dashboard/CommandView';
 import { OpsView } from '../components/dashboard/OpsView';
 import { AnalyticsView } from '../components/dashboard/AnalyticsView';
-import { operationalDate, operationalDateDaysAgo } from '../lib/opDate';
+import { operationalDateDaysAgo } from '../lib/opDate';
 
 type ViewMode = 'command' | 'ops' | 'analytics';
 
@@ -158,7 +158,7 @@ export default function DashboardPage() {
 
 // Drilldown – memoized
 import { formatNumber, relativeTime } from '../lib/utils';
-import EmergencyDetailCard from '../components/EmergencyDetailCard';
+
 import { X } from 'lucide-react';
 function DrillDown({ office, onClose }: { office: any; onClose: ()=>void }) {
   const { state } = useOps();

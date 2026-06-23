@@ -7,7 +7,6 @@ import iraqAdm0 from '../data/iraq-adm0.json';
 import { useMapData, useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
 import type { Office } from '../data/offices';
-import { isFieldLayerOn } from '../lib/mapLayers';
 
 const ISO_TO_CODE: Record<string, string> = {
   'IQ-AN': 'ANB', 'IQ-KA': 'KRB', 'IQ-NA': 'NJF', 'IQ-BB': 'BBL',
@@ -111,9 +110,7 @@ function IraqMapInner({ onSelectOffice, selectedOfficeId, height = '100%', filte
   const { offices, officeById } = useOffices();
   const [hoveredGov, setHoveredGov] = useState<string | null>(null);
 
-  // We need UI state (visibleProvinces) – read minimal
-  const visibleProvincesRef = useRef<Set<string>>(new Set());
-  // fallback to empty – provinces filter is non-critical for map stability
+
 
   const visibleOffices = useMemo(() => {
     let list = (!filterOfficeIds || filterOfficeIds.length === 0) ? offices : offices.filter(o => filterOfficeIds.includes(o.id));
