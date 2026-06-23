@@ -7,7 +7,7 @@ import { FormField } from '../components/FormField';
 import { validateEmail } from '../lib/validation';
 
 export default function LoginPage() {
-  const { actions } = useOps();
+  const { actions, dispatch } = useOps();
   const nav = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +31,9 @@ export default function LoginPage() {
     try {
       const { user, error } = await actions.signIn(email, password);
       if (error || !user) { toast.error(error || 'فشل تسجيل الدخول'); return; }
+      // Set the authenticated user synchronously so the protected route is ready
+      // on the very first navigation (prevents the "login twice" bounce).
+      dispatch({ type: 'AUTH_SUCCESS', user });
       toast.success(`أهلاً ${user.fullNameAr}`);
       nav(user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
     } finally { setSubmitting(false); }
