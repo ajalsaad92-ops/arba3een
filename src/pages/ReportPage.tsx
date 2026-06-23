@@ -83,22 +83,19 @@ export default function ReportPage() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [form, locations, submitting]);
 
-  // GPS
-  const watchIdRef = useRef<number | null>(null);
+  // GPS — reuse the app-wide live location instead of a separate watch.
   useEffect(() => {
-    if (user.role === 'agent' && navigator.geolocation) {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          setReporterLat(pos.coords.latitude); setReporterLng(pos.coords.longitude);
-          actions.updateAgentLocation({
-            agentId: user.id, agentName: user.fullNameAr, officeId: user.officeId,
-            lat: pos.coords.latitude, lng: pos.coords.longitude,
-            accuracyMeters: pos.coords.accuracy, updatedAt: new Date().toISOString(),
-          }).catch(()=>{});
-        }, null, { enableHighAccuracy: true, maximumAge: 30_000, timeout: 10_000 }
-      );
-    }
-    return () => { if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current); };
+    const unsub = subscribeLiveLocation((fix) => {
+      setReporterLat(fix.lat); setReporterLng(fix.lng);
+      if (user.role === 'agent') {
+        actions.updateAgentLocation({
+          agentId: user.id, agentName: user.fullNameAr, officeId: user.officeId,
+          lat: fix.lat, lng: fix.lng,
+          accuracyMeters: fix.accuracy, updatedAt: new Date().toISOString(),
+        }).catch(()=>{});
+      }
+    });
+    return () => { unsub(); };
   }, [user.id, user.role]);
 
   const updateField = (key: string, value: any, field?: ReportFieldDefinition) => {
