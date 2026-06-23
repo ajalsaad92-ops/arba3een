@@ -50,14 +50,17 @@ export default function EmergencyPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleLocate = () => {
+  const handleLocate = async () => {
     setLocating(true);
-    if (!navigator.geolocation) { toast.error('الموقع غير مدعوم'); setLocating(false); return; }
-    navigator.geolocation.getCurrentPosition(
-      (p) => { setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); toast.success('تم تحديد موقعك'); setLocating(false); setErrors(s => { const n = {...s}; delete n.location; return n; }); },
-      () => { toast.error('فشل تحديد الموقع'); setLocating(false); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+    const fix = await requestLiveLocation();
+    if (fix) {
+      setCoords({ lat: fix.lat, lng: fix.lng });
+      toast.success('تم تحديد موقعك');
+      setErrors(s => { const n = {...s}; delete n.location; return n; });
+    } else {
+      toast.error('فشل تحديد الموقع');
+    }
+    setLocating(false);
   };
 
   const handleSubmit = async () => {
