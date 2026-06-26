@@ -8,6 +8,7 @@ import { CommandView } from '../components/dashboard/CommandView';
 import { OpsView } from '../components/dashboard/OpsView';
 import { AnalyticsView } from '../components/dashboard/AnalyticsView';
 import { operationalDateDaysAgo } from '../lib/opDate';
+import { extraFieldNumericValue, statExtraKeys } from '../lib/extraFieldStats';
 
 type ViewMode = 'command' | 'ops' | 'analytics';
 
