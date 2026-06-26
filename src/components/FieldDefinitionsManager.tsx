@@ -383,6 +383,19 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
             <input type="checkbox" checked={withQuantity} onChange={e => setWithQty(e.target.checked)} className="accent-amber-500" />
             تفعيل إدخال الكمية وإمكانية إضافة مواد متعددة (زر «إضافة مادة أخرى»)
           </label>
+          {withQuantity && (
+            <>
+              <label className="flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" checked={countInStats} onChange={e => setCount(e.target.checked)} className="accent-amber-500" />
+                احتساب مجموع الكميات في إحصائيات لوحة القيادة
+              </label>
+              {countInStats && (
+                <FieldRow label="اسم المؤشّر في الإحصائيات (اختياري)">
+                  <input value={statLabelAr} onChange={e => setStatLabel(e.target.value)} className={inputCls} placeholder="مثال: إجمالي المواد الموزعة" />
+                </FieldRow>
+              )}
+            </>
+          )}
         </div>
       )}
 
