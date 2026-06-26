@@ -287,7 +287,7 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
         maxLength: maxLength ? Number(maxLength) : null,
         isHidden: hidden,
         isBuiltIn,
-        countInStats: fieldType === 'number' ? countInStats : false,
+        countInStats: (fieldType === 'number' || (fieldType === 'select' && withQuantity)) ? countInStats : false,
         statLabelAr: countInStats ? (statLabelAr?.trim() || labelAr.trim()) : null,
         allowedUserIds,
         options: fieldType === 'select'
