@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import type { DailyReport, Profile } from '../data/types';
 import type { ReportFieldDefinition } from '../data/types';
 import { officeById } from '../data/offices';
+import { extraFieldDisplay, extraFieldNumericValue } from './extraFieldStats';
 
 /** Format an ISO timestamp as a readable Baghdad-local date+time string. */
 function fmtDateTime(iso?: string): string {
