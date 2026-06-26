@@ -56,7 +56,7 @@ export default function DashboardPage() {
   );
 
   const { aggToday, aggYesterday, rangeLabel } = useMemo(() => {
-    const extraKeys = state.fieldDefinitions.filter(f=>f.countInStats && !f.isBuiltIn && f.fieldType==='number' && !f.isHidden).map(f=>f.fieldKey);
+    const extraKeys = statExtraKeys(state.fieldDefinitions);
     const dr = state.dateRange;
     if (!dr) {
       const yestStr = operationalDateDaysAgo(1);
