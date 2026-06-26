@@ -28,7 +28,7 @@ function computeAggregates(reports: any[], officeIds: string[], extraKeys:string
     base.deaths += r.deathsCount||0; base.violations += r.violationsCount||0;
     base.events += r.eventsCount||0; base.incidents += r.incidentsCount||0;
     base.resources += r.resourcesDistributed||0; base.deployment += r.deploymentCount||0;
-    if(r.extraFields){ for(const k of extraKeys){ const v=Number(r.extraFields[k]); if(!isNaN(v)) base[`x:${k}`]+=v; }}
+    if(r.extraFields){ for(const k of extraKeys){ base[`x:${k}`] += extraFieldNumericValue(r.extraFields[k]); }}
   }
   return base;
 }
