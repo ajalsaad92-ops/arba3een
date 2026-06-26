@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import type { DailyReport, Profile } from '../data/types';
 import type { ReportFieldDefinition } from '../data/types';
 import { officeById } from '../data/offices';
+import { extraFieldDisplay, extraFieldNumericValue } from './extraFieldStats';
 
 /** Format an ISO timestamp as a readable Baghdad-local date+time string. */
 function fmtDateTime(iso?: string): string {
@@ -86,8 +87,14 @@ export function exportComprehensiveReports(
       // Append all dynamic/custom fields.
       for (const k of extraKeys) {
         const v = r.extraFields?.[k];
-        row[extraLabel(k)] =
-          v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : v;
+        const def = fieldDefinitions.find((d) => d.fieldKey === k);
+        if (def?.fieldType === 'select' && def.withQuantity) {
+          // select + quantity → readable list + numeric total column
+          row[extraLabel(k)] = extraFieldDisplay(v);
+          row[`${extraLabel(k)} (الإجمالي)`] = extraFieldNumericValue(v);
+        } else {
+          row[extraLabel(k)] = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : v;
+        }
       }
       return row;
     });

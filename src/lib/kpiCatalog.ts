@@ -39,7 +39,8 @@ export const kpiById = (id: string) => KPI_CATALOG.find(k => k.id === id);
  */
 export function getEffectiveKpiCatalog(defs: ReportFieldDefinition[]): KpiDef[] {
   const dynamic: KpiDef[] = defs
-    .filter(f => f.countInStats && !f.isBuiltIn && f.fieldType === 'number' && !f.isHidden)
+    .filter(f => f.countInStats && !f.isBuiltIn && !f.isHidden &&
+      (f.fieldType === 'number' || (f.fieldType === 'select' && f.withQuantity)))
     .map(f => ({
       id: `x:${f.fieldKey}` as KpiId,
       label: f.statLabelAr || f.labelAr,

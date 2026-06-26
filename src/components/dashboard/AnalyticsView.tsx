@@ -4,7 +4,8 @@ import { useOffices } from '../../lib/offices';
 import KpiCard from '../KpiCard';
 import { operationalDateDaysAgo } from '../../lib/opDate';
 import { Users, Truck, AlertOctagon, Activity, X, Download, BarChart3, TrendingUp, BarChart2 } from 'lucide-react';
-import { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+import { extraFieldNumericValue } from '../../lib/extraFieldStats';
 import { getHeatColor, toIntensity } from '../Heatmap';
 import { exportComprehensiveReports } from '../../lib/exportReports';
 import { toast } from 'sonner';
@@ -38,7 +39,7 @@ function computeAggregates(reports: any[], officeIds: string[], extraKeys:string
     base.deaths += r.deathsCount||0; base.violations += r.violationsCount||0;
     base.events += r.eventsCount||0; base.incidents += r.incidentsCount||0;
     base.resources += r.resourcesDistributed||0; base.deployment += r.deploymentCount||0;
-    if(r.extraFields){ for(const k of extraKeys){ const v=Number(r.extraFields[k]); if(!isNaN(v)) base[`x:${k}`]+=v; }}
+    if(r.extraFields){ for(const k of extraKeys){ base[`x:${k}`] += extraFieldNumericValue(r.extraFields[k]); }}
   }
   return base;
 }
@@ -153,6 +154,24 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
                 <Legend wrapperStyle={{ fontSize:10 }} />
                 {officesForChart.map((o:Office,i:number)=> <Line key={o.code} type="monotone" dataKey={o.code} stroke={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} strokeWidth={2} dot={false} name={o.nameAr.replace('مكتب ','')} />)}
               </LineChart>
+            ) : visitorChartType==='vertical' ? (
+              <BarChart data={areaData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis dataKey="date" tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <YAxis tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Legend wrapperStyle={{ fontSize:10 }} />
+                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} name={o.nameAr.replace('مكتب ','')} radius={[2,2,0,0]} />)}
+              </BarChart>
+            ) : visitorChartType==='horizontal' ? (
+              <BarChart data={areaData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis type="number" tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <YAxis type="category" dataKey="date" width={44} tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Legend wrapperStyle={{ fontSize:10 }} />
+                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} name={o.nameAr.replace('مكتب ','')} radius={[0,2,2,0]} />)}
+              </BarChart>
             ) : (
               <AreaChart data={areaData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
@@ -167,6 +186,7 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
               </AreaChart>
             )}
           </ResponsiveContainer>
+
         </div>
 
         <div className="lg:col-span-2 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
