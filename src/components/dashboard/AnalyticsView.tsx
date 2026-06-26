@@ -154,6 +154,24 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
                 <Legend wrapperStyle={{ fontSize:10 }} />
                 {officesForChart.map((o:Office,i:number)=> <Line key={o.code} type="monotone" dataKey={o.code} stroke={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} strokeWidth={2} dot={false} name={o.nameAr.replace('مكتب ','')} />)}
               </LineChart>
+            ) : visitorChartType==='vertical' ? (
+              <BarChart data={areaData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis dataKey="date" tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <YAxis tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Legend wrapperStyle={{ fontSize:10 }} />
+                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} name={o.nameAr.replace('مكتب ','')} radius={[2,2,0,0]} />)}
+              </BarChart>
+            ) : visitorChartType==='horizontal' ? (
+              <BarChart data={areaData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis type="number" tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <YAxis type="category" dataKey="date" width={44} tick={{ fill:'#94A3B8', fontSize:10 }} />
+                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Legend wrapperStyle={{ fontSize:10 }} />
+                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} name={o.nameAr.replace('مكتب ','')} radius={[0,2,2,0]} />)}
+              </BarChart>
             ) : (
               <AreaChart data={areaData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
@@ -168,6 +186,7 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
               </AreaChart>
             )}
           </ResponsiveContainer>
+
         </div>
 
         <div className="lg:col-span-2 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
