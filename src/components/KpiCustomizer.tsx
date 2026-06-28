@@ -6,13 +6,21 @@ import { Settings, Check, X } from 'lucide-react';
 export default function KpiCustomizer() {
   const { state, dispatch } = useOps();
   const [open, setOpen] = useState(false);
-  const selected = state.customKpis;
   const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
+  const selected = getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis);
 
   const toggle = (id: string) => {
-    const next = selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id];
-    if (next.length === 0) return; // keep at least one
-    dispatch({ type: 'SET_CUSTOM_KPIS', ids: next });
+    const isOn = selected.includes(id);
+    if (isOn) {
+      if (selected.length === 1) return; // keep at least one
+      // turn off: remove from custom selection and mark hidden (covers auto-merged dynamic KPIs)
+      dispatch({ type: 'SET_CUSTOM_KPIS', ids: state.customKpis.filter(x => x !== id) });
+      if (!state.hiddenKpis.includes(id)) dispatch({ type: 'SET_HIDDEN_KPIS', ids: [...state.hiddenKpis, id] });
+    } else {
+      // turn on: add to custom selection and clear any hidden flag
+      if (!state.customKpis.includes(id)) dispatch({ type: 'SET_CUSTOM_KPIS', ids: [...state.customKpis, id] });
+      if (state.hiddenKpis.includes(id)) dispatch({ type: 'SET_HIDDEN_KPIS', ids: state.hiddenKpis.filter(x => x !== id) });
+    }
   };
 
   return (
