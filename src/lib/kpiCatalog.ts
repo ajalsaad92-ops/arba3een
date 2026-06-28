@@ -48,5 +48,33 @@ export function getEffectiveKpiCatalog(defs: ReportFieldDefinition[]): KpiDef[] 
       tone: 'slate',
       source: `x:${f.fieldKey}`,
     }));
-  return [...KPI_CATALOG, ...dynamic];
+   return [...KPI_CATALOG, ...dynamic];
+}
+
+/** Dynamic KPI ids (x:fieldKey) derived from flagged stat fields. */
+export function dynamicStatKpiIds(defs: ReportFieldDefinition[]): string[] {
+  return defs
+    .filter(f => f.countInStats && !f.isBuiltIn && !f.isHidden &&
+      (f.fieldType === 'number' || (f.fieldType === 'select' && f.withQuantity)))
+    .map(f => `x:${f.fieldKey}`);
+}
+
+/**
+ * Resolve which KPI ids should actually be shown on the dashboard.
+ * Starts from the user's selected `customKpis`, then auto-appends any flagged
+ * dynamic stat fields that aren't already chosen — so newly flagged fields
+ * appear immediately without a manual customizer step. Ids the user explicitly
+ * removed (kept in `hiddenKpis`) are excluded.
+ */
+export function getVisibleKpiIds(
+  customKpis: string[],
+  defs: ReportFieldDefinition[],
+  hiddenKpis: string[] = [],
+): string[] {
+  const dyn = dynamicStatKpiIds(defs);
+  const merged = [...customKpis];
+  for (const id of dyn) {
+    if (!merged.includes(id) && !hiddenKpis.includes(id)) merged.push(id);
+  }
+  return merged;
 }

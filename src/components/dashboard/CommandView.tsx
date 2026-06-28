@@ -3,7 +3,7 @@ import { useOps } from '../../store/opsStore';
 import { useOffices } from '../../lib/offices';
 import KpiCard from '../KpiCard';
 import IraqMap from '../IraqMap';
-import { getEffectiveKpiCatalog } from '../../lib/kpiCatalog';
+import { getEffectiveKpiCatalog, getVisibleKpiIds } from '../../lib/kpiCatalog';
 import { AlertOctagon, Check, X, Timer, Eye } from 'lucide-react';
 import { formatNumber, relativeTime } from '../../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
@@ -103,7 +103,8 @@ export const CommandView = React.memo(function CommandView({ agg, trend, aggYest
 
 function CustomKpiGrid({ agg, aggYesterday, trend, activeEmergencies }: any) {
   const { state } = useOps();
-  const ids = state.currentUser?.role === 'viewer' ? state.customKpis.filter((id:string)=>id!=='emergencies') : state.customKpis;
+  const visible = getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis);
+  const ids = state.currentUser?.role === 'viewer' ? visible.filter((id:string)=>id!=='emergencies') : visible;
   const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
   const byId = (id:string)=> catalog.find(k=>k.id===id);
   const valFor = (id:string)=> id==='emergencies' ? activeEmergencies : (agg as any)[id] || 0;

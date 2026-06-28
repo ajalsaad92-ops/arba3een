@@ -32,6 +32,7 @@ interface OpsState {
   officeFilter: string[];
   visibleProvinces: Set<string>;
   customKpis: string[];
+  hiddenKpis: string[];
   dateRange: { from: string; to: string } | null;
   unreadNotifications: number;
   lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'system'; text: string; officeId?: string; createdAt: string; read?: boolean }[];
@@ -69,6 +70,7 @@ type Action =
   | { type: 'TOGGLE_PROVINCE'; code: string }
   | { type: 'SET_PROVINCES'; codes: string[] }
   | { type: 'SET_CUSTOM_KPIS'; ids: string[] }
+  | { type: 'SET_HIDDEN_KPIS'; ids: string[] }
   | { type: 'SET_DATE_RANGE'; range: { from: string; to: string } | null }
   | { type: 'ADD_USER'; user: Profile }
   | { type: 'UPDATE_USER'; id: string; patch: Partial<Profile> }
@@ -117,6 +119,7 @@ const initialState: OpsState = {
   officeFilter: _prefs.officeFilter ?? [],
   visibleProvinces: new Set(_prefs.visibleProvinces ?? []),
   customKpis: (() => { try { const v = localStorage.getItem('ops:customKpis'); return v ? JSON.parse(v) : ['visitors', 'vehicles', 'processions', 'emergencies']; } catch { return ['visitors','vehicles','processions','emergencies']; } })(),
+  hiddenKpis: (() => { try { const v = localStorage.getItem('ops:hiddenKpis'); return v ? JSON.parse(v) : []; } catch { return []; } })(),
   dateRange: _prefs.dateRange ?? null,
   unreadNotifications: 0,
   lastActivity: [],
@@ -218,6 +221,7 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'TOGGLE_PROVINCE': { const provinces = new Set(state.visibleProvinces); provinces.has(action.code) ? provinces.delete(action.code) : provinces.add(action.code); const next = { ...state, visibleProvinces: provinces }; savePrefs(next); return next; }
     case 'SET_PROVINCES': { const next = { ...state, visibleProvinces: new Set(action.codes) }; savePrefs(next); return next; }
     case 'SET_CUSTOM_KPIS': { try { localStorage.setItem('ops:customKpis', JSON.stringify(action.ids)); } catch {} return { ...state, customKpis: action.ids }; }
+    case 'SET_HIDDEN_KPIS': { try { localStorage.setItem('ops:hiddenKpis', JSON.stringify(action.ids)); } catch {} return { ...state, hiddenKpis: action.ids }; }
     case 'SET_DATE_RANGE': { const next = { ...state, dateRange: action.range }; savePrefs(next); return next; }
     case 'ADD_USER': return { ...state, users: [...state.users, action.user] };
     case 'UPDATE_USER': return { ...state, users: state.users.map(u => u.id === action.id ? { ...u, ...action.patch } : u) };
@@ -511,7 +515,8 @@ export function useUI() {
     officeFilter: state.officeFilter,
     selectedOfficeId: state.selectedOfficeId,
     customKpis: state.customKpis,
+    hiddenKpis: state.hiddenKpis,
     dateRange: state.dateRange,
     dispatch
-  }), [state.officeFilter, state.selectedOfficeId, state.customKpis, state.dateRange, dispatch]);
+  }), [state.officeFilter, state.selectedOfficeId, state.customKpis, state.hiddenKpis, state.dateRange, dispatch]);
 }

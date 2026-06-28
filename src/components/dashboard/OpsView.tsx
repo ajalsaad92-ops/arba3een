@@ -3,7 +3,7 @@ import { useOps } from '../../store/opsStore';
 import { useOffices } from '../../lib/offices';
 import IraqMap from '../IraqMap';
 import MapLayerControl from '../MapLayerControl';
-import { getEffectiveKpiCatalog } from '../../lib/kpiCatalog';
+import { getEffectiveKpiCatalog, getVisibleKpiIds } from '../../lib/kpiCatalog';
 import { buildInsights } from '../../lib/insights';
 import { AlertOctagon, TrendingUp, TrendingDown, Star, Info, Package, Activity } from 'lucide-react';
 import { formatNumber } from '../../lib/utils';
@@ -34,7 +34,8 @@ export const OpsView = React.memo(function OpsView({ agg, effectiveFilter, selec
 
 function OpsKpiOverlay({ agg, activeEmergencies }: any) {
   const { state } = useOps();
-  const ids = state.currentUser?.role === 'viewer' ? state.customKpis.filter((id:string)=>id!=='emergencies') : state.customKpis;
+  const visible = getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis);
+  const ids = state.currentUser?.role === 'viewer' ? visible.filter((id:string)=>id!=='emergencies') : visible;
   const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
   const toneClass: Record<string,string> = {
     amber:'from-amber-400 to-orange-600', blue:'from-blue-400 to-indigo-600', emerald:'from-emerald-400 to-teal-600',
