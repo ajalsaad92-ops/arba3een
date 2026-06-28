@@ -515,6 +515,7 @@ export function useUI() {
     officeFilter: state.officeFilter,
     selectedOfficeId: state.selectedOfficeId,
     customKpis: state.customKpis,
+    hiddenKpis: state.hiddenKpis,
     dateRange: state.dateRange,
     dispatch
   }), [state.officeFilter, state.selectedOfficeId, state.customKpis, state.dateRange, dispatch]);
