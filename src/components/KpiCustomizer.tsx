@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOps } from '../store/opsStore';
-import { getEffectiveKpiCatalog } from '../lib/kpiCatalog';
+import { getEffectiveKpiCatalog, getVisibleKpiIds } from '../lib/kpiCatalog';
 import { Settings, Check, X } from 'lucide-react';
 
 export default function KpiCustomizer() {
