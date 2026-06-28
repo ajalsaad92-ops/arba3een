@@ -32,6 +32,7 @@ interface OpsState {
   officeFilter: string[];
   visibleProvinces: Set<string>;
   customKpis: string[];
+  hiddenKpis: string[];
   dateRange: { from: string; to: string } | null;
   unreadNotifications: number;
   lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'system'; text: string; officeId?: string; createdAt: string; read?: boolean }[];
