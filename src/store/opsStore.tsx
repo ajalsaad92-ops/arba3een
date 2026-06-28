@@ -70,6 +70,7 @@ type Action =
   | { type: 'TOGGLE_PROVINCE'; code: string }
   | { type: 'SET_PROVINCES'; codes: string[] }
   | { type: 'SET_CUSTOM_KPIS'; ids: string[] }
+  | { type: 'SET_HIDDEN_KPIS'; ids: string[] }
   | { type: 'SET_DATE_RANGE'; range: { from: string; to: string } | null }
   | { type: 'ADD_USER'; user: Profile }
   | { type: 'UPDATE_USER'; id: string; patch: Partial<Profile> }
