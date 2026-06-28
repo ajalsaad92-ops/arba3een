@@ -3,7 +3,7 @@ import { useOps } from '../../store/opsStore';
 import { useOffices } from '../../lib/offices';
 import IraqMap from '../IraqMap';
 import MapLayerControl from '../MapLayerControl';
-import { getEffectiveKpiCatalog } from '../../lib/kpiCatalog';
+import { getEffectiveKpiCatalog, getVisibleKpiIds } from '../../lib/kpiCatalog';
 import { buildInsights } from '../../lib/insights';
 import { AlertOctagon, TrendingUp, TrendingDown, Star, Info, Package, Activity } from 'lucide-react';
 import { formatNumber } from '../../lib/utils';
