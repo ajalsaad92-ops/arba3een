@@ -119,6 +119,7 @@ const initialState: OpsState = {
   officeFilter: _prefs.officeFilter ?? [],
   visibleProvinces: new Set(_prefs.visibleProvinces ?? []),
   customKpis: (() => { try { const v = localStorage.getItem('ops:customKpis'); return v ? JSON.parse(v) : ['visitors', 'vehicles', 'processions', 'emergencies']; } catch { return ['visitors','vehicles','processions','emergencies']; } })(),
+  hiddenKpis: (() => { try { const v = localStorage.getItem('ops:hiddenKpis'); return v ? JSON.parse(v) : []; } catch { return []; } })(),
   dateRange: _prefs.dateRange ?? null,
   unreadNotifications: 0,
   lastActivity: [],
