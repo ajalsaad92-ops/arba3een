@@ -518,5 +518,5 @@ export function useUI() {
     hiddenKpis: state.hiddenKpis,
     dateRange: state.dateRange,
     dispatch
-  }), [state.officeFilter, state.selectedOfficeId, state.customKpis, state.dateRange, dispatch]);
+  }), [state.officeFilter, state.selectedOfficeId, state.customKpis, state.hiddenKpis, state.dateRange, dispatch]);
 }
