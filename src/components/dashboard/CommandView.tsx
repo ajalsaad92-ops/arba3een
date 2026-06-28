@@ -3,7 +3,7 @@ import { useOps } from '../../store/opsStore';
 import { useOffices } from '../../lib/offices';
 import KpiCard from '../KpiCard';
 import IraqMap from '../IraqMap';
-import { getEffectiveKpiCatalog } from '../../lib/kpiCatalog';
+import { getEffectiveKpiCatalog, getVisibleKpiIds } from '../../lib/kpiCatalog';
 import { AlertOctagon, Check, X, Timer, Eye } from 'lucide-react';
 import { formatNumber, relativeTime } from '../../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
