@@ -13,7 +13,7 @@ import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation'
 type Pt = { lat: number; lng: number };
 
 export default function ReportPage() {
-  const { state, actions } = useOps();
+  const { state, actions, dispatch } = useOps();
   const user = state.currentUser;
   const { officeById } = useOffices();
   if (!user) return <div className="h-full flex items-center justify-center text-slate-500">جاري التحميل...</div>;
@@ -118,7 +118,12 @@ export default function ReportPage() {
   const isFieldFilled = (f: ReportFieldDefinition) => {
     if (f.fieldType === 'location') return !!locations[f.fieldKey];
     if (f.fieldType === 'multi_location' || f.fieldType === 'route') return (routes[f.fieldKey]?.length ?? 0) > 0;
-    const v = form[f.fieldKey]; return v !== undefined && v !== null && v !== '';
+    const v = form[f.fieldKey];
+    if (f.fieldType === 'select' && f.withQuantity) {
+      return Array.isArray(v) && v.some((r:any) => r && String(r.item || '').trim() && r.item !== '__other__' && Number(r.qty) > 0);
+    }
+    if (f.fieldType === 'select') return v !== undefined && v !== null && v !== '' && v !== '__other__';
+    return v !== undefined && v !== null && v !== '';
   };
 
   const totalFields = plan.reduce((a,g)=>a+g.fields.length,0);
@@ -155,10 +160,10 @@ export default function ReportPage() {
       else if (f.fieldType === 'number') { const v = form[f.fieldKey]; if (v !== undefined && v !== '') rawExtra[f.fieldKey] = Number(v) || 0; }
       else if (f.fieldType === 'select' && f.withQuantity) {
         const arr = Array.isArray(form[f.fieldKey]) ? form[f.fieldKey] : [];
-        const clean = arr.filter((r:any)=> r && String(r.item).trim() && Number(r.qty)>0).slice(0,50)
+        const clean = arr.filter((r:any)=> r && String(r.item).trim() && r.item !== '__other__' && Number(r.qty)>0).slice(0,50)
           .map((r:any)=>({ item: String(r.item).trim().slice(0,200), qty: Math.min(999999, Number(r.qty)) }));
         if (clean.length) rawExtra[f.fieldKey] = clean;
-      } else if (form[f.fieldKey] !== undefined && form[f.fieldKey] !== '') {
+      } else if (form[f.fieldKey] !== undefined && form[f.fieldKey] !== '' && form[f.fieldKey] !== '__other__') {
         rawExtra[f.fieldKey] = typeof form[f.fieldKey] === 'string' ? form[f.fieldKey].slice(0, f.maxLength || 2000) : form[f.fieldKey];
       }
     }
@@ -169,7 +174,7 @@ export default function ReportPage() {
     const t = toast.loading('جاري الإرسال...');
     setSubmitting(true);
     try {
-      await actions.submitReport({
+      const reportPayload = {
         id: `r-new-${Date.now()}`,
         officeId: office.id, submittedBy: user.id,
         reportDate: operationalDate(), submittedAt: new Date().toISOString(),
@@ -195,7 +200,9 @@ export default function ReportPage() {
         reporterLat: reporterLat ?? undefined, reporterLng: reporterLng ?? undefined,
         mgrsReference: mgrs.slice(0,50),
         extraFields,
-      });
+      };
+      const savedReport = await actions.submitReport(reportPayload);
+      dispatch({ type: 'ADD_REPORT', report: savedReport ?? reportPayload });
       toast.success('✅ تم إرسال التقرير', { id: t });
       if (extensionActive && status !== 'open') { actions.updateExtension(extensionActive.id, { consumedAt: new Date().toISOString() }).catch(()=>{}); }
       setForm({}); setLocations({}); setRoutes({}); setMgrs(''); setFormErrors({});
@@ -402,34 +409,36 @@ function SelectField({ field, value, onChange }:{ field: ReportFieldDefinition; 
   const cls = 'flex-1 bg-[#1E293B] border border-[#263244] rounded-lg px-3 py-2.5 text-sm text-white focus:border-amber-500/40 focus:outline-none';
   if (!field.withQuantity) {
     const v = typeof value === 'string' ? value : '';
-    const isFree = v && !options.includes(v);
+    const isOtherDraft = v === '__other__';
+    const isFree = !!v && !isOtherDraft && !options.includes(v);
     return <div className="space-y-1.5">
-      <select value={isFree ? '__other__' : v} onChange={e=>onChange(e.target.value==='__other__'?'':e.target.value)} className={cls+' w-full'}>
+      <select value={isOtherDraft || isFree ? '__other__' : v} onChange={e=>onChange(e.target.value)} className={cls+' w-full'}>
         <option value="">— اختر —</option>
         {options.map(o=> <option key={o} value={o}>{o}</option>)}
         {allowFree && <option value="__other__">أخرى…</option>}
       </select>
-      {allowFree && isFree && <input type="text" value={v} onChange={e=>onChange(e.target.value.slice(0,200))} className={cls+' w-full'} placeholder="اكتب…" />}
+      {allowFree && (isOtherDraft || isFree) && <input type="text" value={isOtherDraft ? '' : v} onChange={e=>onChange(e.target.value.slice(0,200))} className={cls+' w-full'} placeholder="اكتب…" />}
     </div>;
   }
   const list = Array.isArray(value) ? value : [];
   const rows = list.length ? list : [{item:'',qty:1}];
-  const update = (next:any[])=> onChange(next.filter((r:any)=>r.item && r.qty>0).slice(0,50));
+  const update = (next:any[])=> onChange(next.slice(0,50));
   return <div className="space-y-2">
     {rows.map((r:any,i:number)=>{
-      const isFree = r.item && !options.includes(r.item);
+      const isOtherDraft = r.item === '__other__';
+      const isFree = !!r.item && !isOtherDraft && !options.includes(r.item);
       return <div key={i} className="flex flex-wrap items-center gap-1.5 bg-[#0B0F19] border border-[#1E293B] rounded-lg p-2">
-        <select value={isFree ? '__other__' : r.item} onChange={e=>{ const n=[...rows]; n[i]={...n[i], item: e.target.value==='__other__'?'':e.target.value}; update(n); }} className={cls}>
+        <select value={isOtherDraft || isFree ? '__other__' : r.item} onChange={e=>{ const n=[...rows]; n[i]={...n[i], item: e.target.value}; update(n); }} className={cls}>
           <option value="">— اختر —</option>
           {options.map(o=><option key={o} value={o}>{o}</option>)}
           {allowFree && <option value="__other__">أخرى…</option>}
         </select>
-        {allowFree && isFree && <input type="text" value={r.item} onChange={e=>{ const n=[...rows]; n[i]={...n[i], item: e.target.value.slice(0,200)}; update(n); }} placeholder="اسم المادة" className={cls} />}
+        {allowFree && (isOtherDraft || isFree) && <input type="text" value={isOtherDraft ? '' : r.item} onChange={e=>{ const n=[...rows]; n[i]={...n[i], item: e.target.value.slice(0,200)}; update(n); }} placeholder="اسم المادة" className={cls} />}
         <input type="number" min={1} max={999999} value={r.qty} onChange={e=>{ const n=[...rows]; n[i]={...n[i], qty: Math.max(1, Math.min(999999, Number(e.target.value)||1))}; update(n); }} className="w-20 bg-[#1E293B] border border-[#263244] rounded-lg px-2 py-2.5 text-sm text-center" />
         {rows.length > 1 && <button onClick={()=>update(rows.filter((_,idx)=>idx!==i))} className="p-2 rounded bg-red-500/10 text-red-300"><X className="w-4 h-4" /></button>}
       </div>;
     })}
-    <button onClick={()=> rows.length<50 && onChange([...rows.filter((r:any)=>r.item), {item:'',qty:1}])} disabled={rows.length>=50}
+    <button onClick={()=> rows.length<50 && onChange([...rows, {item:'',qty:1}])} disabled={rows.length>=50}
       className="w-full p-2 bg-[#1E293B] border border-dashed border-[#263244] rounded-lg text-amber-400 text-xs font-bold disabled:opacity-40">
       <Plus className="w-4 h-4 inline ml-1" /> إضافة مادة {rows.length>0 && `(${rows.length}/50)`}
     </button>

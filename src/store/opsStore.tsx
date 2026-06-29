@@ -244,7 +244,7 @@ const actions = {
   async signIn(email: string, password: string) { const { user, error } = await api.signIn(email, password); return { user, error }; },
   async signUp(input: { fullNameAr: string; email: string; password: string; role: Profile['role']; officeId: string }) { const { user, error } = await api.signUp(input); return { user, error }; },
   async signOut() { await api.signOut(); },
-  async submitReport(report: DailyReport) { await api.insertReport(report); },
+  async submitReport(report: DailyReport) { return api.insertReport(report); },
   async submitEmergency(em: Emergency) { await api.insertEmergency(em); },
   async ackEmergency(id: string, userId: string) { await api.updateEmergency(id, { status: 'acknowledged', acknowledgedById: userId, acknowledgedAt: new Date().toISOString() }); },
   async resolveEmergency(id: string, userId?: string) { await api.updateEmergency(id, { status: 'resolved', resolvedById: userId, resolvedAt: new Date().toISOString() }); },
