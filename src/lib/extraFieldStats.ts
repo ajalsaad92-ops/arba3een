@@ -15,6 +15,23 @@ export function extraFieldNumericValue(val: any): number {
   return isNaN(n) ? 0 : n;
 }
 
+/** True when a value is the app's select-with-quantity structure. */
+export function isSelectQuantityValue(val: any): boolean {
+  return Array.isArray(val) && val.some((r) => r && typeof r === 'object' && 'item' in r && 'qty' in r);
+}
+
+/** Clean and clamp a select-with-quantity array before saving/exporting. */
+export function normalizeSelectQuantityValue(val: any, maxRows = 50): { item: string; qty: number }[] {
+  if (!Array.isArray(val)) return [];
+  return val
+    .filter((r: any) => r && String(r.item ?? '').trim() && r.item !== '__other__' && Number(r.qty) > 0)
+    .slice(0, maxRows)
+    .map((r: any) => ({
+      item: String(r.item).trim().slice(0, 200),
+      qty: Math.max(1, Math.min(999999, Number(r.qty) || 1)),
+    }));
+}
+
 /**
  * Field keys that should be counted in dashboard statistics:
  * numeric fields, OR select fields with quantity enabled.

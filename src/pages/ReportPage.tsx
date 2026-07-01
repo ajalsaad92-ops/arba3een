@@ -8,6 +8,7 @@ import MapPicker from '../components/MapPicker';
 import type { ReportFieldDefinition, ReportFieldGroup } from '../data/types';
 import { operationalDate } from '../lib/opDate';
 import { validateExtraFields } from '../lib/api';
+import { extraFieldDisplay, extraFieldNumericValue, normalizeSelectQuantityValue } from '../lib/extraFieldStats';
 import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation';
 
 type Pt = { lat: number; lng: number };
@@ -170,6 +171,9 @@ export default function ReportPage() {
     const extraFields = validateExtraFields(rawExtra, state.fieldDefinitions);
     const num = (k:string)=> Math.max(0, Math.min(999999999, Number(form[k] || 0)));
     const str = (k:string, max=2000)=> String(form[k] ?? '').slice(0, max);
+    const resourceItems = normalizeSelectQuantityValue(form.resourcesDistributed);
+    const resourceTotal = resourceItems.length ? extraFieldNumericValue(resourceItems) : num('resourcesDistributed');
+    const resourceDetails = resourceItems.length ? extraFieldDisplay(resourceItems) : str('resourcesDetails');
 
     const t = toast.loading('جاري الإرسال...');
     setSubmitting(true);
@@ -188,7 +192,7 @@ export default function ReportPage() {
         violationsCount: num('violationsCount'), violationsArea: str('violationsArea',200),
         violationsTimeDetail: str('violationsTimeDetail',50), violationsDetails: str('violationsDetails'),
         deathsCount: num('deathsCount'), deathsLocationMgrs: str('deathsLocationMgrs',50), deathsActionTaken: str('deathsActionTaken'),
-        resourcesDistributed: num('resourcesDistributed'), resourcesDetails: str('resourcesDetails'),
+        resourcesDistributed: resourceTotal, resourcesDetails: resourceDetails,
         eventsCount: num('eventsCount'), eventsDetails: str('eventsDetails'),
         eventsCoordinates: locations['eventsLocation'] ? [locations['eventsLocation'] as Pt] : [],
         visitsCount: num('visitsCount'), visitsSummary: str('visitsSummary'),

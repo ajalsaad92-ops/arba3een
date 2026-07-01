@@ -1,6 +1,7 @@
 import { OFFICES, officeById } from '../data/offices';
 import type { DailyReport, Emergency, Profile } from '../data/types';
 import { operationalDateDaysAgo } from './opDate';
+import { extraFieldNumericValue } from './extraFieldStats';
 
 export interface Insight {
   id: string;
@@ -63,7 +64,7 @@ export function buildInsights(
 
   // 3) Top services / resources
   const resByOffice = todayReports
-    .map(r => ({ off: officeById(r.officeId), val: r.resourcesDistributed || 0, r }))
+    .map(r => ({ off: officeById(r.officeId), val: extraFieldNumericValue((r as any).resourcesDistributed), r }))
     .filter(x => x.val > 0)
     .sort((a, b) => b.val - a.val);
   if (resByOffice[0]) {

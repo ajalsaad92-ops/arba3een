@@ -12,6 +12,7 @@ import { INITIAL_BORDER_CROSSINGS, type BorderCrossing } from '../data/borderCro
 import { OFFICES as OFFICES_FALLBACK, type Office } from '../data/offices';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { operationalDate } from './opDate';
+import { extraFieldDisplay, extraFieldNumericValue, normalizeSelectQuantityValue } from './extraFieldStats';
 
 const SINGLE_TIME_WINDOW_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -135,6 +136,9 @@ function rowToReport(r: any): DailyReport {
 function reportToRow(rep: DailyReport): any {
   const num = (v: any) => (typeof v === 'number' && isFinite(v) ? v : 0);
   const txt = (v: any, max = 5000) => String(v ?? '').slice(0, max);
+  const resourceItems = normalizeSelectQuantityValue((rep as any).resourcesDistributed);
+  const resourceTotal = resourceItems.length ? extraFieldNumericValue(resourceItems) : num(rep.resourcesDistributed);
+  const resourceDetails = resourceItems.length ? extraFieldDisplay(resourceItems) : rep.resourcesDetails;
   return {
     id: rep.id?.startsWith?.('seed-') || rep.id?.startsWith?.('r-') ? undefined : rep.id,
     office_id: rep.officeId,
@@ -156,8 +160,8 @@ function reportToRow(rep: DailyReport): any {
     deaths_count: num(rep.deathsCount),
     deaths_location_mgrs: txt(rep.deathsLocationMgrs, 50),
     deaths_action_taken: txt(rep.deathsActionTaken),
-    resources_distributed: num(rep.resourcesDistributed),
-    resources_details: txt(rep.resourcesDetails),
+    resources_distributed: resourceTotal,
+    resources_details: txt(resourceDetails),
     events_count: num(rep.eventsCount),
     events_details: txt(rep.eventsDetails),
     events_coordinates: Array.isArray(rep.eventsCoordinates) ? rep.eventsCoordinates.slice(0, 50) : [],
@@ -207,7 +211,7 @@ export function validateExtraFields(
           validated[key] = /^\d{2}:\d{2}$/.test(String(value)) ? value : null;
           break;
         case 'select':
-          validated[key] = value;
+          validated[key] = def.withQuantity ? normalizeSelectQuantityValue(value) : value;
           break;
         case 'location':
           if (value && typeof value.lat === 'number' && typeof value.lng === 'number') {
