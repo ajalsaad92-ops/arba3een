@@ -79,7 +79,10 @@ export function getVisibleKpiIds(
   ) ? ['resources'] : [];
   const dyn = dynamicStatKpiIds(defs);
   const merged = [...customKpis];
-  for (const id of [...autoFixed, ...dyn]) {
+  for (const id of autoFixed) {
+    if (!merged.includes(id)) merged.push(id);
+  }
+  for (const id of dyn) {
     if (!merged.includes(id) && !hiddenKpis.includes(id)) merged.push(id);
   }
   return merged;
