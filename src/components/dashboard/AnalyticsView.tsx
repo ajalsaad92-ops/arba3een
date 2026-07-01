@@ -39,7 +39,7 @@ function computeAggregates(reports: any[], officeIds: string[], extraKeys:string
     base.vehicles += r.vehiclesCount||0; base.processions += r.processionsCount||0;
     base.deaths += r.deathsCount||0; base.violations += r.violationsCount||0;
     base.events += r.eventsCount||0; base.incidents += r.incidentsCount||0;
-    base.resources += r.resourcesDistributed||0; base.deployment += r.deploymentCount||0;
+    base.resources += extraFieldNumericValue(r.resourcesDistributed); base.deployment += r.deploymentCount||0;
     if(r.extraFields){ for(const k of extraKeys){ base[`x:${k}`] += extraFieldNumericValue(r.extraFields[k]); }}
   }
   return base;

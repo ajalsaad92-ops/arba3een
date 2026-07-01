@@ -71,9 +71,15 @@ export function getVisibleKpiIds(
   defs: ReportFieldDefinition[],
   hiddenKpis: string[] = [],
 ): string[] {
+  const autoFixed = defs.some(f =>
+    f.isBuiltIn &&
+    f.fieldKey === 'resourcesDistributed' &&
+    !f.isHidden &&
+    (f.countInStats || (f.fieldType === 'select' && f.withQuantity))
+  ) ? ['resources'] : [];
   const dyn = dynamicStatKpiIds(defs);
   const merged = [...customKpis];
-  for (const id of dyn) {
+  for (const id of [...autoFixed, ...dyn]) {
     if (!merged.includes(id) && !hiddenKpis.includes(id)) merged.push(id);
   }
   return merged;

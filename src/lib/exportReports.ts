@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import type { DailyReport, Profile } from '../data/types';
 import type { ReportFieldDefinition } from '../data/types';
 import { officeById } from '../data/offices';
-import { extraFieldDisplay, extraFieldNumericValue } from './extraFieldStats';
+import { extraFieldDisplay, extraFieldNumericValue, isSelectQuantityValue } from './extraFieldStats';
 
 /** Format an ISO timestamp as a readable Baghdad-local date+time string. */
 function fmtDateTime(iso?: string): string {
@@ -42,6 +42,8 @@ export function exportComprehensiveReports(
     .map((r) => {
       const office = officeById(r.officeId);
       const submitter = userById.get(r.submittedBy);
+      const resourcesValue = (r as any).resourcesDistributed;
+      const resourceHasItems = isSelectQuantityValue(resourcesValue);
       const row: Record<string, any> = {
         'المكتب': office?.nameAr || r.officeId,
         'المحافظة': office?.governorateAr || '',
@@ -69,8 +71,8 @@ export function exportComprehensiveReports(
         'عدد الوفيات': r.deathsCount,
         'موقع الوفاة (MGRS)': r.deathsLocationMgrs,
         'الإجراء المتخذ': r.deathsActionTaken,
-        'الموارد الموزعة': r.resourcesDistributed,
-        'تفاصيل الموارد': r.resourcesDetails,
+        'الموارد الموزعة': resourceHasItems ? extraFieldNumericValue(resourcesValue) : r.resourcesDistributed,
+        'تفاصيل الموارد': resourceHasItems ? extraFieldDisplay(resourcesValue) : r.resourcesDetails,
         'عدد الفعاليات': r.eventsCount,
         'تفاصيل الفعاليات': r.eventsDetails,
         'عدد الزيارات': r.visitsCount,
