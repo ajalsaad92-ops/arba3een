@@ -176,12 +176,12 @@ export default function AppShell() {
           <div className="flex-1" />
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-500 font-mono">
+          <div className="hidden xl:flex items-center gap-1.5 text-[11px] text-slate-500 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>وقت السيرفر</span>
             <span className="text-slate-300">{state.serverTime.toLocaleTimeString('en-GB', { hour12: false })}</span>
           </div>
-          <div className="hidden md:flex items-center gap-1 text-[10px] text-slate-600" title="عدد المكاتب التي أرسلت تقرير اليوم">
+          <div className="hidden lg:flex items-center gap-1 text-[10px] text-slate-600" title="عدد المكاتب التي أرسلت تقرير اليوم">
             <span className="text-emerald-400 font-bold">{state.todayReports.length}</span>
             <span>/</span>
             <span>{OFFICES.length}</span>

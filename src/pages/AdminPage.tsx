@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
 import { supabase } from '../lib/supabase';
@@ -64,12 +64,21 @@ export default function AdminPage() {
   const lastLocOf = (userId: string) => state.agentLocations.find(a => a.agentId === userId);
   const isStale = (iso: string) => Date.now() - new Date(iso).getTime() > 120_000;
 
+  const editPaneRef = useRef<HTMLDivElement>(null);
+  const scrollToEdit = () => {
+    if (window.innerWidth < 1024) {
+      setTimeout(() => editPaneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
+  };
+
   const startCreate = () => {
     setDraft({ fullNameAr: '', role: 'agent', officeId: offices[0]?.id || 'KRB', permittedOfficeIds: [], specialPermissions: { canExport:false, canAddCrossings:false, canViewAllOffices:false, canOpenWindow:false, canEditReports:false }, isActive: true, password:'', confirmPassword:'' });
     setUsername(''); setUsernameError(''); setCreating(true); setEditing(null);
+    scrollToEdit();
   };
   const startEdit = (u: Profile) => {
     setDraft({ ...u, password:'', confirmPassword:'' }); setUsername(''); setUsernameError(''); setEditing(u); setCreating(false);
+    scrollToEdit();
   };
 
   const validateDraft = () => {
@@ -217,7 +226,7 @@ export default function AdminPage() {
                   className="w-full bg-[#0d0d0d] border border-[#232323] rounded-md pr-9 pl-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none" />
               </div>
             </div>
-            <div className="divide-y divide-[#232323] max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-[#232323] max-h-[45vh] lg:max-h-[600px] overflow-y-auto">
               {paginated.length===0 && <EmptyState title="لا يوجد مستخدمون" description="جرّب تغيير كلمات البحث" />}
               {paginated.map(u => {
                 const loc = lastLocOf(u.id);
@@ -257,7 +266,7 @@ export default function AdminPage() {
             )}
           </div>
 
-          <div className="lg:col-span-3 bg-[#1a1a1a] border border-[#232323] rounded-xl p-4">
+          <div ref={editPaneRef} className="lg:col-span-3 bg-[#1a1a1a] border border-[#232323] rounded-xl p-4 scroll-mt-16">
             {!creating && !editing ? (
               <EmptyState icon={Shield} title="اختر مستخدماً للتعديل" description="أو أنشئ مستخدماً جديداً من الزر بالأعلى" />
             ) : (
