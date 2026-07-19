@@ -58,13 +58,16 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
 
   const activeMetric = CHART_METRICS.find(m=>m.id===chartMetric) || CHART_METRICS[0];
   const officesForChart = useMemo(()=> availableOffices.filter(o=> selectedChartOffices.includes(o.id)).slice(0,8), [availableOffices, selectedChartOffices]);
+  const visibleIds = useMemo(
+    () => new Set(getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis)),
+    [state.customKpis, state.fieldDefinitions, state.hiddenKpis]
+  );
   const additionalKpis = useMemo(() => {
     const alreadyShown = new Set(['visitors', 'vehicles', 'deaths', 'violations', 'events', 'emergencies']);
-    const visible = getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis)
-      .filter(id => !alreadyShown.has(id));
+    const visible = [...visibleIds].filter(id => !alreadyShown.has(id));
     const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
     return visible.map(id => catalog.find(k => k.id === id)).filter(Boolean);
-  }, [state.customKpis, state.fieldDefinitions, state.hiddenKpis]);
+  }, [visibleIds, state.fieldDefinitions]);
 
   const hasAnyData = state.todayReports.length > 0 || state.historicalReports.length > 0;
 
@@ -102,19 +105,21 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
         </div>
       )}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="relative">
-          <KpiCard label={visitorFlow==='in' ? 'الوافدون' : 'المغادرون'} value={visitorFlow==='in' ? agg.visitorsIn : agg.visitorsOut}
-            icon={Users} size="lg" trend={trend(visitorFlow==='in'?agg.visitorsIn:agg.visitorsOut, visitorFlow==='in'?aggYesterday.visitorsIn:aggYesterday.visitorsOut)}
-            sparklineData={sparklineFor(visitorFlow==='in' ? 'visitorsIn':'visitorsOut')} borderGlow tone="amber" />
-          <div className="absolute top-2 left-2 flex rounded-md overflow-hidden border border-amber-500/30 text-[10px] font-bold">
-            <button onClick={()=>setVisitorFlow('in')} className={visitorFlow==='in'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#070B09] text-amber-300'}>وافدون</button>
-            <button onClick={()=>setVisitorFlow('out')} className={visitorFlow==='out'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#070B09] text-amber-300'}>مغادرون</button>
+        {visibleIds.has('visitors') && (
+          <div className="relative">
+            <KpiCard label={visitorFlow==='in' ? 'الوافدون' : 'المغادرون'} value={visitorFlow==='in' ? agg.visitorsIn : agg.visitorsOut}
+              icon={Users} size="lg" trend={trend(visitorFlow==='in'?agg.visitorsIn:agg.visitorsOut, visitorFlow==='in'?aggYesterday.visitorsIn:aggYesterday.visitorsOut)}
+              sparklineData={sparklineFor(visitorFlow==='in' ? 'visitorsIn':'visitorsOut')} borderGlow tone="amber" />
+            <div className="absolute top-2 left-2 flex rounded-md overflow-hidden border border-amber-500/30 text-[10px] font-bold">
+              <button onClick={()=>setVisitorFlow('in')} className={visitorFlow==='in'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#070B09] text-amber-300'}>وافدون</button>
+              <button onClick={()=>setVisitorFlow('out')} className={visitorFlow==='out'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#070B09] text-amber-300'}>مغادرون</button>
+            </div>
           </div>
-        </div>
-        <KpiCard label="الوفيات" value={agg.deaths} icon={AlertOctagon} size="lg" trend={trend(agg.deaths, aggYesterday.deaths)} sparklineData={sparklineFor('deaths')} tone="red" />
-        <KpiCard label="الخروقات" value={agg.violations} icon={X} size="lg" trend={trend(agg.violations, aggYesterday.violations)} sparklineData={sparklineFor('violations')} tone="orange" />
-        <KpiCard label="الفعاليات" value={agg.events} icon={Activity} size="lg" trend={trend(agg.events, aggYesterday.events)} sparklineData={sparklineFor('events')} tone="purple" />
-        <KpiCard label="العجلات" value={agg.vehicles} icon={Truck} size="lg" trend={trend(agg.vehicles, aggYesterday.vehicles)} sparklineData={sparklineFor('vehicles')} tone="blue" />
+        )}
+        {visibleIds.has('deaths') && <KpiCard label="الوفيات" value={agg.deaths} icon={AlertOctagon} size="lg" trend={trend(agg.deaths, aggYesterday.deaths)} sparklineData={sparklineFor('deaths')} tone="red" />}
+        {visibleIds.has('violations') && <KpiCard label="الخروقات" value={agg.violations} icon={X} size="lg" trend={trend(agg.violations, aggYesterday.violations)} sparklineData={sparklineFor('violations')} tone="orange" />}
+        {visibleIds.has('events') && <KpiCard label="الفعاليات" value={agg.events} icon={Activity} size="lg" trend={trend(agg.events, aggYesterday.events)} sparklineData={sparklineFor('events')} tone="purple" />}
+        {visibleIds.has('vehicles') && <KpiCard label="العجلات" value={agg.vehicles} icon={Truck} size="lg" trend={trend(agg.vehicles, aggYesterday.vehicles)} sparklineData={sparklineFor('vehicles')} tone="blue" />}
         {additionalKpis.map((k:any) => {
           const v = (agg as any)[k.id] || 0;
           const y = (aggYesterday as any)[k.id] || 0;
