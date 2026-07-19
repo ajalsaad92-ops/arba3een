@@ -302,8 +302,28 @@ function rowToFieldDefinition(r: any): ReportFieldDefinition {
     allowedUserIds: Array.isArray(r.allowed_user_ids) ? r.allowed_user_ids : [],
     options: Array.isArray(r.options) ? r.options : [],
     withQuantity: !!r.with_quantity, allowFreeText: !!r.allow_free_text,
+    isFrozen: !!r.is_frozen,
   };
 }
+function rowToFrozenRequest(r: any): import('../data/types').FrozenFieldChangeRequest {
+  return {
+    id: r.id, officeId: r.office_id, fieldKey: r.field_key,
+    fieldLabelAr: r.field_label_ar ?? null,
+    currentValue: r.current_value, requestedValue: r.requested_value,
+    reason: r.reason ?? '', status: r.status,
+    requestedById: r.requested_by, requestedByName: r.requested_by_name ?? null,
+    supervisorApprovedById: r.supervisor_approved_by ?? null,
+    supervisorApprovedAt: r.supervisor_approved_at ?? null,
+    directorApprovedById: r.director_approved_by ?? null,
+    directorApprovedAt: r.director_approved_at ?? null,
+    rejectedById: r.rejected_by ?? null,
+    rejectedAt: r.rejected_at ?? null,
+    rejectionReason: r.rejection_reason ?? null,
+    appliedAt: r.applied_at ?? null,
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  };
+}
+
 function rowToOffice(r: any): Office {
   return { id: r.id, code: r.code ?? r.id, nameAr: r.name_ar, governorateAr: r.governorate_ar ?? '', lat: Number(r.lat), lng: Number(r.lng) };
 }
