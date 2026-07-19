@@ -63,7 +63,11 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
   const availableOffices = useMemo(()=> offices.filter((o:Office)=> effectiveFilter.includes(o.id)), [offices, effectiveFilter]);
   const [selectedChartOffices, setSelectedChartOffices] = usePersisted<string[]>('dash:selectedChartOffices', availableOffices.slice(0,5).map(o=>o.id));
 
-  const activeMetric = CHART_METRICS.find(m=>m.id===chartMetric) || CHART_METRICS[0];
+  const CHART_METRICS = useMemo(
+    () => ALL_CHART_METRICS.filter(m => !isBuiltInFieldHidden(state.fieldDefinitions, m.field)),
+    [state.fieldDefinitions]
+  );
+  const activeMetric = CHART_METRICS.find(m=>m.id===chartMetric) || CHART_METRICS[0] || ALL_CHART_METRICS[0];
   const officesForChart = useMemo(()=> availableOffices.filter(o=> selectedChartOffices.includes(o.id)).slice(0,8), [availableOffices, selectedChartOffices]);
   const visibleIds = useMemo(
     () => new Set(getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis)),
