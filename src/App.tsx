@@ -100,6 +100,11 @@ function AnimatedRoutes() {
             }>
               <Route index element={<ReportFieldsPage />} />
             </Route>
+            <Route path="/frozen-requests" element={
+              <ProtectedRoute roles={['director','supervisor','manager','agent']} />
+            }>
+              <Route index element={<FrozenRequestsPage />} />
+            </Route>
             <Route path="/admin" element={
               <ProtectedRoute roles={['director']} />
             }>
@@ -107,6 +112,7 @@ function AnimatedRoutes() {
             </Route>
           </Route>
         </Route>
+
 
         <Route path="*" element={<NotFound />} />
       </Routes>
