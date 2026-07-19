@@ -3,9 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { OpsProvider, useOps } from './store/opsStore';
 import { WalkieProvider } from './store/walkieStore';
 import AppShell from './components/AppShell';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OfflineBanner } from './components/OfflineBanner';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import BackButtonHandler from './components/BackButtonHandler';
 import { startLiveLocation } from './lib/liveLocation';
 
 // lazy pages – code splitting
@@ -123,15 +125,22 @@ function AnimatedRoutes() {
 export default function App() {
   // Request location once on app open (all devices) and keep tracking in the
   // background so any feature can read the live position without re-prompting.
-  useEffect(() => { startLiveLocation(); }, []);
+  useEffect(() => {
+    startLiveLocation();
+    const onHint = () => toast.info('اضغط زر الرجوع مرة أخرى للخروج من التطبيق');
+    window.addEventListener('app:back-exit-hint', onHint);
+    return () => window.removeEventListener('app:back-exit-hint', onHint);
+  }, []);
 
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <OpsProvider>
           <WalkieProvider>
+            <BackButtonHandler />
             <OfflineBanner />
             <AnimatedRoutes />
+            <PWAInstallPrompt />
             <Toaster richColors position="top-center" dir="rtl" />
           </WalkieProvider>
         </OpsProvider>
