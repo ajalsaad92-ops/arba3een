@@ -411,16 +411,44 @@ function buildPlan(groups: ReportFieldGroup[], defs: ReportFieldDefinition[], us
   })).filter(x => x.fields.length > 0).sort((a,b)=>a.group.sortOrder-b.group.sortOrder);
 }
 
-const MemoField = memo(DynamicFieldRenderer, (p,n)=> p.field.id===n.field.id && p.value===n.value && p.error===n.error && p.location===n.location && (p.route?.length??0)===(n.route?.length??0));
+const MemoField = memo(DynamicFieldRenderer, (p,n)=> p.field.id===n.field.id && p.value===n.value && p.error===n.error && p.location===n.location && (p.route?.length??0)===(n.route?.length??0) && p.locked===n.locked);
 
-function DynamicFieldRenderer({ field, value, error, onChange, location, route, onOpenPicker, onRemoveRoutePoint, onClearLocation }:{
+function renderLockedValue(field: ReportFieldDefinition, value:any, location:Pt|null, route:Pt[]): string {
+  if (field.fieldType === 'location') return location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}` : '—';
+  if (field.fieldType === 'multi_location' || field.fieldType === 'route') return route?.length ? `${route.length} نقطة` : '—';
+  if (field.fieldType === 'select' && field.withQuantity) {
+    if (!Array.isArray(value) || !value.length) return '—';
+    return value.map((r:any)=> `${r.item} × ${r.qty}`).join('، ');
+  }
+  if (value === undefined || value === null || value === '') return '—';
+  return String(value);
+}
+
+function DynamicFieldRenderer({ field, value, error, onChange, location, route, locked, onRequestEdit, onOpenPicker, onRemoveRoutePoint, onClearLocation }:{
   field: ReportFieldDefinition; value:any; error?:string; onChange:(v:any)=>void;
-  location: Pt | null; route: Pt[]; onOpenPicker:(m:'single'|'multi'|'route',l:string)=>void;
+  location: Pt | null; route: Pt[]; locked?: boolean; onRequestEdit?: ()=>void;
+  onOpenPicker:(m:'single'|'multi'|'route',l:string)=>void;
   onRemoveRoutePoint:(i:number)=>void; onClearLocation:()=>void;
 }) {
+  if (locked) {
+    return (
+      <div>
+        <label className="text-xs text-slate-300 mb-1.5 block font-semibold flex items-center justify-between">
+          <span className="flex items-center gap-1.5"><Lock className="w-3 h-3 text-blue-400" />{field.labelAr}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">مجمّد</span>
+        </label>
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#0d0d0d] border border-blue-500/30 text-xs">
+          <span className="flex-1 text-slate-200 truncate">{renderLockedValue(field, value, location, route)}</span>
+          <button onClick={onRequestEdit} className="text-[11px] px-2 py-1 rounded-md bg-blue-500/20 border border-blue-500/40 text-blue-200 font-bold hover:bg-blue-500/30">طلب تعديل</button>
+        </div>
+        {field.descriptionAr && <div className="text-[10px] text-slate-500 mt-1">{field.descriptionAr}</div>}
+      </div>
+    );
+  }
   const inputCls = `w-full bg-[#232323] border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 ${error ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/20' : 'border-[#2c2c2c] focus:border-amber-500/40 focus:ring-amber-500/20'}`;
   const Label = <label className="text-xs text-slate-300 mb-1.5 block font-semibold flex items-center justify-between"><span>{field.labelAr}</span>{field.maxLength && <span className="text-[10px] text-slate-500">{String(value??'').length}/{field.maxLength}</span>}</label>;
   const helper = field.descriptionAr ? <div className="text-[10px] text-slate-500 mt-1">{field.descriptionAr}</div> : null;
+
 
   if (field.fieldType === 'number') return <div>{Label}<input type="text" inputMode="numeric" value={value ?? ''} onChange={e=>onChange(e.target.value.replace(/[^0-9]/g,'').slice(0,12))} placeholder={field.placeholderAr ?? ''} className={inputCls} />{error ? <div className="text-[10px] text-red-400 mt-1">{error}</div> : helper}</div>;
   if (field.fieldType === 'textarea') return <div>{Label}<textarea value={value ?? ''} onChange={e=>onChange(e.target.value.slice(0, field.maxLength || 2000))} className={inputCls + ' min-h-20 resize-none'} placeholder={field.placeholderAr ?? ''} />{error ? <div className="text-[10px] text-red-400 mt-1">{error}</div> : helper}</div>;
