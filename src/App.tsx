@@ -75,6 +75,7 @@ function AnimatedRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
 
         <Route element={<ProtectedRoute roles={['director','supervisor','manager','agent','viewer']} />}>
           <Route element={<AppShell />}>
