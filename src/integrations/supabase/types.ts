@@ -388,6 +388,104 @@ export type Database = {
           },
         ]
       }
+      frozen_field_change_requests: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          current_value: Json | null
+          director_approved_at: string | null
+          director_approved_by: string | null
+          field_key: string
+          field_label_ar: string | null
+          id: string
+          office_id: string
+          reason: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          requested_by: string
+          requested_by_name: string | null
+          requested_value: Json
+          status: string
+          supervisor_approved_at: string | null
+          supervisor_approved_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          current_value?: Json | null
+          director_approved_at?: string | null
+          director_approved_by?: string | null
+          field_key: string
+          field_label_ar?: string | null
+          id?: string
+          office_id: string
+          reason: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          requested_by: string
+          requested_by_name?: string | null
+          requested_value: Json
+          status?: string
+          supervisor_approved_at?: string | null
+          supervisor_approved_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          current_value?: Json | null
+          director_approved_at?: string | null
+          director_approved_by?: string | null
+          field_key?: string
+          field_label_ar?: string | null
+          id?: string
+          office_id?: string
+          reason?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          requested_by?: string
+          requested_by_name?: string | null
+          requested_value?: Json
+          status?: string
+          supervisor_approved_at?: string | null
+          supervisor_approved_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "frozen_field_change_requests_director_approved_by_fkey"
+            columns: ["director_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frozen_field_change_requests_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frozen_field_change_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frozen_field_change_requests_supervisor_approved_by_fkey"
+            columns: ["supervisor_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offices: {
         Row: {
           code: string
@@ -502,6 +600,7 @@ export type Database = {
           group_id: string
           id: string
           is_built_in: boolean
+          is_frozen: boolean
           is_hidden: boolean
           label_ar: string
           max_length: number | null
@@ -523,6 +622,7 @@ export type Database = {
           group_id: string
           id?: string
           is_built_in?: boolean
+          is_frozen?: boolean
           is_hidden?: boolean
           label_ar: string
           max_length?: number | null
@@ -544,6 +644,7 @@ export type Database = {
           group_id?: string
           id?: string
           is_built_in?: boolean
+          is_frozen?: boolean
           is_hidden?: boolean
           label_ar?: string
           max_length?: number | null

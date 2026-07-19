@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useOps } from '../store/opsStore';
-import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal } from 'lucide-react';
+import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal, Lock } from 'lucide-react';
 import EmergencyBanner from './EmergencyBanner';
 import PushNotificationToggle from './PushNotificationToggle';
 import { OFFICES } from '../data/offices';
@@ -59,7 +59,9 @@ export default function AppShell() {
     { to: '/history', label: 'السجل والتصدير', icon: History, show: !isAgent && !isViewer },
     { to: '/supervisor-panel', label: 'لوحة المشرف', icon: Timer, show: isSupervisorPlus },
     { to: '/report-fields', label: 'حقول التقرير', icon: Settings2, show: isSupervisorPlus },
+    { to: '/frozen-requests', label: 'طلبات التجميد', icon: Lock, show: !isViewer },
     { to: '/admin', label: 'المستخدمون', icon: Users, show: isDirector },
+
   ];
 
   // Where each notification type should take the user when clicked.

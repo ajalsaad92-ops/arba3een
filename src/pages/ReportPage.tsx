@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
-import { MapPin, ChevronDown, Send, MapPinned, X, Check, Crosshair, History, Plus } from 'lucide-react';
+import { MapPin, ChevronDown, Send, MapPinned, X, Check, Crosshair, History, Plus, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import TimeLockBar from '../components/TimeLockBar';
 import MapPicker from '../components/MapPicker';
-import type { ReportFieldDefinition, ReportFieldGroup } from '../data/types';
+import type { ReportFieldDefinition, ReportFieldGroup, DailyReport } from '../data/types';
 import { operationalDate } from '../lib/opDate';
-import { validateExtraFields } from '../lib/api';
+import { api, validateExtraFields } from '../lib/api';
 import { extraFieldDisplay, extraFieldNumericValue, normalizeSelectQuantityValue } from '../lib/extraFieldStats';
 import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation';
 
@@ -40,6 +40,52 @@ export default function ReportPage() {
   const [reporterLng, setReporterLng] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState(false);
+  const [editReqField, setEditReqField] = useState<ReportFieldDefinition | null>(null);
+
+  // Latest report for this office (today first, else most recent historical)
+  const priorReport: DailyReport | undefined = useMemo(() => {
+    const t = state.todayReports.find(r => r.officeId === user.officeId);
+    if (t) return t;
+    const hist = state.historicalReports.filter(r => r.officeId === user.officeId);
+    return hist.sort((a,b) => (b.reportDate + b.submittedAt).localeCompare(a.reportDate + a.submittedAt))[0];
+  }, [state.todayReports, state.historicalReports, user.officeId]);
+
+  const priorValueOf = (f: ReportFieldDefinition): any => {
+    if (!priorReport) return undefined;
+    if (f.isBuiltIn) return (priorReport as any)[f.fieldKey];
+    return priorReport.extraFields?.[f.fieldKey];
+  };
+  const hasPriorValue = (f: ReportFieldDefinition): boolean => {
+    const v = priorValueOf(f);
+    if (v === undefined || v === null || v === '') return false;
+    if (Array.isArray(v) && v.length === 0) return false;
+    if (typeof v === 'number' && v === 0) return false;
+    return true;
+  };
+  const isLocked = (f: ReportFieldDefinition): boolean => !!f.isFrozen && hasPriorValue(f);
+
+  // Pre-fill locked (frozen) fields with the prior value so the user sees them.
+  useEffect(() => {
+    const nextForm: Record<string, any> = {};
+    const nextLoc: Record<string, any> = {};
+    const nextRoutes: Record<string, any> = {};
+    let dirty = false;
+    for (const g of plan) for (const f of g.fields) {
+      if (!isLocked(f)) continue;
+      const v = priorValueOf(f);
+      if (f.fieldType === 'location') { nextLoc[f.fieldKey] = v; dirty = true; }
+      else if (f.fieldType === 'multi_location' || f.fieldType === 'route') { nextRoutes[f.fieldKey] = Array.isArray(v) ? v : []; dirty = true; }
+      else { nextForm[f.fieldKey] = v; dirty = true; }
+    }
+    if (dirty) {
+      setForm(prev => ({ ...nextForm, ...prev, ...nextForm }));
+      setLocations(prev => ({ ...nextLoc, ...prev, ...nextLoc }));
+      setRoutes(prev => ({ ...nextRoutes, ...prev, ...nextRoutes }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priorReport, state.fieldDefinitions]);
+
+
 
   const reportExists = state.todayReports.find(r => r.officeId === user.officeId);
   const today = operationalDate();
@@ -282,16 +328,21 @@ export default function ReportPage() {
                   </button>
                   {expanded && (
                     <div className="p-4 pt-0 space-y-3">
-                      {fields.map(field => (
+                      {fields.map(field => {
+                        const locked = isLocked(field);
+                        return (
                         <MemoField key={field.id} field={field} value={form[field.fieldKey]} error={formErrors[field.fieldKey]}
                           onChange={(v:any)=>updateField(field.fieldKey, v, field)}
                           location={locations[field.fieldKey] ?? null}
                           route={routes[field.fieldKey] ?? []}
+                          locked={locked}
+                          onRequestEdit={()=> setEditReqField(field)}
                           onOpenPicker={(mode,label)=>setPicker({ fieldKey: field.fieldKey, mode, label })}
                           onRemoveRoutePoint={(i:number)=> setRoutes(r=>({...r,[field.fieldKey]:(r[field.fieldKey]||[]).filter((_,idx)=>idx!==i)}))}
                           onClearLocation={()=> setLocations(l=>({...l,[field.fieldKey]:null}))}
                         />
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -349,6 +400,101 @@ export default function ReportPage() {
           </div>
         </div>
       )}
+      {editReqField && (
+        <FrozenEditRequestDialog
+          field={editReqField}
+          currentValue={priorValueOf(editReqField)}
+          officeId={user.officeId}
+          requesterId={user.id}
+          requesterName={user.fullNameAr}
+          onClose={()=> setEditReqField(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function FrozenEditRequestDialog({ field, currentValue, officeId, requesterId, requesterName, onClose }:{
+  field: ReportFieldDefinition; currentValue:any; officeId:string; requesterId:string; requesterName:string; onClose:()=>void;
+}) {
+  const [reason, setReason] = useState('');
+  const [newVal, setNewVal] = useState<string>(() => {
+    if (currentValue == null) return '';
+    if (typeof currentValue === 'object') return JSON.stringify(currentValue);
+    return String(currentValue);
+  });
+  const [busy, setBusy] = useState(false);
+
+  const parseVal = (): any => {
+    if (field.fieldType === 'number') return Number(newVal) || 0;
+    if (field.fieldType === 'select' && field.withQuantity) {
+      try { const j = JSON.parse(newVal); return Array.isArray(j) ? j : []; } catch { return []; }
+    }
+    return newVal;
+  };
+
+  const submit = async () => {
+    if (reason.trim().length < 5) { toast.error('السبب مطلوب (5 أحرف على الأقل)'); return; }
+    setBusy(true);
+    const t = toast.loading('جاري رفع الطلب...');
+    try {
+      await api.createFrozenRequest({
+        officeId, fieldKey: field.fieldKey, fieldLabelAr: field.labelAr,
+        currentValue, requestedValue: parseVal(), reason: reason.trim(),
+        requestedById: requesterId, requestedByName: requesterName,
+      });
+      toast.success('تم رفع الطلب — بانتظار موافقة المشرف ثم المدير العام', { id: t });
+      onClose();
+    } catch (e:any) { toast.error(e?.message || 'فشل رفع الطلب', { id: t }); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[600] bg-black/70 flex items-center justify-center p-3" onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} className="w-full max-w-lg bg-[#0d0d0d] border-2 border-blue-500/40 rounded-2xl p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Lock className="w-4 h-4 text-blue-400" />
+          <div className="text-lg font-black text-blue-300">طلب تعديل حقل مجمّد</div>
+        </div>
+        <div className="text-xs text-slate-400">الحقل: <b className="text-slate-200">{field.labelAr}</b></div>
+        <div className="p-2 rounded-md bg-[#232323] text-xs text-slate-300">
+          <div className="text-[10px] text-slate-500 mb-0.5">القيمة الحالية</div>
+          <div dir="auto">{typeof currentValue === 'object' ? JSON.stringify(currentValue) : String(currentValue ?? '—')}</div>
+        </div>
+        <div>
+          <label className="text-xs text-slate-300 mb-1 block font-semibold">القيمة المطلوبة</label>
+          {field.fieldType === 'select' && field.withQuantity ? (
+            <textarea value={newVal} onChange={e=>setNewVal(e.target.value)} rows={4}
+              placeholder='[{"item":"...","qty":1}]'
+              className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg p-2 text-xs text-white font-mono" />
+          ) : field.fieldType === 'select' ? (
+            <select value={newVal} onChange={e=>setNewVal(e.target.value)} className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg p-2 text-sm text-white">
+              <option value="">— اختر —</option>
+              {(field.options ?? []).map(o=><option key={o} value={o}>{o}</option>)}
+            </select>
+          ) : field.fieldType === 'textarea' ? (
+            <textarea value={newVal} onChange={e=>setNewVal(e.target.value)} rows={3}
+              className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg p-2 text-sm text-white" />
+          ) : (
+            <input type={field.fieldType==='number'?'number':'text'} value={newVal} onChange={e=>setNewVal(e.target.value)}
+              className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg p-2 text-sm text-white" />
+          )}
+        </div>
+        <div>
+          <label className="text-xs text-slate-300 mb-1 block font-semibold">سبب طلب التعديل</label>
+          <textarea value={reason} onChange={e=>setReason(e.target.value.slice(0,1000))} rows={3}
+            placeholder="اشرح سبب الحاجة إلى التعديل..."
+            className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg p-2 text-sm text-white" />
+          <div className="text-[10px] text-slate-500 mt-1">{reason.length}/1000</div>
+        </div>
+        <div className="flex gap-2 pt-2">
+          <button onClick={onClose} className="flex-1 py-2 rounded-lg bg-[#232323] text-slate-300 font-bold">إلغاء</button>
+          <button onClick={submit} disabled={busy || reason.trim().length < 5}
+            className="flex-1 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-black font-black disabled:opacity-50">
+            {busy ? 'جاري الإرسال...' : 'رفع الطلب'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -360,16 +506,44 @@ function buildPlan(groups: ReportFieldGroup[], defs: ReportFieldDefinition[], us
   })).filter(x => x.fields.length > 0).sort((a,b)=>a.group.sortOrder-b.group.sortOrder);
 }
 
-const MemoField = memo(DynamicFieldRenderer, (p,n)=> p.field.id===n.field.id && p.value===n.value && p.error===n.error && p.location===n.location && (p.route?.length??0)===(n.route?.length??0));
+const MemoField = memo(DynamicFieldRenderer, (p,n)=> p.field.id===n.field.id && p.value===n.value && p.error===n.error && p.location===n.location && (p.route?.length??0)===(n.route?.length??0) && p.locked===n.locked);
 
-function DynamicFieldRenderer({ field, value, error, onChange, location, route, onOpenPicker, onRemoveRoutePoint, onClearLocation }:{
+function renderLockedValue(field: ReportFieldDefinition, value:any, location:Pt|null, route:Pt[]): string {
+  if (field.fieldType === 'location') return location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}` : '—';
+  if (field.fieldType === 'multi_location' || field.fieldType === 'route') return route?.length ? `${route.length} نقطة` : '—';
+  if (field.fieldType === 'select' && field.withQuantity) {
+    if (!Array.isArray(value) || !value.length) return '—';
+    return value.map((r:any)=> `${r.item} × ${r.qty}`).join('، ');
+  }
+  if (value === undefined || value === null || value === '') return '—';
+  return String(value);
+}
+
+function DynamicFieldRenderer({ field, value, error, onChange, location, route, locked, onRequestEdit, onOpenPicker, onRemoveRoutePoint, onClearLocation }:{
   field: ReportFieldDefinition; value:any; error?:string; onChange:(v:any)=>void;
-  location: Pt | null; route: Pt[]; onOpenPicker:(m:'single'|'multi'|'route',l:string)=>void;
+  location: Pt | null; route: Pt[]; locked?: boolean; onRequestEdit?: ()=>void;
+  onOpenPicker:(m:'single'|'multi'|'route',l:string)=>void;
   onRemoveRoutePoint:(i:number)=>void; onClearLocation:()=>void;
 }) {
+  if (locked) {
+    return (
+      <div>
+        <label className="text-xs text-slate-300 mb-1.5 block font-semibold flex items-center justify-between">
+          <span className="flex items-center gap-1.5"><Lock className="w-3 h-3 text-blue-400" />{field.labelAr}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">مجمّد</span>
+        </label>
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#0d0d0d] border border-blue-500/30 text-xs">
+          <span className="flex-1 text-slate-200 truncate">{renderLockedValue(field, value, location, route)}</span>
+          <button onClick={onRequestEdit} className="text-[11px] px-2 py-1 rounded-md bg-blue-500/20 border border-blue-500/40 text-blue-200 font-bold hover:bg-blue-500/30">طلب تعديل</button>
+        </div>
+        {field.descriptionAr && <div className="text-[10px] text-slate-500 mt-1">{field.descriptionAr}</div>}
+      </div>
+    );
+  }
   const inputCls = `w-full bg-[#232323] border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 ${error ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/20' : 'border-[#2c2c2c] focus:border-amber-500/40 focus:ring-amber-500/20'}`;
   const Label = <label className="text-xs text-slate-300 mb-1.5 block font-semibold flex items-center justify-between"><span>{field.labelAr}</span>{field.maxLength && <span className="text-[10px] text-slate-500">{String(value??'').length}/{field.maxLength}</span>}</label>;
   const helper = field.descriptionAr ? <div className="text-[10px] text-slate-500 mt-1">{field.descriptionAr}</div> : null;
+
 
   if (field.fieldType === 'number') return <div>{Label}<input type="text" inputMode="numeric" value={value ?? ''} onChange={e=>onChange(e.target.value.replace(/[^0-9]/g,'').slice(0,12))} placeholder={field.placeholderAr ?? ''} className={inputCls} />{error ? <div className="text-[10px] text-red-400 mt-1">{error}</div> : helper}</div>;
   if (field.fieldType === 'textarea') return <div>{Label}<textarea value={value ?? ''} onChange={e=>onChange(e.target.value.slice(0, field.maxLength || 2000))} className={inputCls + ' min-h-20 resize-none'} placeholder={field.placeholderAr ?? ''} />{error ? <div className="text-[10px] text-red-400 mt-1">{error}</div> : helper}</div>;

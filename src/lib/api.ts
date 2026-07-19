@@ -302,8 +302,28 @@ function rowToFieldDefinition(r: any): ReportFieldDefinition {
     allowedUserIds: Array.isArray(r.allowed_user_ids) ? r.allowed_user_ids : [],
     options: Array.isArray(r.options) ? r.options : [],
     withQuantity: !!r.with_quantity, allowFreeText: !!r.allow_free_text,
+    isFrozen: !!r.is_frozen,
   };
 }
+function rowToFrozenRequest(r: any): import('../data/types').FrozenFieldChangeRequest {
+  return {
+    id: r.id, officeId: r.office_id, fieldKey: r.field_key,
+    fieldLabelAr: r.field_label_ar ?? null,
+    currentValue: r.current_value, requestedValue: r.requested_value,
+    reason: r.reason ?? '', status: r.status,
+    requestedById: r.requested_by, requestedByName: r.requested_by_name ?? null,
+    supervisorApprovedById: r.supervisor_approved_by ?? null,
+    supervisorApprovedAt: r.supervisor_approved_at ?? null,
+    directorApprovedById: r.director_approved_by ?? null,
+    directorApprovedAt: r.director_approved_at ?? null,
+    rejectedById: r.rejected_by ?? null,
+    rejectedAt: r.rejected_at ?? null,
+    rejectionReason: r.rejection_reason ?? null,
+    appliedAt: r.applied_at ?? null,
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  };
+}
+
 function rowToOffice(r: any): Office {
   return { id: r.id, code: r.code ?? r.id, nameAr: r.name_ar, governorateAr: r.governorate_ar ?? '', lat: Number(r.lat), lng: Number(r.lng) };
 }
@@ -751,6 +771,7 @@ export const api = {
       options: Array.isArray(f.options) ? f.options.slice(0, 50).map((o: any) => String(o).slice(0, 200)) : [],
       with_quantity: f.withQuantity ?? false,
       allow_free_text: f.allowFreeText ?? false,
+      is_frozen: f.isFrozen ?? false,
     };
     if (f.id) row.id = f.id;
     const { data, error } = await supabase.from('report_field_definitions').upsert(row).select('*').single();
@@ -762,4 +783,108 @@ export const api = {
     const { error } = await supabase.from('report_field_definitions').delete().eq('id', id);
     if (error) throw error;
   },
+
+  // ─── Frozen-field change requests ────────────────────────────
+  async listFrozenRequests(): Promise<import('../data/types').FrozenFieldChangeRequest[]> {
+    const { data, error } = await supabase.from('frozen_field_change_requests').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(rowToFrozenRequest);
+  },
+
+  async createFrozenRequest(input: {
+    officeId: string; fieldKey: string; fieldLabelAr: string;
+    currentValue: any; requestedValue: any; reason: string;
+    requestedById: string; requestedByName: string;
+  }): Promise<import('../data/types').FrozenFieldChangeRequest> {
+    if (!input.reason || input.reason.trim().length < 5) throw new Error('السبب مطلوب (5 أحرف على الأقل)');
+    const { data, error } = await supabase.from('frozen_field_change_requests').insert({
+      office_id: input.officeId,
+      field_key: input.fieldKey,
+      field_label_ar: input.fieldLabelAr,
+      current_value: input.currentValue ?? null,
+      requested_value: input.requestedValue ?? null,
+      reason: input.reason.trim().slice(0, 1000),
+      requested_by: input.requestedById,
+      requested_by_name: input.requestedByName,
+      status: 'pending_supervisor',
+    }).select('*').single();
+    if (error) throw error;
+    return rowToFrozenRequest(data);
+  },
+
+  async approveFrozenRequest(reqId: string, approverId: string, asRole: 'supervisor' | 'director'): Promise<import('../data/types').FrozenFieldChangeRequest> {
+    const { data: cur, error: e1 } = await supabase.from('frozen_field_change_requests').select('*').eq('id', reqId).single();
+    if (e1) throw e1;
+    const now = new Date().toISOString();
+    let patch: any = {};
+    if (asRole === 'supervisor') {
+      if (cur.status !== 'pending_supervisor') throw new Error('الطلب ليس بانتظار موافقة المشرف');
+      patch = { status: 'pending_director', supervisor_approved_by: approverId, supervisor_approved_at: now };
+    } else {
+      if (cur.status !== 'pending_director') throw new Error('الطلب ليس بانتظار موافقة المدير العام');
+      patch = { status: 'approved', director_approved_by: approverId, director_approved_at: now, applied_at: now };
+    }
+    const { data, error } = await supabase.from('frozen_field_change_requests').update(patch).eq('id', reqId).select('*').single();
+    if (error) throw error;
+    if (asRole === 'director') {
+      await applyFrozenChange(data);
+    }
+    return rowToFrozenRequest(data);
+  },
+
+  async rejectFrozenRequest(reqId: string, approverId: string, reason: string): Promise<import('../data/types').FrozenFieldChangeRequest> {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase.from('frozen_field_change_requests').update({
+      status: 'rejected', rejected_by: approverId, rejected_at: now,
+      rejection_reason: (reason || '').slice(0, 500),
+    }).eq('id', reqId).select('*').single();
+    if (error) throw error;
+    return rowToFrozenRequest(data);
+  },
 };
+
+// snake_case helper
+function toSnake(s: string): string {
+  return s.replace(/[A-Z]/g, m => '_' + m.toLowerCase());
+}
+
+// Applies an approved frozen-field change to the office's latest daily_reports row.
+// For built-in fields we UPDATE the mapped column; for extras we patch extra_fields JSONB.
+async function applyFrozenChange(row: any): Promise<void> {
+  try {
+    const { data: latest } = await supabase.from('daily_reports')
+      .select('id, extra_fields')
+      .eq('office_id', row.office_id)
+      .order('report_date', { ascending: false })
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!latest) return;
+
+    // detect built-in via existing field definitions
+    const { data: defs } = await supabase.from('report_field_definitions')
+      .select('field_key, is_built_in, field_type, with_quantity')
+      .eq('field_key', row.field_key)
+      .maybeSingle();
+
+    const val = row.requested_value;
+    if (defs?.is_built_in) {
+      const col = toSnake(row.field_key);
+      const update: any = {};
+      if (defs.field_type === 'number') update[col] = Number(val) || 0;
+      else if (defs.field_type === 'select' && defs.with_quantity) {
+        // built-in "select w/ qty" is unusual, but sum & store in the numeric column if present
+        const items = Array.isArray(val) ? val : [];
+        update[col] = items.reduce((s: number, i: any) => s + (Number(i?.qty) || 0), 0);
+      } else {
+        update[col] = typeof val === 'string' ? val : String(val ?? '');
+      }
+      await supabase.from('daily_reports').update(update).eq('id', latest.id);
+    } else {
+      const cur = (latest as any).extra_fields;
+      const extras = { ...(cur && typeof cur === 'object' ? cur : {}), [row.field_key]: val };
+      await supabase.from('daily_reports').update({ extra_fields: extras }).eq('id', latest.id);
+    }
+  } catch (e) { log('applyFrozenChange', e); }
+}
+

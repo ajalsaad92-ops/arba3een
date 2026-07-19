@@ -18,6 +18,8 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ReportFieldsPage = lazy(() => import('./pages/ReportFieldsPage'));
 const SupervisorPanelPage = lazy(() => import('./pages/SupervisorPanelPage'));
+const FrozenRequestsPage = lazy(() => import('./pages/FrozenRequestsPage'));
+
 
 function LoadingFallback() {
   return (
@@ -98,6 +100,11 @@ function AnimatedRoutes() {
             }>
               <Route index element={<ReportFieldsPage />} />
             </Route>
+            <Route path="/frozen-requests" element={
+              <ProtectedRoute roles={['director','supervisor','manager','agent']} />
+            }>
+              <Route index element={<FrozenRequestsPage />} />
+            </Route>
             <Route path="/admin" element={
               <ProtectedRoute roles={['director']} />
             }>
@@ -105,6 +112,7 @@ function AnimatedRoutes() {
             </Route>
           </Route>
         </Route>
+
 
         <Route path="*" element={<NotFound />} />
       </Routes>
