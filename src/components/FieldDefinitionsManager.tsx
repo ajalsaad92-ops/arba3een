@@ -260,6 +260,7 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
   const [optionsText, setOptionsText] = useState<string>((initial?.options ?? []).join('\n'));
   const [withQuantity, setWithQty]    = useState<boolean>(!!initial?.withQuantity);
   const [allowFreeText, setFreeText]  = useState<boolean>(!!initial?.allowFreeText);
+  const [isFrozen, setIsFrozen]       = useState<boolean>(!!initial?.isFrozen);
   // field_key: editable only when creating a new (non-built-in) field
   const [fieldKey, setFieldKey]       = useState<string>(initial?.fieldKey ?? '');
   const isNew = !initial;
