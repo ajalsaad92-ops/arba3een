@@ -10,6 +10,8 @@ import { operationalDate } from '../lib/opDate';
 import { api, validateExtraFields } from '../lib/api';
 import { extraFieldDisplay, extraFieldNumericValue, normalizeSelectQuantityValue } from '../lib/extraFieldStats';
 import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation';
+import { validateReportForm, validateMgrs } from '../lib/reportValidation';
+
 
 type Pt = { lat: number; lng: number };
 
@@ -188,16 +190,13 @@ export default function ReportPage() {
   const handleSubmit = async () => {
     if (submitting) return;
     if (!canSubmit && !extensionActive) { setShowExtension(true); return; }
-    if (mgrs && !validateMgrsLocal(mgrs)) { toast.error('MGRS غير صحيح'); return; }
+    if (mgrs && !validateMgrs(mgrs)) { setMgrsError('صيغة MGRS غير صحيحة'); toast.error('MGRS غير صحيح'); return; }
     if (!mgrs && (reporterLat == null || reporterLng == null)) { toast.error('حدد موقعك'); return; }
 
-    const newErr: Record<string,string> = {};
-    for (const grp of plan) for (const f of grp.fields) {
-      const v = form[f.fieldKey];
-      if (f.fieldType === 'number' && v !== '' && v !== undefined) { const n = Number(v); if (isNaN(n) || n < 0) newErr[f.fieldKey] = 'قيمة غير صالحة'; }
-      if ((f.fieldType === 'text' || f.fieldType === 'textarea') && f.maxLength && String(v||'').length > f.maxLength) newErr[f.fieldKey] = 'تجاوز الحد المسموح';
-    }
+    const allFields = plan.flatMap(g => g.fields);
+    const newErr = validateReportForm(allFields, form);
     if (Object.keys(newErr).length) { setFormErrors(newErr); toast.error(`يوجد ${Object.keys(newErr).length} أخطاء`); return; }
+
 
     const rawExtra: Record<string,any> = {};
     for (const grp of plan) for (const f of grp.fields) {

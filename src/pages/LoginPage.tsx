@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useOps } from '../store/opsStore';
+import { supabase } from '../integrations/supabase/client';
+
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Eye, EyeOff, LogIn, Zap } from 'lucide-react';
@@ -53,8 +55,23 @@ export default function LoginPage() {
     setEmail(acc.email);
     setPassword(acc.password);
     setErrors({});
-    await doSignIn(acc.email, acc.password);
+    setSubmitting(true);
+    try {
+      let res = await actions.signIn(acc.email, acc.password);
+      if (!res.user) {
+        // Demo accounts not yet seeded — bootstrap them then retry once.
+        const t = toast.loading('جاري تهيئة حسابات التجربة…');
+        try { await supabase.functions.invoke('seed-demo-users', { body: {} }); }
+        finally { toast.dismiss(t); }
+        res = await actions.signIn(acc.email, acc.password);
+      }
+      if (!res.user) { toast.error(res.error || 'فشل تسجيل الدخول'); return; }
+      dispatch({ type: 'AUTH_SUCCESS', user: res.user });
+      toast.success(`أهلاً ${res.user.fullNameAr}`);
+      nav(res.user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
+    } finally { setSubmitting(false); }
   };
+
 
 
 
