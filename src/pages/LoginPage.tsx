@@ -32,20 +32,30 @@ export default function LoginPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleLogin = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!validate()) return;
+  const doSignIn = async (em: string, pw: string) => {
     setSubmitting(true);
     try {
-      const { user, error } = await actions.signIn(email, password);
+      const { user, error } = await actions.signIn(em, pw);
       if (error || !user) { toast.error(error || 'فشل تسجيل الدخول'); return; }
-      // Set the authenticated user synchronously so the protected route is ready
-      // on the very first navigation (prevents the "login twice" bounce).
       dispatch({ type: 'AUTH_SUCCESS', user });
       toast.success(`أهلاً ${user.fullNameAr}`);
       nav(user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
     } finally { setSubmitting(false); }
   };
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!validate()) return;
+    await doSignIn(email, password);
+  };
+
+  const quickLogin = async (acc: { email: string; password: string }) => {
+    setEmail(acc.email);
+    setPassword(acc.password);
+    setErrors({});
+    await doSignIn(acc.email, acc.password);
+  };
+
 
 
   return (
