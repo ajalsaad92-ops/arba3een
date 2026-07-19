@@ -72,6 +72,7 @@ export default function LoginPage() {
       if (!res.user) { toast.error(res.error || 'فشل تسجيل الدخول'); return; }
       dispatch({ type: 'AUTH_SUCCESS', user: res.user });
       toast.success(`أهلاً ${res.user.fullNameAr}`);
+      if (safeNext) { nav(safeNext, { replace: true }); return; }
       nav(res.user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
     } finally { setSubmitting(false); }
   };
