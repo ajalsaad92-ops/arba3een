@@ -886,15 +886,4 @@ async function applyFrozenChange(row: any): Promise<void> {
     }
   } catch (e) { log('applyFrozenChange', e); }
 }
-    };
-    if (f.id) row.id = f.id;
-    const { data, error } = await supabase.from('report_field_definitions').upsert(row).select('*').single();
-    if (error) throw error;
-    return rowToFieldDefinition(data);
-  },
 
-  async deleteFieldDefinition(id: string): Promise<void> {
-    const { error } = await supabase.from('report_field_definitions').delete().eq('id', id);
-    if (error) throw error;
-  },
-};
