@@ -671,6 +671,7 @@ export const api = {
     onAgentLocationChange?: (payload: AgentLocation) => void;
     onBorderCrossingChange?: (payload: BorderCrossing) => void;
     onProfileChange?: (payload: any) => void;
+    onFrozenRequestChange?: (payload: { type: string; new?: import('../data/types').FrozenFieldChangeRequest; old?: import('../data/types').FrozenFieldChangeRequest }) => void;
   }): () => void {
     const mapRow = (table: string, row: any) => {
       if (!row) return row;
