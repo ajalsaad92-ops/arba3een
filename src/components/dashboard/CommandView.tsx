@@ -193,28 +193,9 @@ function ReportStatusTable({ effectiveFilter, onSelect }: { effectiveFilter: str
 }
 
 // -----------------------------------------------------------------------------
-// Analytics section (merged from AnalyticsView)
+// Analytics section
 // -----------------------------------------------------------------------------
 
-function computeDayAggregate(reports: any[], officeIds: string[], defs: ReportFieldDefinition[]) {
-  const filt = officeIds.length===0 ? reports : reports.filter(r=>officeIds.includes(r.officeId));
-  const base: Record<string,number> = { visitors:0, visitorsIn:0, visitorsOut:0, vehicles:0, processions:0, deaths:0, violations:0, events:0, incidents:0, resources:0, deployment:0 };
-  const h = (key:string) => isBuiltInFieldHidden(defs, key);
-  for (const r of filt) {
-    if(!h('visitorsIn')) base.visitorsIn += r.visitorsIn||0;
-    if(!h('visitorsOut')) base.visitorsOut += r.visitorsOut||0;
-    base.visitors = base.visitorsIn + base.visitorsOut;
-    if(!h('vehiclesCount')) base.vehicles += r.vehiclesCount||0;
-    if(!h('processionsCount')) base.processions += r.processionsCount||0;
-    if(!h('deathsCount')) base.deaths += r.deathsCount||0;
-    if(!h('violationsCount')) base.violations += r.violationsCount||0;
-    if(!h('eventsCount')) base.events += r.eventsCount||0;
-    if(!h('incidentsCount')) base.incidents += r.incidentsCount||0;
-    if(!h('resourcesDistributed')) base.resources += extraFieldNumericValue(r.resourcesDistributed);
-    if(!h('deploymentCount')) base.deployment += r.deploymentCount||0;
-  }
-  return base;
-}
 
 function AnalyticsSection({ effectiveFilter }: any) {
   const { state } = useOps();
