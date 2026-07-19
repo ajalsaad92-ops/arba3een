@@ -25,7 +25,7 @@ export const OpsView = React.memo(function OpsView({ agg, effectiveFilter, selec
           <span>حالة طارئة نشطة في {officeById(state.emergencies.find((e:any)=>e.status==='active')?.officeId ?? '')?.nameAr}</span>
         </div>
       )}
-      <MapLayerControl position="right" variant="vertical" className="!right-auto !left-3 !top-3" />
+      <MapLayerControl position="left" variant="vertical" className="!top-20" />
       <IraqMap onSelectOffice={setSelectedOffice} selectedOfficeId={selectedOffice?.id} filterOfficeIds={effectiveFilter} height="100%" />
       <SmartInsightsTicker insights={insights} />
     </div>
