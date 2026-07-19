@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useOps } from '../store/opsStore';
 import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal } from 'lucide-react';
-import TimeLockBar from './TimeLockBar';
 import EmergencyBanner from './EmergencyBanner';
 import PushNotificationToggle from './PushNotificationToggle';
 import { OFFICES } from '../data/offices';
