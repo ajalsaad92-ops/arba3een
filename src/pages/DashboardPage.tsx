@@ -6,7 +6,7 @@ import DateRangeFilter from '../components/DateRangeFilter';
 import { Search, Map, Activity } from 'lucide-react';
 import { CommandView } from '../components/dashboard/CommandView';
 import { OpsView } from '../components/dashboard/OpsView';
-import { AnalyticsView } from '../components/dashboard/AnalyticsView';
+
 import { operationalDateDaysAgo } from '../lib/opDate';
 import { extraFieldNumericValue, statExtraKeys } from '../lib/extraFieldStats';
 import { isBuiltInFieldHidden } from '../lib/kpiCatalog';
