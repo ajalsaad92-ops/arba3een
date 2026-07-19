@@ -82,8 +82,15 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className="text-center mt-4 text-[11px] text-slate-500">
-          ليس لديك حساب؟ <button onClick={()=>nav('/register')} className="text-amber-400 hover:underline font-bold">إنشاء حساب جديد</button>
+        <div className="text-center mt-4 text-[11px] text-slate-500 space-y-2">
+          <div>
+            <button onClick={()=>nav('/forgot-password')} className="text-amber-400/90 hover:text-amber-400 hover:underline">
+              نسيت كلمة المرور؟
+            </button>
+          </div>
+          <div>
+            ليس لديك حساب؟ <button onClick={()=>nav('/register')} className="text-amber-400 hover:underline font-bold">إنشاء حساب جديد</button>
+          </div>
         </div>
       </div>
     </div>
