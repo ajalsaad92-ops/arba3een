@@ -9,6 +9,8 @@ import { OfflineBanner } from './components/OfflineBanner';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import BackButtonHandler from './components/BackButtonHandler';
 import { startLiveLocation } from './lib/liveLocation';
+import { supabase } from './integrations/supabase/client';
+import { registerNativePush, unregisterNativePush, isNativePlatform } from './lib/nativePush';
 
 // lazy pages – code splitting
 const LoginPage = lazy(() => import('./pages/LoginPage'));
