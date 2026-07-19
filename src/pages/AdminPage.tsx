@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
 import { supabase } from '../lib/supabase';
@@ -64,12 +64,21 @@ export default function AdminPage() {
   const lastLocOf = (userId: string) => state.agentLocations.find(a => a.agentId === userId);
   const isStale = (iso: string) => Date.now() - new Date(iso).getTime() > 120_000;
 
+  const editPaneRef = useRef<HTMLDivElement>(null);
+  const scrollToEdit = () => {
+    if (window.innerWidth < 1024) {
+      setTimeout(() => editPaneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
+  };
+
   const startCreate = () => {
     setDraft({ fullNameAr: '', role: 'agent', officeId: offices[0]?.id || 'KRB', permittedOfficeIds: [], specialPermissions: { canExport:false, canAddCrossings:false, canViewAllOffices:false, canOpenWindow:false, canEditReports:false }, isActive: true, password:'', confirmPassword:'' });
     setUsername(''); setUsernameError(''); setCreating(true); setEditing(null);
+    scrollToEdit();
   };
   const startEdit = (u: Profile) => {
     setDraft({ ...u, password:'', confirmPassword:'' }); setUsername(''); setUsernameError(''); setEditing(u); setCreating(false);
+    scrollToEdit();
   };
 
   const validateDraft = () => {
