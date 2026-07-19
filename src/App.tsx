@@ -18,6 +18,8 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ReportFieldsPage = lazy(() => import('./pages/ReportFieldsPage'));
 const SupervisorPanelPage = lazy(() => import('./pages/SupervisorPanelPage'));
+const FrozenRequestsPage = lazy(() => import('./pages/FrozenRequestsPage'));
+
 
 function LoadingFallback() {
   return (
