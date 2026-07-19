@@ -65,19 +65,21 @@ export default function AppShell() {
   ];
 
   // Where each notification type should take the user when clicked.
-  const notifTarget = (type: string): string => {
+  const notifTarget = (type: string, targetPath?: string): string => {
+    if (targetPath) return targetPath;
     switch (type) {
       case 'emergency': return '/emergency';
       case 'extension': return '/supervisor-panel';
+      case 'frozen': return '/frozen-requests';
       case 'report': return isViewer ? '/dashboard' : '/history';
       default: return '/dashboard';
     }
   };
 
-  const handleNotificationClick = (a: { id: string; type: string }) => {
+  const handleNotificationClick = (a: { id: string; type: string; targetPath?: string }) => {
     dispatch({ type: 'MARK_NOTIFICATION_READ', id: a.id });
     setBellOpen(false);
-    const dest = notifTarget(a.type);
+    const dest = notifTarget(a.type, a.targetPath);
     // Viewers can only reach the dashboard.
     navigate(isViewer ? '/dashboard' : dest);
   };
