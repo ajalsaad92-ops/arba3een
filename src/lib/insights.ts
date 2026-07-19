@@ -172,7 +172,8 @@ export function buildInsights(
   if (active.length > 1) {
     out.push({ id: 'e-sum', icon: 'alert', tone: 'negative', text: `يوجد ${active.length} حالات طارئة نشطة بحاجة معالجة` });
   }
-  const resolvedToday = emergencies.filter(e => e.status === 'resolved' && e.reportedAt && String(e.reportedAt).slice(0,10) >= operationalDateDaysAgo(0));
+  const today0 = operationalDateDaysAgo(0);
+  const resolvedToday = emergencies.filter(e => e.status === 'resolved' && (e.resolvedAt || e.createdAt) && String(e.resolvedAt || e.createdAt).slice(0,10) >= today0);
   if (resolvedToday.length > 0) {
     out.push({ id: 'e-res', icon: 'up', tone: 'positive', text: `تم حلّ ${resolvedToday.length} حالة طارئة اليوم` });
   }
