@@ -27,7 +27,7 @@ function KpiCardBase({ label, value, icon: Icon, trend = 0, tone = 'amber', size
   const trendUp = trend > 0;
   const trendDown = trend < 0;
   return (
-    <div className={`relative bg-[#0E1512] border border-[#16211D] rounded-xl p-3 overflow-hidden ${borderGlow ? 'ring-1 ring-amber-500/20' : ''}`}>
+    <div className={`relative bg-[#1a1a1a] border border-[#232323] rounded-xl p-3 overflow-hidden ${borderGlow ? 'ring-1 ring-amber-500/20' : ''}`}>
       <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${t.gradient}`} />
       <div className="flex items-center justify-between mb-1.5">
         <div className="text-[11px] text-slate-400 truncate">{label}</div>

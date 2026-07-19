@@ -19,8 +19,8 @@ function fmt(dt?: string) {
 
 function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2.5 py-2 border-b border-[#16211D] last:border-0">
-      <div className="w-7 h-7 rounded-lg bg-[#16211D] flex items-center justify-center text-slate-400 shrink-0">{icon}</div>
+    <div className="flex items-start gap-2.5 py-2 border-b border-[#232323] last:border-0">
+      <div className="w-7 h-7 rounded-lg bg-[#232323] flex items-center justify-center text-slate-400 shrink-0">{icon}</div>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] text-slate-500 font-bold">{label}</div>
         <div className="text-sm text-slate-100 break-words">{value}</div>
@@ -41,9 +41,9 @@ export default function EmergencyDetailCard({ emergency, users = [], onClose }: 
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose} dir="rtl">
-      <div className="w-full max-w-md bg-[#070B09] border-2 border-red-500/40 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+      <div className="w-full max-w-md bg-[#0d0d0d] border-2 border-red-500/40 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-3 p-4 bg-gradient-to-l from-red-900/40 to-[#070B09] border-b border-red-500/30">
+        <div className="flex items-center gap-3 p-4 bg-gradient-to-l from-red-900/40 to-[#0d0d0d] border-b border-red-500/30">
           <div className="w-11 h-11 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
             <AlertOctagon className="w-6 h-6" />
           </div>

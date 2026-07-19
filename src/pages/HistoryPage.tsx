@@ -94,7 +94,7 @@ export default function HistoryPage() {
   const toggleExpand = (id: string) => setExpanded(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   return (
-    <div className="h-full overflow-y-auto bg-[#070B09] p-3 md:p-5" dir="rtl">
+    <div className="h-full overflow-y-auto bg-[#0d0d0d] p-3 md:p-5" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -107,37 +107,37 @@ export default function HistoryPage() {
           </button>
         </div>
 
-        <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-3">
+        <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
             <div><label className="text-[10px] text-slate-500 block mb-1">من</label>
               <input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1); }}
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-2 py-1.5 text-xs text-white" />
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-md px-2 py-1.5 text-xs text-white" />
             </div>
             <div><label className="text-[10px] text-slate-500 block mb-1">إلى</label>
               <input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1); }}
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-2 py-1.5 text-xs text-white" />
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-md px-2 py-1.5 text-xs text-white" />
             </div>
             <div><label className="text-[10px] text-slate-500 block mb-1">المكتب</label>
               <select value={selectedOffice} onChange={e => { setSelectedOffice(e.target.value); setPage(1); }}
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-2 py-1.5 text-xs text-white">
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-md px-2 py-1.5 text-xs text-white">
                 <option value="">جميع المكاتب</option>
                 {offices.filter(o=> permittedIds.includes(o.id)).map(o => <option key={o.id} value={o.id}>{o.nameAr}</option>)}
               </select>
             </div>
             <div><label className="text-[10px] text-slate-500 block mb-1">الحالة</label>
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-2 py-1.5 text-xs text-white">
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-md px-2 py-1.5 text-xs text-white">
                 <option value="all">الكل</option>
                 <option value="on-time">في الوقت</option>
                 <option value="late">متأخر</option>
               </select>
             </div>
             <button onClick={() => { setFromDate(operationalDateDaysAgo(14)); setToDate(operationalDate()); setSelectedOffice(''); setStatusFilter('all'); setPage(1); }}
-              className="px-3 bg-[#16211D] hover:bg-[#1F2D28] text-slate-300 text-xs font-bold py-1.5 rounded-md">إعادة تعيين</button>
+              className="px-3 bg-[#232323] hover:bg-[#2c2c2c] text-slate-300 text-xs font-bold py-1.5 rounded-md">إعادة تعيين</button>
           </div>
         </div>
 
-        <div className="bg-[#0E1512] border border-[#16211D] rounded-xl overflow-hidden">
+        <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl overflow-hidden">
           {loading ? (
             <div className="p-6 space-y-2">
               {[...Array(6)].map((_,i)=> <Skeleton key={i} className="h-10 w-full" />)}
@@ -147,7 +147,7 @@ export default function HistoryPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead className="bg-[#070B09] border-b border-[#16211D] text-slate-400">
+                <thead className="bg-[#0d0d0d] border-b border-[#232323] text-slate-400">
                   <tr>
                     <th className="px-3 py-2 text-right">التاريخ</th>
                     <th className="px-3 py-2 text-right">المكتب</th>
@@ -159,12 +159,12 @@ export default function HistoryPage() {
                     <th className="px-3 py-2 text-right">الحالة</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#16211D]">
+                <tbody className="divide-y divide-[#232323]">
                   {filtered.map(r => {
                     const isExp = expanded.has(r.id);
                     return (
                       <React.Fragment key={r.id}>
-                        <tr onClick={()=>toggleExpand(r.id)} className="hover:bg-[#16211D]/40 cursor-pointer">
+                        <tr onClick={()=>toggleExpand(r.id)} className="hover:bg-[#232323]/40 cursor-pointer">
                           <td className="px-3 py-2 text-slate-300 font-mono">{r.reportDate}</td>
                           <td className="px-3 py-2 text-slate-200 font-semibold">{officeById(r.officeId)?.nameAr ?? r.officeId}</td>
                           <td className="px-3 py-2 text-emerald-400 tabular-nums">{formatNumber(r.visitorsIn)}</td>
@@ -179,7 +179,7 @@ export default function HistoryPage() {
                           </td>
                         </tr>
                         {isExp && (
-                          <tr className="bg-[#070B09]">
+                          <tr className="bg-[#0d0d0d]">
                             <td colSpan={8} className="px-4 py-3 text-[11px] text-slate-300">
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                 {r.incidentsDetails && <div><b className="text-slate-500">حوادث:</b> {r.incidentsDetails}</div>}
@@ -207,11 +207,11 @@ export default function HistoryPage() {
               </table>
             </div>
           )}
-          <div className="p-3 border-t border-[#16211D] flex items-center justify-between text-xs">
+          <div className="p-3 border-t border-[#232323] flex items-center justify-between text-xs">
             <div className="text-slate-500">إجمالي: {meta.total} — صفحة {page} / {totalPages}</div>
             <div className="flex gap-1">
-              <button disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)} className="px-3 py-1 rounded bg-[#16211D] hover:bg-[#1F2D28] disabled:opacity-30">السابق</button>
-              <button disabled={page >= totalPages || loading} onClick={() => setPage(p => p + 1)} className="px-3 py-1 rounded bg-[#16211D] hover:bg-[#1F2D28] disabled:opacity-30">التالي</button>
+              <button disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)} className="px-3 py-1 rounded bg-[#232323] hover:bg-[#2c2c2c] disabled:opacity-30">السابق</button>
+              <button disabled={page >= totalPages || loading} onClick={() => setPage(p => p + 1)} className="px-3 py-1 rounded bg-[#232323] hover:bg-[#2c2c2c] disabled:opacity-30">التالي</button>
             </div>
           </div>
         </div>

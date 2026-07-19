@@ -50,7 +50,7 @@ function OpsKpiOverlay({ agg, activeEmergencies }: any) {
       const v = id==='emergencies' ? activeEmergencies : (agg as any)[id] || 0;
       const isEmergency = id==='emergencies' && v>0;
       return (
-        <div key={id} className={`${isEmergency?'bg-gradient-to-br from-red-900/95 to-red-800/85 border-red-500/50':'bg-gradient-to-br from-[#070B09]/95 to-[#0E1512]/85 border-[#16211D]'} backdrop-blur-md border rounded-lg p-2.5 relative overflow-hidden`}>
+        <div key={id} className={`${isEmergency?'bg-gradient-to-br from-red-900/95 to-red-800/85 border-red-500/50':'bg-gradient-to-br from-[#0d0d0d]/95 to-[#1a1a1a]/85 border-[#232323]'} backdrop-blur-md border rounded-lg p-2.5 relative overflow-hidden`}>
           <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${toneClass[def.tone]}`} />
           <div className="text-[10px] text-slate-400 mb-0.5">{def.label}</div>
           <div className={`text-xl font-black ${textClass[def.tone]}`}>{formatNumber(v)}</div>
@@ -62,7 +62,7 @@ function OpsKpiOverlay({ agg, activeEmergencies }: any) {
 
 function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildInsights> }) {
   if (insights.length === 0) {
-    return <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#070B09]/90 backdrop-blur-md border-t border-[#16211D] h-10 flex items-center px-4 text-xs text-slate-500">لا توجد رؤى لعرضها بعد</div>;
+    return <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#0d0d0d]/90 backdrop-blur-md border-t border-[#232323] h-10 flex items-center px-4 text-xs text-slate-500">لا توجد رؤى لعرضها بعد</div>;
   }
   const iconFor = (icon: string) => {
     switch(icon){
@@ -76,7 +76,7 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
   };
   const toneCls = (tone: string) => tone==='positive' ? 'text-emerald-300' : tone==='negative' ? 'text-red-300' : tone==='warning' ? 'text-amber-300' : 'text-slate-200';
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#070B09]/95 backdrop-blur-md border-t border-[#16211D] h-12 flex items-center overflow-hidden" dir="rtl">
+    <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#0d0d0d]/95 backdrop-blur-md border-t border-[#232323] h-12 flex items-center overflow-hidden" dir="rtl">
       <div className="shrink-0 px-3 text-[10px] font-bold text-black bg-amber-400 h-full flex items-center gap-1.5"><Activity className="w-3 h-3" />رؤى لحظية</div>
       <div className="flex-1 overflow-hidden relative">
         <div className="flex w-max items-center animate-marquee-rtl whitespace-nowrap text-xs" style={{ animationDuration: `${Math.max(25, insights.length * 6)}s` }}>

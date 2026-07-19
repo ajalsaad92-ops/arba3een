@@ -17,8 +17,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return this.props.fallback ?? (
-        <div className="min-h-screen bg-[#070B09] flex items-center justify-center p-6" dir="rtl">
-          <div className="max-w-md w-full bg-[#0E1512] border border-red-500/30 rounded-2xl p-6 text-center">
+        <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-6" dir="rtl">
+          <div className="max-w-md w-full bg-[#1a1a1a] border border-red-500/30 rounded-2xl p-6 text-center">
             <div className="text-4xl mb-3">⚠️</div>
             <div className="text-lg font-black text-red-300 mb-2">حدث خطأ غير متوقع</div>
             <div className="text-xs text-slate-400 mb-4">تم تسجيل الخطأ تلقائياً. جرّب تحديث الصفحة.</div>
@@ -26,7 +26,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm">
                 تحديث الصفحة
               </button>
-              <button onClick={() => this.setState({ hasError: false })} className="px-4 py-2 rounded-lg bg-[#16211D] hover:bg-[#1F2D28] text-slate-200 text-sm">
+              <button onClick={() => this.setState({ hasError: false })} className="px-4 py-2 rounded-lg bg-[#232323] hover:bg-[#2c2c2c] text-slate-200 text-sm">
                 محاولة مجدداً
               </button>
             </div>

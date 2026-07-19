@@ -32,8 +32,8 @@ function userMarkerIcon(name: string, stale: boolean) {
     html: `
       <div style="position:relative;width:36px;height:44px;transform:translate(-50%,-100%);">
         <svg width="36" height="44" viewBox="0 0 36 44">
-          <path d="M18 0 C8 0 0 8 0 18 C0 31 18 44 18 44 C18 44 36 31 36 18 C36 8 28 0 18 0 Z" fill="${color}" stroke="#070B09" stroke-width="2"/>
-          <circle cx="18" cy="17" r="9" fill="#070B09"/>
+          <path d="M18 0 C8 0 0 8 0 18 C0 31 18 44 18 44 C18 44 36 31 36 18 C36 8 28 0 18 0 Z" fill="${color}" stroke="#0d0d0d" stroke-width="2"/>
+          <circle cx="18" cy="17" r="9" fill="#0d0d0d"/>
           <text x="18" y="21" text-anchor="middle" fill="#fff" font-size="12" font-weight="800" font-family="Cairo, sans-serif">${initial}</text>
         </svg>
       </div>`,
@@ -80,8 +80,8 @@ export default function LiveTrackingMap({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-2 md:p-4" dir="rtl">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-5xl h-[85vh] bg-[#070B09] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b border-[#16211D]">
+      <div className="relative w-full max-w-5xl h-[85vh] bg-[#0d0d0d] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b border-[#232323]">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-amber-400" />
             <div className="text-sm font-bold text-amber-400">تتبّع مستخدمي الموقع على الخريطة</div>
@@ -92,7 +92,7 @@ export default function LiveTrackingMap({ onClose }: { onClose: () => void }) {
               الكل: {tracked.length}
             </span>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[#16211D]"><X className="w-4 h-4 text-slate-400" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[#232323]"><X className="w-4 h-4 text-slate-400" /></button>
         </div>
         <div className="flex-1 relative">
           {tracked.length === 0 ? (
@@ -100,7 +100,7 @@ export default function LiveTrackingMap({ onClose }: { onClose: () => void }) {
               لا توجد بيانات مواقع لمستخدمي الموقع بعد.
             </div>
           ) : (
-            <MapContainer center={IRAQ_CENTER} zoom={6} className="w-full h-full" style={{ background: '#070B09' }}>
+            <MapContainer center={IRAQ_CENTER} zoom={6} className="w-full h-full" style={{ background: '#0d0d0d' }}>
               <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; OpenStreetMap &copy; CARTO'
@@ -138,7 +138,7 @@ export default function LiveTrackingMap({ onClose }: { onClose: () => void }) {
             </MapContainer>
           )}
         </div>
-        <div className="flex items-center gap-4 p-2 px-3 border-t border-[#16211D] text-[11px] text-slate-400">
+        <div className="flex items-center gap-4 p-2 px-3 border-t border-[#232323] text-[11px] text-slate-400">
           <span className="flex items-center gap-1"><Navigation className="w-3 h-3 text-emerald-400" /> متصل ويُحدّث الموقع</span>
           <span className="flex items-center gap-1"><WifiOff className="w-3 h-3 text-red-400" /> الاتصال مفقود — آخر موقع معروف</span>
         </div>

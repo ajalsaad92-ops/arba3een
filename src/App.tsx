@@ -21,7 +21,7 @@ const SupervisorPanelPage = lazy(() => import('./pages/SupervisorPanelPage'));
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen bg-[#070B09] flex items-center justify-center">
+    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-3 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
         <div className="text-[11px] text-slate-500">جاري التحميل...</div>
@@ -48,7 +48,7 @@ function RoleBasedRedirect() {
 
 function NotFound() {
   return (
-    <div className="min-h-screen bg-[#070B09] flex items-center justify-center text-center p-6" dir="rtl">
+    <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center text-center p-6" dir="rtl">
       <div>
         <div className="text-5xl font-black text-amber-400 mb-2">404</div>
         <div className="text-slate-300 mb-4">الصفحة غير موجودة</div>

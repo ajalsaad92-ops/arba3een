@@ -468,7 +468,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="min-h-screen w-screen flex items-center justify-center bg-[#070B09]">
+      <div className="min-h-screen w-screen flex items-center justify-center bg-[#0d0d0d]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
           <div className="text-xs text-slate-500 font-display">جاري تهيئة منظومة الرصد...</div>

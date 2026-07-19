@@ -64,7 +64,7 @@ export default function PushNotificationToggle() {
   return (
     <button
       onClick={toggle}
-      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-200 hover:bg-[#16211D] rounded-lg transition-colors"
+      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-200 hover:bg-[#232323] rounded-lg transition-colors"
     >
       {subscribed ? (
         <>
