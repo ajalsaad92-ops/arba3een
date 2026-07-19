@@ -1,14 +1,19 @@
 @import "tailwindcss";
 
-/* ─── Emerald / Gold Command Theme ─────────────────────────────────
-   Remap Tailwind's `amber-*` palette to a refined gold scale so every
-   existing `text-amber-400`, `bg-amber-500`, etc. across the app picks
-   up the new identity without touching component files. */
+/* ─── Noir & Gold Command Theme ────────────────────────────────────
+   Editorial black surfaces, engraved gold accents, DM Serif Display
+   for authoritative numerals, Fira Sans for the operational body.
+   Tailwind's `amber-*` palette is remapped so every existing
+   `text-amber-*` / `bg-amber-*` class in the codebase resolves to
+   the new refined gold scale without touching component files. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Fira+Sans:wght@300;400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&display=swap');
+
 @theme {
-  --color-amber-50:  #FBF7E8;
-  --color-amber-100: #F5EDCA;
-  --color-amber-200: #EDDDA0;
-  --color-amber-300: #E1C878;
+  /* Gold scale — the sovereign accent */
+  --color-amber-50:  #FBF6E1;
+  --color-amber-100: #F5EAB8;
+  --color-amber-200: #F0D78C;
+  --color-amber-300: #E5C374;
   --color-amber-400: #D4B458;
   --color-amber-500: #C9A84C;
   --color-amber-600: #A88938;
@@ -16,6 +21,7 @@
   --color-amber-800: #5E4B1E;
   --color-amber-900: #3A2E13;
 
+  /* Emerald retained as a neutral status accent (no longer the identity) */
   --color-emerald-300: #6EE7B7;
   --color-emerald-400: #34D399;
   --color-emerald-500: #10B981;
@@ -26,32 +32,32 @@
 }
 
 :root {
-  /* Surfaces – deep obsidian with a subtle green undertone */
-  --bg: #070B09;
-  --surface-1: #0E1512;
-  --surface-2: #16211D;
-  --surface-3: #1F2D28;
+  /* Surfaces — Noir hierarchy */
+  --bg: #0d0d0d;
+  --surface-1: #1a1a1a;
+  --surface-2: #232323;
+  --surface-3: #2c2c2c;
 
-  /* Accents */
-  --primary: #C9A84C;              /* gold */
+  /* Accents — engraved gold */
+  --primary: #C9A84C;
   --primary-glow: rgba(201, 168, 76, 0.14);
-  --accent: #0D7A5F;               /* emerald sovereign */
-  --accent-glow: rgba(13, 122, 95, 0.18);
+  --accent: #F0D78C;
+  --accent-glow: rgba(240, 215, 140, 0.18);
 
   --success: #10B981;
   --danger: #EF4444;
   --warning: #F59E0B;
   --info: #3B82F6;
 
-  --text-1: #F5F0E0;               /* warm cream headings */
-  --text-2: #9AA79E;                /* sage muted */
-  --text-3: #4E5B54;
-  --border: rgba(31, 45, 40, 0.85);
+  --text-1: #F0D78C;               /* soft champagne headings */
+  --text-2: #B8B0A0;               /* muted parchment body */
+  --text-3: #6B655A;
+  --border: rgba(201, 168, 76, 0.12);
   --border-active: rgba(201, 168, 76, 0.42);
 
-  --gradient-hero: linear-gradient(135deg, #0D7A5F 0%, #063A2E 45%, #070B09 100%);
-  --gradient-gold: linear-gradient(135deg, #E1C878 0%, #C9A84C 55%, #856C2A 100%);
-  --shadow-elegant: 0 12px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(201, 168, 76, 0.06);
+  --gradient-hero: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 55%, #000000 100%);
+  --gradient-gold: linear-gradient(135deg, #F0D78C 0%, #C9A84C 55%, #856C2A 100%);
+  --shadow-elegant: 0 12px 40px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(201, 168, 76, 0.08);
 }
 
 * { box-sizing: border-box; }
@@ -61,34 +67,38 @@ html, body, #root {
   padding: 0;
   min-height: 100vh;
   background:
-    radial-gradient(1200px 800px at 85% -10%, rgba(13, 122, 95, 0.10), transparent 60%),
-    radial-gradient(900px 600px at -10% 100%, rgba(201, 168, 76, 0.06), transparent 60%),
+    radial-gradient(1200px 800px at 85% -10%, rgba(201, 168, 76, 0.08), transparent 60%),
+    radial-gradient(900px 600px at -10% 100%, rgba(240, 215, 140, 0.04), transparent 60%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text-1);
-  font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  font-family: 'Fira Sans', 'Noto Naskh Arabic', 'Tajawal', 'Cairo', system-ui, sans-serif;
   direction: rtl;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Editorial display face for the app identity, section titles, big numbers.
+   In RTL Arabic contexts, the browser falls back to Noto Kufi Arabic which
+   carries the same stately weight. */
 h1, h2, h3, h4, .display-number, .font-display {
-  font-family: 'Cairo', sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-family: 'DM Serif Display', 'Noto Kufi Arabic', 'Cairo', serif;
+  font-weight: 400;
+  letter-spacing: -0.005em;
 }
 
 .kpi-number {
-  font-family: 'Cairo', sans-serif;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  font-family: 'DM Serif Display', 'Noto Kufi Arabic', serif;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
 }
 
-input, textarea, select, button { font-family: 'Tajawal', sans-serif; }
-input::placeholder, textarea::placeholder { color: #4E5B54; }
+input, textarea, select, button {
+  font-family: 'Fira Sans', 'Noto Naskh Arabic', 'Tajawal', sans-serif;
+}
+input::placeholder, textarea::placeholder { color: #6B655A; }
 
-/* Text gradient utility for premium headings */
 .text-gold-gradient {
   background: var(--gradient-gold);
   -webkit-background-clip: text;
@@ -100,35 +110,35 @@ input::placeholder, textarea::placeholder { color: #4E5B54; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #1F2D28, #16211D);
+  background: linear-gradient(180deg, #2c2c2c, #1a1a1a);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover { background: #2A3D36; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
 
-/* Leaflet overrides for command theme */
+/* Leaflet overrides — Noir map chrome */
 .leaflet-container {
-  background: #070B09 !important;
-  font-family: 'Tajawal', sans-serif !important;
+  background: #0d0d0d !important;
+  font-family: 'Fira Sans', sans-serif !important;
 }
 .leaflet-control-zoom a {
-  background: #0E1512 !important;
-  color: #F5F0E0 !important;
-  border: 1px solid #1F2D28 !important;
+  background: #1a1a1a !important;
+  color: #F0D78C !important;
+  border: 1px solid rgba(201, 168, 76, 0.2) !important;
 }
-.leaflet-control-zoom a:hover { background: #16211D !important; }
+.leaflet-control-zoom a:hover { background: #232323 !important; }
 .leaflet-control-attribution {
-  background: rgba(7, 11, 9, 0.75) !important;
-  color: #9AA79E !important;
+  background: rgba(13, 13, 13, 0.78) !important;
+  color: #B8B0A0 !important;
   font-size: 10px !important;
 }
 .leaflet-control-attribution a { color: #C9A84C !important; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: #0E1512 !important;
-  color: #F5F0E0 !important;
-  border: 1px solid #1F2D28;
+  background: #1a1a1a !important;
+  color: #F0D78C !important;
+  border: 1px solid rgba(201, 168, 76, 0.2);
 }
 
-/* Pulse animations */
+/* Pulse / motion registers */
 @keyframes pulse-alert {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
@@ -187,7 +197,7 @@ input::placeholder, textarea::placeholder { color: #4E5B54; }
 }
 .animate-ping-slow { animation: ping-slow 1.6s ease-out infinite; }
 
-/* Subtle gold shimmer for premium accents */
+/* Sovereign gold shimmer — reserved for premium accents */
 @keyframes shimmer-gold {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -197,7 +207,7 @@ input::placeholder, textarea::placeholder { color: #4E5B54; }
     100deg,
     transparent 0%,
     transparent 40%,
-    rgba(201, 168, 76, 0.18) 50%,
+    rgba(240, 215, 140, 0.22) 50%,
     transparent 60%,
     transparent 100%
   );
@@ -205,40 +215,41 @@ input::placeholder, textarea::placeholder { color: #4E5B54; }
   animation: shimmer-gold 3.5s ease-in-out infinite;
 }
 
+/* Engraved hairline grid — echoes the museum-plaque aesthetic */
 .grid-pattern {
   background-image:
-    linear-gradient(rgba(201, 168, 76, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 168, 76, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(201, 168, 76, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 76, 0.05) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 .glow-amber {
   box-shadow:
-    0 0 40px rgba(201, 168, 76, 0.10),
-    inset 0 1px 0 rgba(201, 168, 76, 0.08);
+    0 0 40px rgba(201, 168, 76, 0.12),
+    inset 0 1px 0 rgba(240, 215, 140, 0.10);
 }
 .glow-emerald {
-  box-shadow: 0 0 40px rgba(13, 122, 95, 0.18);
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15);
 }
 .glow-crimson {
   box-shadow: 0 0 30px rgba(239, 68, 68, 0.18);
 }
 
-/* Refined card surface — used on KPI/report/emergency cards */
+/* Refined bento surface — the primary card in the redesign */
 .card-surface {
   background:
-    linear-gradient(180deg, rgba(31, 45, 40, 0.4), rgba(14, 21, 18, 0.9));
+    linear-gradient(180deg, rgba(44, 44, 44, 0.5), rgba(26, 26, 26, 0.92));
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   backdrop-filter: blur(8px);
 }
 .card-surface:hover {
-  border-color: rgba(201, 168, 76, 0.28);
+  border-color: rgba(201, 168, 76, 0.32);
   box-shadow: var(--shadow-elegant);
   transition: border-color .25s ease, box-shadow .25s ease;
 }
 
-/* Custom leaflet marker containers - hide default icon */
+/* Leaflet marker container reset */
 .leaflet-marker-icon.leaflet-div-icon {
   background: transparent;
   border: none;
