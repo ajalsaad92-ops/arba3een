@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useOps } from '../store/opsStore';
 import { supabase } from '../integrations/supabase/client';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Eye, EyeOff, LogIn, Zap } from 'lucide-react';
 import { FormField } from '../components/FormField';
