@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
-import { MapPin, ChevronDown, Send, MapPinned, X, Check, Crosshair, History, Plus } from 'lucide-react';
+import { MapPin, ChevronDown, Send, MapPinned, X, Check, Crosshair, History, Plus, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import TimeLockBar from '../components/TimeLockBar';
 import MapPicker from '../components/MapPicker';
-import type { ReportFieldDefinition, ReportFieldGroup } from '../data/types';
+import type { ReportFieldDefinition, ReportFieldGroup, DailyReport } from '../data/types';
 import { operationalDate } from '../lib/opDate';
-import { validateExtraFields } from '../lib/api';
+import { api, validateExtraFields } from '../lib/api';
 import { extraFieldDisplay, extraFieldNumericValue, normalizeSelectQuantityValue } from '../lib/extraFieldStats';
 import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation';
 
