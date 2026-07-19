@@ -67,7 +67,7 @@ export default function AdminPage() {
   };
 
   const startCreate = () => {
-    setDraft({ fullNameAr: '', role: 'agent', officeId: offices[0]?.id || 'KRB', permittedOfficeIds: [], specialPermissions: { canExport:false, canAddCrossings:false, canViewAllOffices:false, canOpenWindow:false, canEditReports:false }, isActive: true, password:'', confirmPassword:'' });
+    setDraft({ fullNameAr: '', role: 'agent', officeId: offices[0]?.id || 'KRB', permittedOfficeIds: [], specialPermissions: defaultPermissionsForRole('agent'), isActive: true, password:'', confirmPassword:'' });
     setUsername(''); setUsernameError(''); setCreating(true); setEditing(null);
     scrollToEdit();
   };
@@ -332,16 +332,55 @@ export default function AdminPage() {
                 )}
 
                 <div>
-                  <div className="text-xs text-slate-400 mb-2 font-bold">الصلاحيات الخاصة</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {PERMS.map(p=>{
-                      const on = (draft.specialPermissions as any)?.[p.key] || false;
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <div className="text-xs text-slate-400 font-bold">الصلاحيات الخاصة ({PERMISSION_CATALOG.length})</div>
+                    <div className="flex gap-1.5">
+                      <button type="button" onClick={()=>setDraft(d=>({ ...d, specialPermissions: allPermissions(true) }))}
+                        className="text-[10px] px-2 py-1 rounded bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25">تفعيل الكل</button>
+                      <button type="button" onClick={()=>setDraft(d=>({ ...d, specialPermissions: allPermissions(false) }))}
+                        className="text-[10px] px-2 py-1 rounded bg-red-500/15 border border-red-500/40 text-red-300 hover:bg-red-500/25">إلغاء الكل</button>
+                      <button type="button" onClick={()=>setDraft(d=>({ ...d, specialPermissions: defaultPermissionsForRole((d.role ?? 'agent') as Role) }))}
+                        className="text-[10px] px-2 py-1 rounded bg-slate-600/30 border border-slate-500/40 text-slate-200 hover:bg-slate-600/40">افتراضي الدور</button>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {PERMISSION_GROUPS.map(group => {
+                      const items = PERMISSION_CATALOG.filter(p => p.group === group.id);
+                      if (!items.length) return null;
+                      const onCount = items.filter(p => !!(draft.specialPermissions as any)?.[p.key]).length;
+                      const setGroup = (val: boolean) => setDraft(d => {
+                        const next = { ...(d.specialPermissions || {}) } as Record<string, boolean>;
+                        items.forEach(p => { next[p.key] = val; });
+                        return { ...d, specialPermissions: next as any };
+                      });
                       return (
-                        <button type="button" key={p.key} onClick={()=>togglePerm(p.key)}
-                          className={`text-right p-2.5 rounded-lg border text-xs transition-all ${on ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-[#0d0d0d] border-[#232323] text-slate-300 hover:border-[#2c2c2c]'}`}>
-                          <div className="font-bold">{p.label} {on && <Check className="w-3 h-3 inline text-emerald-400" />}</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">{p.desc}</div>
-                        </button>
+                        <div key={group.id} className="bg-[#0d0d0d]/60 border border-[#232323] rounded-lg overflow-hidden">
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-[#232323] bg-[#1a1a1a]">
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs font-bold text-amber-300">{group.label}</div>
+                              <div className="text-[10px] text-slate-500">{onCount}/{items.length}</div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={()=>setGroup(true)} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">تفعيل</button>
+                              <button type="button" onClick={()=>setGroup(false)} className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-300 border border-red-500/30">إلغاء</button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2">
+                            {items.map(p => {
+                              const on = !!(draft.specialPermissions as any)?.[p.key];
+                              return (
+                                <button type="button" key={p.key} onClick={()=>togglePerm(p.key)}
+                                  className={`text-right p-2.5 rounded-lg border text-xs transition-all ${on ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-[#0d0d0d] border-[#232323] text-slate-300 hover:border-[#2c2c2c]'}`}>
+                                  <div className="font-bold flex items-center justify-between gap-2">
+                                    <span>{p.label}</span>
+                                    {on && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 mt-0.5">{p.desc}</div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
