@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
-import { MapPin, ChevronDown, Send, MapPinned, X, Check, Crosshair, History, Plus, Lock } from 'lucide-react';
+import { Send, ChevronDown, Check, Crosshair, History } from 'lucide-react';
 import { toast } from 'sonner';
 import TimeLockBar from '../components/TimeLockBar';
 import MapPicker from '../components/MapPicker';
@@ -11,9 +11,13 @@ import { api, validateExtraFields } from '../lib/api';
 import { extraFieldDisplay, extraFieldNumericValue, normalizeSelectQuantityValue } from '../lib/extraFieldStats';
 import { subscribeLiveLocation, requestLiveLocation } from '../lib/liveLocation';
 import { validateReportForm, validateMgrs } from '../lib/reportValidation';
+import FrozenEditRequestDialog from '../components/report/FrozenEditRequestDialog';
+import PreviousReportsPanel from '../components/report/PreviousReportsPanel';
+import { MemoField, type Pt } from '../components/report/DynamicFieldRenderer';
 
+// api is used within extracted dialog component too; keep import for validateExtraFields
+void api;
 
-type Pt = { lat: number; lng: number };
 
 export default function ReportPage() {
   const { state, actions, dispatch } = useOps();
