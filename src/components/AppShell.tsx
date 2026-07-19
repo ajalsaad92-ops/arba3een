@@ -170,71 +170,8 @@ export default function AppShell() {
             <span>مكتب</span>
           </div>
 
-            <div className="relative">
-              <button
-                onClick={() => { setBellOpen(o => !o); dispatch({ type: 'CLEAR_UNREAD' }); }}
-                className="relative w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#232323] flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/30 transition-colors"
-              >
-                <Bell size={16} />
-                {state.unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold px-1 animate-pulse-alert">
-                    {state.unreadNotifications}
-                  </span>
-                )}
-              </button>
-              {bellOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setBellOpen(false)} />
-                  <div className="absolute left-0 mt-2 w-80 bg-[#1a1a1a] border border-[#232323] rounded-xl shadow-2xl z-40 max-h-[400px] overflow-y-auto">
-                    <div className="sticky top-0 bg-[#1a1a1a] z-10 p-3 border-b border-[#232323] flex items-center justify-between">
-                      <span className="font-bold text-sm">الإشعارات</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => dispatch({ type: 'MARK_ALL_NOTIFICATIONS_READ' })}
-                          className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold"
-                        >
-                          تعليم الكل كمقروءة
-                        </button>
-                        <span className="text-[10px] text-slate-500">{state.lastActivity.filter(a => !(a as any).read).length} جديدة</span>
-                      </div>
-                    </div>
-                    <div className="divide-y divide-[#232323]">
-                      {state.lastActivity
-                        .filter(a => !(isViewer && a.type === 'emergency'))
-                        .map((a, i) => {
-                        const isRead = (a as any).read;
-                        return (
-                          <div
-                            key={i}
-                            onClick={() => handleNotificationClick(a)}
-                            className={`p-3 cursor-pointer transition-colors ${isRead ? 'bg-[#0d0d0d]/50' : 'bg-[#232323]/30 hover:bg-[#232323]/50'}`}
-                          >
-                            <div className="flex items-start gap-2">
-                              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                                a.type === 'emergency' ? 'bg-red-500 animate-pulse' :
-                                a.type === 'extension' ? 'bg-amber-500' :
-                                a.type === 'report' ? 'bg-emerald-500' : 'bg-blue-500'
-                              } ${!isRead ? 'animate-pulse' : ''}`} />
-                              <div className="flex-1 min-w-0">
-                                <div className={`text-xs ${isRead ? 'text-slate-400' : 'text-slate-200 font-semibold'}`}>{a.text}</div>
-                                <div className="text-[10px] text-slate-500 mt-1">{new Date(a.createdAt).toLocaleString('ar-IQ')}</div>
-                                <div className="text-[10px] text-amber-400/80 mt-1">اضغط للانتقال ←</div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {state.lastActivity.filter(a => !(isViewer && a.type === 'emergency')).length === 0 && (
-                        <div className="p-6 text-center text-xs text-slate-500">لا توجد إشعارات جديدة</div>
-                      )}
-                    </div>
-                    <div className="p-2 border-t border-[#232323]">
-                      <PushNotificationToggle />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <NotificationBell open={bellOpen} onOpenChange={setBellOpen} isViewer={isViewer} />
+
 
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">
