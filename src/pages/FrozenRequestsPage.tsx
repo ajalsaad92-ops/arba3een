@@ -83,7 +83,7 @@ export default function FrozenRequestsPage() {
           <div>
             <div className="text-2xl font-display font-black text-blue-300">طلبات تعديل الحقول المجمّدة</div>
             <div className="text-xs text-slate-400 mt-0.5">
-              الحقول المجمّدة تُدخل مرة واحدة وتُقفل. أي تعديل لاحق يتطلب موافقة المشرف ثم المدير العام.
+              الحقول المجمّدة تُدخل مرة واحدة وتُقفل. أي تعديل لاحق يحتاج إلى موافقة المشرف أو المدير العام (أحدهما يكفي).
             </div>
           </div>
         </div>
