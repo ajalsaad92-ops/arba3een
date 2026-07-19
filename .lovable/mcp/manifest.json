@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://yqwspssnpeyvzhpdoqpy.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "arba3een-ops-mcp",
+      "version": "0.1.0",
+      "title": "Arba3een Ops MCP"
+    },
+    "tools": [
+      {
+        "name": "whoami",
+        "title": "من أنا",
+        "description": "Return the signed-in user's profile, role, and office assignment.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_offices",
+        "title": "قائمة المكاتب",
+        "description": "List all operational offices the signed-in user is permitted to see.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_daily_reports",
+        "title": "التقارير اليومية",
+        "description": "List recent daily reports visible to the signed-in user. Optional filters: officeId, fromDate/toDate (YYYY-MM-DD), and limit (1–100, default 20).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "officeId": {
+              "description": "Filter by office id.",
+              "type": "string"
+            },
+            "fromDate": {
+              "description": "Inclusive start date.",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "toDate": {
+              "description": "Inclusive end date.",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "limit": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_daily_report",
+        "title": "تفاصيل تقرير يومي",
+        "description": "Fetch the full row of a single daily report by id.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Daily report UUID."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_emergencies",
+        "title": "الحالات الطارئة",
+        "description": "List emergencies visible to the signed-in user. Filter by status (active/acknowledged/resolved) or officeId.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "acknowledged",
+                "resolved"
+              ]
+            },
+            "officeId": {
+              "type": "string"
+            },
+            "limit": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_emergency",
+        "title": "إنشاء حالة طارئة",
+        "description": "Create a new emergency for the signed-in user's office. Location fields are optional.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "emergencyType": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Short label, e.g. 'حريق'."
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "Details of the emergency."
+            },
+            "locationMgrs": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          "required": [
+            "emergencyType",
+            "description"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
