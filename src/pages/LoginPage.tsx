@@ -93,6 +93,24 @@ export default function LoginPage() {
             {submitting ? 'جاري تسجيل الدخول…' : 'تسجيل الدخول'}
           </button>
 
+          <div className="pt-3 border-t border-[#232323] space-y-2">
+            <div className="flex items-center justify-center gap-2 text-[11px] text-amber-400/80">
+              <Zap className="w-3 h-3" />
+              <span>دخول سريع (للتجربة)</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {DEMO_ACCOUNTS.map(acc => (
+                <button key={acc.email} type="button" disabled={submitting}
+                  onClick={()=>quickLogin(acc)}
+                  className="px-2 py-2 rounded-lg bg-[#0d0d0d] border border-[#2c2c2c] hover:border-amber-500/50 hover:bg-amber-500/5 text-[12px] text-slate-200 font-bold disabled:opacity-50 transition-colors">
+                  {acc.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+
+
           <div className="pt-2 border-t border-[#232323]">
             <div className="text-[11px] text-slate-500 text-center">
               للحصول على حساب، تواصل مع المدير العام
