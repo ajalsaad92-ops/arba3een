@@ -714,6 +714,14 @@ export const api = {
       ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' },
         (p: any) => callbacks.onProfileChange!(p));
     }
+    if (callbacks.onFrozenRequestChange) {
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: 'frozen_field_change_requests' },
+        (p: any) => callbacks.onFrozenRequestChange!({
+          type: p.eventType,
+          new: p.new ? rowToFrozenRequest(p.new) : undefined,
+          old: p.old ? rowToFrozenRequest(p.old) : undefined,
+        }));
+    }
     ch.subscribe();
     return () => { supabase.removeChannel(ch); };
   },
