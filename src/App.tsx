@@ -25,6 +25,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ReportFieldsPage = lazy(() => import('./pages/ReportFieldsPage'));
 const SupervisorPanelPage = lazy(() => import('./pages/SupervisorPanelPage'));
 const FrozenRequestsPage = lazy(() => import('./pages/FrozenRequestsPage'));
+const OAuthConsentPage = lazy(() => import('./pages/OAuthConsentPage'));
 
 
 function LoadingFallback() {
