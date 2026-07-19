@@ -25,7 +25,7 @@ export const OpsView = React.memo(function OpsView({ agg, effectiveFilter, selec
           <span>حالة طارئة نشطة في {officeById(state.emergencies.find((e:any)=>e.status==='active')?.officeId ?? '')?.nameAr}</span>
         </div>
       )}
-      <MapLayerControl position="left" variant="vertical" />
+      <MapLayerControl position="left" variant="vertical" className="!top-20" />
       <IraqMap onSelectOffice={setSelectedOffice} selectedOfficeId={selectedOffice?.id} filterOfficeIds={effectiveFilter} height="100%" />
       <SmartInsightsTicker insights={insights} />
     </div>
@@ -50,10 +50,10 @@ function OpsKpiOverlay({ agg, activeEmergencies }: any) {
       const v = id==='emergencies' ? activeEmergencies : (agg as any)[id] || 0;
       const isEmergency = id==='emergencies' && v>0;
       return (
-        <div key={id} className={`${isEmergency?'bg-gradient-to-br from-red-900/95 to-red-800/85 border-red-500/50':'bg-gradient-to-br from-[#0d0d0d]/95 to-[#1a1a1a]/85 border-[#232323]'} backdrop-blur-md border rounded-lg p-2.5 relative overflow-hidden`}>
+        <div key={id} className={`${isEmergency?'bg-gradient-to-br from-red-900/95 to-red-800/85 border-red-500/50':'bg-gradient-to-br from-[#0d0d0d]/95 to-[#1a1a1a]/85 border-[#232323]'} backdrop-blur-md border rounded-lg px-2.5 py-2 relative overflow-hidden flex items-center justify-between gap-2`}>
           <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${toneClass[def.tone]}`} />
-          <div className="text-[10px] text-slate-400 mb-0.5">{def.label}</div>
-          <div className={`text-xl font-black ${textClass[def.tone]}`}>{formatNumber(v)}</div>
+          <div className="text-[11px] text-slate-300 font-semibold truncate">{def.label}</div>
+          <div className={`text-lg font-black tabular-nums ${textClass[def.tone]}`}>{formatNumber(v)}</div>
         </div>
       );
     })}

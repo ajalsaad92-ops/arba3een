@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useOps } from '../store/opsStore';
 import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal } from 'lucide-react';
-import TimeLockBar from './TimeLockBar';
 import EmergencyBanner from './EmergencyBanner';
 import PushNotificationToggle from './PushNotificationToggle';
 import { OFFICES } from '../data/offices';
@@ -170,7 +169,7 @@ export default function AppShell() {
             </div>
           </div>
 
-          {!isAgent && <div className="flex-1 max-w-2xl mx-2"><TimeLockBar compact /></div>}
+          <div className="flex-1" />
 
         <div className="flex items-center gap-2 shrink-0">
           <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-500 font-mono">

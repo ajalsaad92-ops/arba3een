@@ -29,15 +29,15 @@ function KpiCardBase({ label, value, icon: Icon, trend = 0, tone = 'amber', size
   return (
     <div className={`relative bg-[#1a1a1a] border border-[#232323] rounded-xl p-3 overflow-hidden ${borderGlow ? 'ring-1 ring-amber-500/20' : ''}`}>
       <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${t.gradient}`} />
-      <div className="flex items-center justify-between mb-1.5">
-        <div className="text-[11px] text-slate-400 truncate">{label}</div>
-        <div className={`w-7 h-7 rounded-lg ${t.bg} flex items-center justify-center ${t.text}`}>
-          <Icon className="w-3.5 h-3.5" />
+      <div className="flex items-center gap-2">
+        <div className={`w-8 h-8 rounded-lg ${t.bg} flex items-center justify-center ${t.text} shrink-0`}>
+          <Icon className="w-4 h-4" />
         </div>
+        <div className="text-[12px] text-slate-300 font-semibold truncate flex-1 min-w-0">{label}</div>
+        <div className={`kpi-number tabular-nums ${size==='lg' ? 'text-2xl' : 'text-xl'} ${t.text}`}>{formatNumber(value)}</div>
       </div>
-      <div className={`kpi-number ${size==='lg' ? 'text-2xl' : 'text-xl'} ${t.text}`}>{formatNumber(value)}</div>
       {!!trend && (
-        <div className={`text-[10px] mt-1 ${trendUp ? 'text-emerald-400' : trendDown ? 'text-red-400' : 'text-slate-500'}`}>
+        <div className={`text-[10px] mt-1.5 text-left ${trendUp ? 'text-emerald-400' : trendDown ? 'text-red-400' : 'text-slate-500'}`}>
           {trendUp ? '▲' : trendDown ? '▼' : '—'} {Math.abs(trend).toFixed(1)}%
         </div>
       )}
