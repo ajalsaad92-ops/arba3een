@@ -217,7 +217,7 @@ export default function AdminPage() {
                   className="w-full bg-[#0d0d0d] border border-[#232323] rounded-md pr-9 pl-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none" />
               </div>
             </div>
-            <div className="divide-y divide-[#232323] max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-[#232323] max-h-[45vh] lg:max-h-[600px] overflow-y-auto">
               {paginated.length===0 && <EmptyState title="لا يوجد مستخدمون" description="جرّب تغيير كلمات البحث" />}
               {paginated.map(u => {
                 const loc = lastLocOf(u.id);
