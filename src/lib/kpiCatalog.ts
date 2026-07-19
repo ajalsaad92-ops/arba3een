@@ -71,19 +71,58 @@ export function getVisibleKpiIds(
   defs: ReportFieldDefinition[],
   hiddenKpis: string[] = [],
 ): string[] {
-  const autoFixed = defs.some(f =>
-    f.isBuiltIn &&
-    f.fieldKey === 'resourcesDistributed' &&
-    !f.isHidden &&
-    (f.countInStats || (f.fieldType === 'select' && f.withQuantity))
-  ) ? ['resources'] : [];
+  // Map fixed KPI id → built-in field key(s). If every feeder field is hidden
+  // (or missing), the KPI is treated as legacy and dropped from the dashboard.
+  const KPI_TO_FIELDS: Record<string, string[]> = {
+    visitors: ['visitorsIn', 'visitorsOut'],
+    vehicles: ['vehiclesCount'],
+    processions: ['processionsCount'],
+    deaths: ['deathsCount'],
+    violations: ['violationsCount'],
+    events: ['eventsCount'],
+    incidents: ['incidentsCount'],
+    resources: ['resourcesDistributed'],
+    deployment: ['deploymentCount'],
+  };
+  const fieldActive = (key: string) => defs.some(f => f.isBuiltIn && f.fieldKey === key && !f.isHidden);
+  const fixedActive = (id: string) => {
+    const keys = KPI_TO_FIELDS[id];
+    if (!keys) return true; // emergencies etc. — not tied to a report field
+    return keys.some(fieldActive);
+  };
+
+  const autoFixed = fieldActive('resourcesDistributed') &&
+    defs.some(f => f.isBuiltIn && f.fieldKey === 'resourcesDistributed' &&
+      (f.countInStats || (f.fieldType === 'select' && f.withQuantity)))
+    ? ['resources'] : [];
   const dyn = dynamicStatKpiIds(defs);
-  const merged = [...customKpis];
-  for (const id of autoFixed) {
-    if (!merged.includes(id)) merged.push(id);
+
+  // Dedupe by label so a dynamic field sharing a fixed KPI's Arabic label
+  // (e.g. "المواكب") doesn't render twice.
+  const labelFor = (id: string): string | null => {
+    if (id.startsWith('x:')) {
+      const key = id.slice(2);
+      const def = defs.find(f => f.fieldKey === key);
+      return (def?.statLabelAr || def?.labelAr || '').trim() || null;
+    }
+    return kpiById(id)?.label?.trim() || null;
+  };
+
+  const merged: string[] = [];
+  const seenLabels = new Set<string>();
+  const push = (id: string) => {
+    if (merged.includes(id) || hiddenKpis.includes(id)) return;
+    const l = labelFor(id);
+    if (l && seenLabels.has(l)) return;
+    if (l) seenLabels.add(l);
+    merged.push(id);
+  };
+
+  for (const id of customKpis) {
+    if (!id.startsWith('x:') && !fixedActive(id)) continue;
+    push(id);
   }
-  for (const id of dyn) {
-    if (!merged.includes(id) && !hiddenKpis.includes(id)) merged.push(id);
-  }
+  for (const id of autoFixed) push(id);
+  for (const id of dyn) push(id);
   return merged;
 }
