@@ -125,15 +125,22 @@ function AnimatedRoutes() {
 export default function App() {
   // Request location once on app open (all devices) and keep tracking in the
   // background so any feature can read the live position without re-prompting.
-  useEffect(() => { startLiveLocation(); }, []);
+  useEffect(() => {
+    startLiveLocation();
+    const onHint = () => toast.info('اضغط زر الرجوع مرة أخرى للخروج من التطبيق');
+    window.addEventListener('app:back-exit-hint', onHint);
+    return () => window.removeEventListener('app:back-exit-hint', onHint);
+  }, []);
 
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <OpsProvider>
           <WalkieProvider>
+            <BackButtonHandler />
             <OfflineBanner />
             <AnimatedRoutes />
+            <PWAInstallPrompt />
             <Toaster richColors position="top-center" dir="rtl" />
           </WalkieProvider>
         </OpsProvider>
