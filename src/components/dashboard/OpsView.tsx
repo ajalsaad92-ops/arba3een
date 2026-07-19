@@ -77,7 +77,7 @@ function SmartInsightsTicker({ insights }: { insights: ReturnType<typeof buildIn
   const toneCls = (tone: string) => tone==='positive' ? 'text-emerald-300' : tone==='negative' ? 'text-red-300' : tone==='warning' ? 'text-amber-300' : 'text-slate-200';
   return (
     <div className="absolute bottom-0 left-0 right-0 z-[400] bg-[#0d0d0d]/95 backdrop-blur-md border-t border-[#232323] h-12 flex items-center overflow-hidden" dir="ltr">
-      <div className="shrink-0 px-3 text-[10px] font-bold text-black bg-amber-400 h-full flex items-center gap-1.5"><Activity className="w-3 h-3" />رؤى لحظية</div>
+      <div className="shrink-0 px-3 text-[10px] font-bold text-black bg-amber-400 h-full flex items-center gap-1.5"><Activity className="w-3 h-3" />الموجز</div>
       <div className="flex-1 overflow-hidden relative">
         <div className="flex w-max items-center animate-marquee-ltr whitespace-nowrap text-xs" style={{ animationDuration: `${Math.max(25, insights.length * 6)}s` }}>
           {[...insights, ...insights].map((ins, i) => (
