@@ -30,6 +30,13 @@ export const KPI_CATALOG: KpiDef[] = [
 
 export const kpiById = (id: string) => KPI_CATALOG.find(k => k.id === id);
 
+/** True when the given built-in report field exists in the definitions AND is hidden by admin.
+ *  If the field is not present in `defs` at all, treat it as active (legacy safety). */
+export function isBuiltInFieldHidden(defs: ReportFieldDefinition[], fieldKey: string): boolean {
+  const f = defs.find(d => d.isBuiltIn && d.fieldKey === fieldKey);
+  return !!f && f.isHidden;
+}
+
 /**
  * Combine the fixed KPI catalog with dynamic KPIs derived from
  * report-field definitions that have `count_in_stats=true`.

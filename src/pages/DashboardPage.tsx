@@ -9,6 +9,8 @@ import { OpsView } from '../components/dashboard/OpsView';
 import { AnalyticsView } from '../components/dashboard/AnalyticsView';
 import { operationalDateDaysAgo } from '../lib/opDate';
 import { extraFieldNumericValue, statExtraKeys } from '../lib/extraFieldStats';
+import { isBuiltInFieldHidden } from '../lib/kpiCatalog';
+import type { ReportFieldDefinition } from '../data/types';
 
 type ViewMode = 'command' | 'ops' | 'analytics';
 
@@ -18,17 +20,27 @@ function usePersisted<T>(key: string, initial: T): [T, React.Dispatch<React.SetS
   return [v, setV];
 }
 
-function computeAggregates(reports: any[], officeIds: string[], extraKeys:string[]=[]): Record<string,number> {
+function computeAggregates(reports: any[], officeIds: string[], extraKeys:string[]=[], defs: ReportFieldDefinition[]=[]): Record<string,number> {
   const filt = officeIds.length===0 ? reports : reports.filter(r=> officeIds.includes(r.officeId));
   const base:Record<string,number> = { visitors:0, visitorsIn:0, visitorsOut:0, vehicles:0, processions:0, deaths:0, violations:0, events:0, incidents:0, resources:0, deployment:0 };
   for(const k of extraKeys) base[`x:${k}`]=0;
+  const hide = (key: string) => isBuiltInFieldHidden(defs, key);
+  const hIn = hide('visitorsIn'), hOut = hide('visitorsOut'), hVeh = hide('vehiclesCount'),
+        hProc = hide('processionsCount'), hDeath = hide('deathsCount'), hViol = hide('violationsCount'),
+        hEv = hide('eventsCount'), hInc = hide('incidentsCount'),
+        hRes = hide('resourcesDistributed'), hDep = hide('deploymentCount');
   for(const r of filt){
-    base.visitorsIn += r.visitorsIn||0; base.visitorsOut += r.visitorsOut||0;
-    base.visitors += (r.visitorsIn||0)+(r.visitorsOut||0);
-    base.vehicles += r.vehiclesCount||0; base.processions += r.processionsCount||0;
-    base.deaths += r.deathsCount||0; base.violations += r.violationsCount||0;
-    base.events += r.eventsCount||0; base.incidents += r.incidentsCount||0;
-    base.resources += extraFieldNumericValue(r.resourcesDistributed); base.deployment += r.deploymentCount||0;
+    if(!hIn) base.visitorsIn += r.visitorsIn||0;
+    if(!hOut) base.visitorsOut += r.visitorsOut||0;
+    base.visitors = base.visitorsIn + base.visitorsOut;
+    if(!hVeh) base.vehicles += r.vehiclesCount||0;
+    if(!hProc) base.processions += r.processionsCount||0;
+    if(!hDeath) base.deaths += r.deathsCount||0;
+    if(!hViol) base.violations += r.violationsCount||0;
+    if(!hEv) base.events += r.eventsCount||0;
+    if(!hInc) base.incidents += r.incidentsCount||0;
+    if(!hRes) base.resources += extraFieldNumericValue(r.resourcesDistributed);
+    if(!hDep) base.deployment += r.deploymentCount||0;
     if(r.extraFields){ for(const k of extraKeys){ base[`x:${k}`] += extraFieldNumericValue(r.extraFields[k]); }}
   }
   return base;
@@ -61,16 +73,16 @@ export default function DashboardPage() {
     if (!dr) {
       const yestStr = operationalDateDaysAgo(1);
       return {
-        aggToday: computeAggregates(state.todayReports, effectiveFilter, extraKeys),
-        aggYesterday: computeAggregates(state.historicalReports.filter(r=>r.reportDate===yestStr), effectiveFilter, extraKeys),
+        aggToday: computeAggregates(state.todayReports, effectiveFilter, extraKeys, state.fieldDefinitions),
+        aggYesterday: computeAggregates(state.historicalReports.filter(r=>r.reportDate===yestStr), effectiveFilter, extraKeys, state.fieldDefinitions),
         rangeLabel: 'اليوم',
       };
     }
     const all = [...state.historicalReports, ...state.todayReports];
     const inRange = all.filter(r => r.reportDate >= dr.from && r.reportDate <= dr.to);
     return {
-      aggToday: computeAggregates(inRange, effectiveFilter, extraKeys),
-      aggYesterday: computeAggregates([], effectiveFilter, extraKeys),
+      aggToday: computeAggregates(inRange, effectiveFilter, extraKeys, state.fieldDefinitions),
+      aggYesterday: computeAggregates([], effectiveFilter, extraKeys, state.fieldDefinitions),
       rangeLabel: dr.from === dr.to ? dr.from : `${dr.from} → ${dr.to}`,
     };
   }, [state.dateRange, state.todayReports, state.historicalReports, effectiveFilter, state.fieldDefinitions]);
