@@ -130,14 +130,9 @@ export const CommandView = React.memo(function CommandView({ agg, trend, aggYest
         </div>
       </div>
 
-      {/* --- Analytics section (merged from previous "تحليل" tab) --- */}
-      <AnalyticsSection
-        agg={agg}
-        aggYesterday={aggYesterday}
-        trend={trend}
-        effectiveFilter={effectiveFilter}
-        setSelectedOffice={setSelectedOffice}
-      />
+      {/* --- Analytics section --- */}
+      <AnalyticsSection effectiveFilter={effectiveFilter} />
+
 
       {detailEm && <EmergencyDetailCard emergency={detailEm} users={state.users} onClose={()=>setDetailEm(null)} />}
     </div>
