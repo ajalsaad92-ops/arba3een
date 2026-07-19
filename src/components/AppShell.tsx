@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useOps } from '../store/opsStore';
-import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal, Lock } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, Lock } from 'lucide-react';
 import EmergencyBanner from './EmergencyBanner';
-import PushNotificationToggle from './PushNotificationToggle';
 import { OFFICES } from '../data/offices';
 import { toast } from 'sonner';
 import { useLocationTracker } from '../lib/useLocationTracker';
+import NotificationBell from './shell/NotificationBell';
+import MobileBottomNav from './shell/MobileBottomNav';
 
 const roleLabels = {
   director: 'مدير عام',
