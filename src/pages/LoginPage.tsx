@@ -39,12 +39,6 @@ export default function LoginPage() {
     } finally { setSubmitting(false); }
   };
 
-  const quick = [
-    { role: 'مدير عام', email: 'u-director@ops.iq', color: 'from-amber-500 to-orange-500' },
-    { role: 'مشرف', email: 'u-supervisor@ops.iq', color: 'from-blue-500 to-indigo-500' },
-    { role: 'مدير مكتب', email: 'u-manager@ops.iq', color: 'from-emerald-500 to-teal-500' },
-    { role: 'مندوب', email: 'u-agent@ops.iq', color: 'from-slate-500 to-slate-600' },
-  ];
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4" dir="rtl">
@@ -82,13 +76,8 @@ export default function LoginPage() {
           </button>
 
           <div className="pt-2 border-t border-[#232323]">
-            <div className="text-[11px] text-slate-500 mb-2 font-bold">دخول سريع للتجربة:</div>
-            <div className="grid grid-cols-2 gap-2">
-              {quick.map(q => (
-                <button type="button" key={q.email}
-                  onClick={()=>{ setEmail(q.email); setPassword('123456'); }}
-                  className={`text-[11px] py-2 rounded-lg bg-gradient-to-l ${q.color} text-white font-bold opacity-90 hover:opacity-100 transition-opacity`}>
-                  {q.role}
+            <div className="text-[11px] text-slate-500 text-center">
+              للحصول على حساب، تواصل مع المدير العام
                 </button>
               ))}
             </div>
