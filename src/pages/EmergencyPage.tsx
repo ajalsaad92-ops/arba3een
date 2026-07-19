@@ -45,8 +45,11 @@ export default function EmergencyPage() {
     if (dErr) e.description = dErr;
     const mErr = validateMGRS(mgrs, false);
     if (mErr) e.mgrs = mErr;
-    const locErr = validateLatLng(coords?.lat, coords?.lng, !mgrs);
-    if (locErr) e.location = locErr;
+    // الموقع أصبح اختيارياً — لا يُشترط GPS ولا MGRS
+    if (coords?.lat != null || coords?.lng != null) {
+      const locErr = validateLatLng(coords?.lat, coords?.lng, false);
+      if (locErr) e.location = locErr;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
