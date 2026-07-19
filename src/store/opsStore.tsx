@@ -444,7 +444,30 @@ export function OpsProvider({ children }: { children: ReactNode }) {
             specialPermissions: upd.special_permissions ?? undefined,
             isActive: upd.is_active,
           }});
-        }
+        },
+        onFrozenRequestChange: ev => {
+          const r = ev.new; if (!r) return;
+          const me = currentUserRef.current; if (!me) return;
+          const role = me.role;
+          const isApprover = role === 'supervisor' || role === 'director';
+          const isRequester = r.requestedById === me.id;
+          const act = (text: string) => dispatch({ type: 'ADD_ACTIVITY', activity: {
+            id: `fz-${r.id}-${ev.type}-${Date.now()}`, type: 'frozen', text,
+            officeId: r.officeId, createdAt: new Date().toISOString(), targetPath: '/frozen-requests',
+          }});
+          if (ev.type === 'INSERT' && isApprover && !isRequester) {
+            alert('extension', '🔒 طلب تعديل حقل مجمّد', `${r.fieldLabelAr || r.fieldKey} — ${r.requestedByName || ''}`);
+            act(`طلب تعديل حقل مجمّد: ${r.fieldLabelAr || r.fieldKey}`);
+          } else if (ev.type === 'UPDATE' && isRequester) {
+            if (r.status === 'approved') {
+              alert('report', '✅ تمت الموافقة على تعديل الحقل', `${r.fieldLabelAr || r.fieldKey}`);
+              act(`تمت الموافقة على تعديل: ${r.fieldLabelAr || r.fieldKey}`);
+            } else if (r.status === 'rejected') {
+              alert('system', '❌ رُفض طلب تعديل الحقل', `${r.fieldLabelAr || r.fieldKey}`);
+              act(`رُفض طلب تعديل: ${r.fieldLabelAr || r.fieldKey}`);
+            }
+          }
+        },
       });
     })();
     return () => { cancelled = true; unsub(); };
