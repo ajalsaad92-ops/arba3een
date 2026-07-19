@@ -45,8 +45,11 @@ export default function EmergencyPage() {
     if (dErr) e.description = dErr;
     const mErr = validateMGRS(mgrs, false);
     if (mErr) e.mgrs = mErr;
-    const locErr = validateLatLng(coords?.lat, coords?.lng, !mgrs);
-    if (locErr) e.location = locErr;
+    // الموقع أصبح اختيارياً — لا يُشترط GPS ولا MGRS
+    if (coords?.lat != null || coords?.lng != null) {
+      const locErr = validateLatLng(coords?.lat, coords?.lng, false);
+      if (locErr) e.location = locErr;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -152,7 +155,7 @@ export default function EmergencyPage() {
               <div className={`text-[10px] mt-1 ${descCountColor}`} aria-live="polite">{descLen} حرف — الحد الأدنى 20</div>
             </FormField>
 
-            <FormField label="الموقع" error={errors.location || errors.mgrs} hint="GPS أو MGRS — أحدهما يكفي" id="em-loc">
+            <FormField label="الموقع (اختياري)" error={errors.location || errors.mgrs} hint="GPS أو MGRS — اختياري" id="em-loc">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   type="button"
