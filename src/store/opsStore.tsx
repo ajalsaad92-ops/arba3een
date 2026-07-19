@@ -35,7 +35,7 @@ interface OpsState {
   hiddenKpis: string[];
   dateRange: { from: string; to: string } | null;
   unreadNotifications: number;
-  lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'system'; text: string; officeId?: string; createdAt: string; read?: boolean }[];
+  lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'frozen' | 'system'; text: string; officeId?: string; createdAt: string; read?: boolean; targetPath?: string }[];
   loadingFlags: Record<string, boolean>;
   errors: Record<string, string | null>;
 }
