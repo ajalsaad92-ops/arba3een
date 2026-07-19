@@ -3,9 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { OpsProvider, useOps } from './store/opsStore';
 import { WalkieProvider } from './store/walkieStore';
 import AppShell from './components/AppShell';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OfflineBanner } from './components/OfflineBanner';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import BackButtonHandler from './components/BackButtonHandler';
 import { startLiveLocation } from './lib/liveLocation';
 
 // lazy pages – code splitting
