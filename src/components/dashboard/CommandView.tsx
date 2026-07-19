@@ -4,7 +4,7 @@ import { useOffices } from '../../lib/offices';
 import KpiCard from '../KpiCard';
 import IraqMap from '../IraqMap';
 import { getEffectiveKpiCatalog, getVisibleKpiIds, isBuiltInFieldHidden } from '../../lib/kpiCatalog';
-import { AlertOctagon, Check, X, Timer, Eye, Users, Truck, Activity, Download, BarChart3, TrendingUp, BarChart2 } from 'lucide-react';
+import { AlertOctagon, Check, X, Timer, Eye, Activity, BarChart3, TrendingUp, BarChart2 } from 'lucide-react';
 import { formatNumber, relativeTime } from '../../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 import type { Office } from '../../data/offices';
@@ -12,9 +12,6 @@ import type { ReportFieldDefinition } from '../../data/types';
 import EmergencyDetailCard from '../EmergencyDetailCard';
 import { operationalDateDaysAgo } from '../../lib/opDate';
 import { extraFieldNumericValue } from '../../lib/extraFieldStats';
-import { getHeatColor, toIntensity } from '../Heatmap';
-import { exportComprehensiveReports } from '../../lib/exportReports';
-import { toast } from 'sonner';
 
 const GOVERNORATE_COLORS = ['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899','#84CC16','#FBBF24','#A78BFA','#34D399','#F87171','#FB923C','#FB7185'];
 const SERIES_COLORS = ['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'];
