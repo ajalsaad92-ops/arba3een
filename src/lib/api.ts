@@ -455,7 +455,7 @@ export const api = {
   async insertEmergency(em: Emergency): Promise<Emergency> {
     if (!em.emergencyType) throw new Error('نوع الطارئ مطلوب');
     if (!em.description || em.description.trim().length < 20) throw new Error('الوصف يجب أن يكون 20 حرف على الأقل');
-    if (!em.lat && !em.lng && !em.locationMgrs) throw new Error('الموقع مطلوب');
+    // الموقع اختياري — أُلغي الاشتراط بناءً على طلب المستخدم
     const { data, error } = await supabase.from('emergencies').insert({
       reported_by: em.reportedById,
       reported_by_name: (em.reportedByName || '').slice(0, 200),
