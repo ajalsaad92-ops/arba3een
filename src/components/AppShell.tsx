@@ -170,7 +170,7 @@ export default function AppShell() {
             </div>
           </div>
 
-          {!isAgent && <div className="flex-1 max-w-2xl mx-2"><TimeLockBar compact /></div>}
+          <div className="flex-1" />
 
         <div className="flex items-center gap-2 shrink-0">
           <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-500 font-mono">
