@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useOps } from '../store/opsStore';
-import { getEffectiveKpiCatalog, getVisibleKpiIds } from '../lib/kpiCatalog';
+import { getCustomizableKpiCatalog, getVisibleKpiIds } from '../lib/kpiCatalog';
 import { Settings, Check, X } from 'lucide-react';
 
 export default function KpiCustomizer() {
   const { state, dispatch } = useOps();
   const [open, setOpen] = useState(false);
-  const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
+  const catalog = getCustomizableKpiCatalog(state.fieldDefinitions);
   const selected = getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis);
 
   const toggle = (id: string) => {

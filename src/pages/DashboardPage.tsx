@@ -3,10 +3,10 @@ import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
 import KpiCustomizer from '../components/KpiCustomizer';
 import DateRangeFilter from '../components/DateRangeFilter';
-import { Search, Map, Activity, BarChart3 } from 'lucide-react';
+import { Search, Map, Activity } from 'lucide-react';
 import { CommandView } from '../components/dashboard/CommandView';
 import { OpsView } from '../components/dashboard/OpsView';
-import { AnalyticsView } from '../components/dashboard/AnalyticsView';
+
 import { operationalDateDaysAgo } from '../lib/opDate';
 import { extraFieldNumericValue, statExtraKeys } from '../lib/extraFieldStats';
 import { isBuiltInFieldHidden } from '../lib/kpiCatalog';
@@ -101,7 +101,6 @@ export default function DashboardPage() {
           {[
             { id:'ops', label:'العمليات', icon: Map },
             { id:'command', label:'القيادة', icon: Activity },
-            { id:'analytics', label:'التحليل', icon: BarChart3 },
           ].map(t=>{
             const Icon=t.icon; const active=view===t.id;
             return <button key={t.id} onClick={()=>setView(t.id as ViewMode)}
@@ -159,9 +158,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {view === 'command' && <CommandView agg={aggToday} trend={trend} aggYesterday={aggYesterday} effectiveFilter={effectiveFilter} selectedOffice={selectedOffice} setSelectedOffice={setSelectedOffice} activeEmergencies={activeEmergencies} />}
+        {view !== 'ops' && <CommandView agg={aggToday} trend={trend} aggYesterday={aggYesterday} effectiveFilter={effectiveFilter} selectedOffice={selectedOffice} setSelectedOffice={setSelectedOffice} activeEmergencies={activeEmergencies} />}
         {view === 'ops' && <OpsView agg={aggToday} effectiveFilter={effectiveFilter} selectedOffice={selectedOffice} setSelectedOffice={setSelectedOffice} activeEmergencies={activeEmergencies} />}
-        {view === 'analytics' && <AnalyticsView agg={aggToday} trend={trend} aggYesterday={aggYesterday} effectiveFilter={effectiveFilter} selectedOffice={selectedOffice} setSelectedOffice={setSelectedOffice} />}
       </div>
 
       {selectedOffice && <DrillDown office={selectedOffice} onClose={()=>setSelectedOffice(null)} />}

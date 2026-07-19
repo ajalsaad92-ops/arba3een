@@ -58,6 +58,34 @@ export function getEffectiveKpiCatalog(defs: ReportFieldDefinition[]): KpiDef[] 
    return [...KPI_CATALOG, ...dynamic];
 }
 
+/**
+ * Catalog for the "تخصيص" (customize) picker — only KPIs that are currently
+ * meaningful given the active report fields. Built-in KPIs whose backing
+ * field(s) are all hidden are dropped; dynamic KPIs come from flagged
+ * non-built-in numeric fields.
+ */
+export function getCustomizableKpiCatalog(defs: ReportFieldDefinition[]): KpiDef[] {
+  const KPI_TO_FIELDS: Record<string, string[]> = {
+    visitors: ['visitorsIn', 'visitorsOut'],
+    vehicles: ['vehiclesCount'],
+    processions: ['processionsCount'],
+    deaths: ['deathsCount'],
+    violations: ['violationsCount'],
+    events: ['eventsCount'],
+    incidents: ['incidentsCount'],
+    resources: ['resourcesDistributed'],
+    deployment: ['deploymentCount'],
+  };
+  const fieldActive = (key: string) => defs.some(f => f.isBuiltIn && f.fieldKey === key && !f.isHidden);
+  const full = getEffectiveKpiCatalog(defs);
+  return full.filter(k => {
+    if (k.id.startsWith('x:')) return true; // dynamic already filtered by definitions
+    const keys = KPI_TO_FIELDS[k.id];
+    if (!keys) return true; // e.g. "emergencies" — not tied to a report field
+    return keys.some(fieldActive);
+  });
+}
+
 /** Dynamic KPI ids (x:fieldKey) derived from flagged stat fields. */
 export function dynamicStatKpiIds(defs: ReportFieldDefinition[]): string[] {
   return defs
