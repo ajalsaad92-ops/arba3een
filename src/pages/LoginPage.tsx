@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useOps } from '../store/opsStore';
 import { supabase } from '../integrations/supabase/client';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Eye, EyeOff, LogIn, Zap } from 'lucide-react';
 import { FormField } from '../components/FormField';
@@ -19,6 +19,9 @@ const DEMO_ACCOUNTS: { label: string; email: string; password: string }[] = [
 export default function LoginPage() {
   const { actions, dispatch } = useOps();
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get('next');
+  const safeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -41,6 +44,7 @@ export default function LoginPage() {
       if (error || !user) { toast.error(error || 'فشل تسجيل الدخول'); return; }
       dispatch({ type: 'AUTH_SUCCESS', user });
       toast.success(`أهلاً ${user.fullNameAr}`);
+      if (safeNext) { nav(safeNext, { replace: true }); return; }
       nav(user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
     } finally { setSubmitting(false); }
   };
@@ -68,6 +72,7 @@ export default function LoginPage() {
       if (!res.user) { toast.error(res.error || 'فشل تسجيل الدخول'); return; }
       dispatch({ type: 'AUTH_SUCCESS', user: res.user });
       toast.success(`أهلاً ${res.user.fullNameAr}`);
+      if (safeNext) { nav(safeNext, { replace: true }); return; }
       nav(res.user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
     } finally { setSubmitting(false); }
   };

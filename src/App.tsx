@@ -25,6 +25,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ReportFieldsPage = lazy(() => import('./pages/ReportFieldsPage'));
 const SupervisorPanelPage = lazy(() => import('./pages/SupervisorPanelPage'));
 const FrozenRequestsPage = lazy(() => import('./pages/FrozenRequestsPage'));
+const OAuthConsentPage = lazy(() => import('./pages/OAuthConsentPage'));
 
 
 function LoadingFallback() {
@@ -74,6 +75,7 @@ function AnimatedRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
 
         <Route element={<ProtectedRoute roles={['director','supervisor','manager','agent','viewer']} />}>
           <Route element={<AppShell />}>
