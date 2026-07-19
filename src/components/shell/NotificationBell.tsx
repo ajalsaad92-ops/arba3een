@@ -1,7 +1,7 @@
 import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useOps } from '../store/opsStore';
-import PushNotificationToggle from './PushNotificationToggle';
+import { useOps } from '../../store/opsStore';
+import PushNotificationToggle from '../PushNotificationToggle';
 
 type Props = {
   open: boolean;
