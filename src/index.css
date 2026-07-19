@@ -169,6 +169,12 @@ input::placeholder, textarea::placeholder { color: #6B655A; }
 }
 .animate-marquee-rtl { animation: marquee-rtl linear infinite; }
 
+@keyframes marquee-ltr {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.animate-marquee-ltr { animation: marquee-ltr linear infinite; }
+
 @keyframes flowDash { to { stroke-dashoffset: -40; } }
 .animate-flow { stroke-dasharray: 10 6; animation: flowDash 1.2s linear infinite; }
 
