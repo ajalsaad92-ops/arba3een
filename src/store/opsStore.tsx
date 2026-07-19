@@ -227,7 +227,7 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'ADD_USER': return { ...state, users: [...state.users, action.user] };
     case 'UPDATE_USER': return { ...state, users: state.users.map(u => u.id === action.id ? { ...u, ...action.patch } : u) };
     case 'ADD_BORDER_CROSSING': return { ...state, borderCrossings: [...state.borderCrossings, action.crossing] };
-    case 'ADD_ACTIVITY': return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50) };
+    case 'ADD_ACTIVITY': return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50), unreadNotifications: state.unreadNotifications + 1 };
     case 'MARK_NOTIFICATION_READ': return { ...state, lastActivity: state.lastActivity.map(a => a.id === action.id ? { ...a, read: true } : a), unreadNotifications: Math.max(0, state.unreadNotifications - 1) };
     case 'MARK_ALL_NOTIFICATIONS_READ': return { ...state, lastActivity: state.lastActivity.map(a => ({ ...a, read: true })), unreadNotifications: 0 };
     case 'CLEAR_UNREAD': return { ...state, unreadNotifications: 0 };
