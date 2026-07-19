@@ -59,12 +59,12 @@ export default function NotificationBell({ open, onOpenChange, isViewer }: Props
                 >
                   تعليم الكل كمقروءة
                 </button>
-                <span className="text-[10px] text-slate-500">{state.lastActivity.filter(a => !(a as any).read).length} جديدة</span>
+                <span className="text-[10px] text-slate-500">{state.lastActivity.filter((a) => !a.read).length} جديدة</span>
               </div>
             </div>
             <div className="divide-y divide-[#232323]">
               {items.map((a, i) => {
-                const isRead = (a as any).read;
+                const isRead = a.read;
                 return (
                   <div
                     key={i}
