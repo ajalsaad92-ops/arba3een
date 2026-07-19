@@ -328,16 +328,21 @@ export default function ReportPage() {
                   </button>
                   {expanded && (
                     <div className="p-4 pt-0 space-y-3">
-                      {fields.map(field => (
+                      {fields.map(field => {
+                        const locked = isLocked(field);
+                        return (
                         <MemoField key={field.id} field={field} value={form[field.fieldKey]} error={formErrors[field.fieldKey]}
                           onChange={(v:any)=>updateField(field.fieldKey, v, field)}
                           location={locations[field.fieldKey] ?? null}
                           route={routes[field.fieldKey] ?? []}
+                          locked={locked}
+                          onRequestEdit={()=> setEditReqField(field)}
                           onOpenPicker={(mode,label)=>setPicker({ fieldKey: field.fieldKey, mode, label })}
                           onRemoveRoutePoint={(i:number)=> setRoutes(r=>({...r,[field.fieldKey]:(r[field.fieldKey]||[]).filter((_,idx)=>idx!==i)}))}
                           onClearLocation={()=> setLocations(l=>({...l,[field.fieldKey]:null}))}
                         />
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
