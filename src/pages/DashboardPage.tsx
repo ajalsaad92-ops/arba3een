@@ -101,7 +101,6 @@ export default function DashboardPage() {
           {[
             { id:'ops', label:'العمليات', icon: Map },
             { id:'command', label:'القيادة', icon: Activity },
-            { id:'analytics', label:'التحليل', icon: BarChart3 },
           ].map(t=>{
             const Icon=t.icon; const active=view===t.id;
             return <button key={t.id} onClick={()=>setView(t.id as ViewMode)}
