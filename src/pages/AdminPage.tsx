@@ -266,7 +266,7 @@ export default function AdminPage() {
             )}
           </div>
 
-          <div className="lg:col-span-3 bg-[#1a1a1a] border border-[#232323] rounded-xl p-4">
+          <div ref={editPaneRef} className="lg:col-span-3 bg-[#1a1a1a] border border-[#232323] rounded-xl p-4 scroll-mt-16">
             {!creating && !editing ? (
               <EmptyState icon={Shield} title="اختر مستخدماً للتعديل" description="أو أنشئ مستخدماً جديداً من الزر بالأعلى" />
             ) : (
