@@ -273,7 +273,7 @@ export default function ReportPage() {
               const hasErr = fields.some(f => formErrors[f.fieldKey]);
               return (
                 <div key={group.id} className={`bg-[#0E1512] border rounded-xl overflow-hidden ${hasErr ? 'border-red-500/40' : 'border-[#16211D]'}`}>
-                  <button onClick={()=>{ const n=new Set(expandedCards); n.has(group.id)?n.delete(group.id):n.add(group.id); setExpandedCards(n); }}
+                  <button onClick={()=>setExpandedCards(prev=>{ const n=new Set(prev); n.has(group.id)?n.delete(group.id):n.add(group.id); return n; })}
                     className="w-full p-4 flex items-center gap-3 hover:bg-[#16211D]/40">
                     <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-sm font-black">{group.sortOrder}</div>
                     <div className="flex-1 text-right"><div className="font-bold text-sm">{group.titleAr} {hasErr && <span className="text-red-400 text-[10px]">⚠</span>}</div>
