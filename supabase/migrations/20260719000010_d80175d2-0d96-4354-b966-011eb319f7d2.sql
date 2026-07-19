@@ -1,0 +1,1 @@
+DELETE FROM public.report_field_definitions WHERE is_hidden = true AND is_built_in = false;
