@@ -144,6 +144,7 @@ export default function FieldDefinitionsManager() {
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#232323] text-slate-400">{Tm.label}</span>
                             {f.isBuiltIn && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">أساسي</span>}
                             {f.countInStats && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300">إحصائيات</span>}
+                            {f.isFrozen && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">مجمّد 🔒</span>}
                             {f.allowedUserIds.length > 0 && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 flex items-center gap-1">
                                 <UsersIcon className="w-2.5 h-2.5" /> {f.allowedUserIds.length} مخصّص
