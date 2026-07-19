@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useOps } from '../store/opsStore';
-import { Bell, ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, MoreHorizontal, Lock } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, FileText, AlertOctagon, History, Users, Timer, LogOut, Hexagon, Radio, Settings2, Lock } from 'lucide-react';
 import EmergencyBanner from './EmergencyBanner';
-import PushNotificationToggle from './PushNotificationToggle';
 import { OFFICES } from '../data/offices';
 import { toast } from 'sonner';
 import { useLocationTracker } from '../lib/useLocationTracker';
+import NotificationBell from './shell/NotificationBell';
+import MobileBottomNav from './shell/MobileBottomNav';
 
 const roleLabels = {
   director: 'مدير عام',
@@ -64,32 +65,13 @@ export default function AppShell() {
 
   ];
 
-  // Where each notification type should take the user when clicked.
-  const notifTarget = (type: string, targetPath?: string): string => {
-    if (targetPath) return targetPath;
-    switch (type) {
-      case 'emergency': return '/emergency';
-      case 'extension': return '/supervisor-panel';
-      case 'frozen': return '/frozen-requests';
-      case 'report': return isViewer ? '/dashboard' : '/history';
-      default: return '/dashboard';
-    }
-  };
-
-  const handleNotificationClick = (a: { id: string; type: string; targetPath?: string }) => {
-    dispatch({ type: 'MARK_NOTIFICATION_READ', id: a.id });
-    setBellOpen(false);
-    const dest = notifTarget(a.type, a.targetPath);
-    // Viewers can only reach the dashboard.
-    navigate(isViewer ? '/dashboard' : dest);
-  };
-
   const handleLogout = async () => {
     await actions.signOut();
     dispatch({ type: 'AUTH_LOGOUT' });
     toast.success('تم تسجيل الخروج بنجاح');
     navigate('/login');
   };
+
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#0d0d0d] text-slate-100" dir="rtl">
@@ -188,71 +170,8 @@ export default function AppShell() {
             <span>مكتب</span>
           </div>
 
-            <div className="relative">
-              <button
-                onClick={() => { setBellOpen(o => !o); dispatch({ type: 'CLEAR_UNREAD' }); }}
-                className="relative w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#232323] flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/30 transition-colors"
-              >
-                <Bell size={16} />
-                {state.unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold px-1 animate-pulse-alert">
-                    {state.unreadNotifications}
-                  </span>
-                )}
-              </button>
-              {bellOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setBellOpen(false)} />
-                  <div className="absolute left-0 mt-2 w-80 bg-[#1a1a1a] border border-[#232323] rounded-xl shadow-2xl z-40 max-h-[400px] overflow-y-auto">
-                    <div className="sticky top-0 bg-[#1a1a1a] z-10 p-3 border-b border-[#232323] flex items-center justify-between">
-                      <span className="font-bold text-sm">الإشعارات</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => dispatch({ type: 'MARK_ALL_NOTIFICATIONS_READ' })}
-                          className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold"
-                        >
-                          تعليم الكل كمقروءة
-                        </button>
-                        <span className="text-[10px] text-slate-500">{state.lastActivity.filter(a => !(a as any).read).length} جديدة</span>
-                      </div>
-                    </div>
-                    <div className="divide-y divide-[#232323]">
-                      {state.lastActivity
-                        .filter(a => !(isViewer && a.type === 'emergency'))
-                        .map((a, i) => {
-                        const isRead = (a as any).read;
-                        return (
-                          <div
-                            key={i}
-                            onClick={() => handleNotificationClick(a)}
-                            className={`p-3 cursor-pointer transition-colors ${isRead ? 'bg-[#0d0d0d]/50' : 'bg-[#232323]/30 hover:bg-[#232323]/50'}`}
-                          >
-                            <div className="flex items-start gap-2">
-                              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                                a.type === 'emergency' ? 'bg-red-500 animate-pulse' :
-                                a.type === 'extension' ? 'bg-amber-500' :
-                                a.type === 'report' ? 'bg-emerald-500' : 'bg-blue-500'
-                              } ${!isRead ? 'animate-pulse' : ''}`} />
-                              <div className="flex-1 min-w-0">
-                                <div className={`text-xs ${isRead ? 'text-slate-400' : 'text-slate-200 font-semibold'}`}>{a.text}</div>
-                                <div className="text-[10px] text-slate-500 mt-1">{new Date(a.createdAt).toLocaleString('ar-IQ')}</div>
-                                <div className="text-[10px] text-amber-400/80 mt-1">اضغط للانتقال ←</div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {state.lastActivity.filter(a => !(isViewer && a.type === 'emergency')).length === 0 && (
-                        <div className="p-6 text-center text-xs text-slate-500">لا توجد إشعارات جديدة</div>
-                      )}
-                    </div>
-                    <div className="p-2 border-t border-[#232323]">
-                      <PushNotificationToggle />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <NotificationBell open={bellOpen} onOpenChange={setBellOpen} isViewer={isViewer} />
+
 
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">
@@ -275,96 +194,13 @@ export default function AppShell() {
         </main>
 
         {/* Mobile bottom nav */}
-        {(() => {
-          const visible = navItems.filter(i => i.show);
-          const primary = visible.slice(0, 4);
-          const overflow = visible.slice(4);
-          return (
-            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0d0d0d]/95 backdrop-blur border-t border-[#232323] flex items-stretch" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-              {primary.map(item => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors ${
-                        isActive ? 'text-amber-400' : 'text-slate-400 hover:text-slate-200'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Icon size={18} className={isActive ? 'scale-110 transition-transform' : ''} />
-                        <span className="truncate max-w-[68px]">{item.label}</span>
-                      </>
-                    )}
-                  </NavLink>
-                );
-              })}
-              {overflow.length > 0 && (
-                <button
-                  onClick={() => setMoreOpen(true)}
-                  className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] text-slate-400 hover:text-amber-400 transition-colors"
-                  aria-label="المزيد"
-                >
-                  <MoreHorizontal size={18} />
-                  <span>المزيد</span>
-                </button>
-              )}
-              {overflow.length === 0 && (
-                <button
-                  onClick={handleLogout}
-                  className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 text-[10px] text-slate-500 hover:text-red-400"
-                  aria-label="تسجيل الخروج"
-                >
-                  <LogOut size={18} />
-                  <span>خروج</span>
-                </button>
-              )}
-            </nav>
-          );
-        })()}
+        <MobileBottomNav
+          items={navItems}
+          moreOpen={moreOpen}
+          onMoreOpenChange={setMoreOpen}
+          onLogout={handleLogout}
+        />
 
-        {/* Mobile "more" sheet */}
-        {moreOpen && (
-          <div className="md:hidden fixed inset-0 z-50" dir="rtl">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
-            <div className="absolute bottom-0 inset-x-0 bg-[#0d0d0d] border-t border-[#232323] rounded-t-2xl p-4 pb-6">
-              <div className="w-10 h-1 rounded-full bg-[#232323] mx-auto mb-4" />
-              <div className="text-sm font-bold text-slate-200 mb-3 px-1">القائمة</div>
-              <div className="grid grid-cols-3 gap-2">
-                {navItems.filter(i => i.show).slice(4).map(item => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setMoreOpen(false)}
-                      className={({ isActive }) =>
-                        `flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border text-[11px] transition-colors ${
-                          isActive
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : 'text-slate-300 bg-[#1a1a1a] border-[#232323] hover:text-slate-100'
-                        }`
-                      }
-                    >
-                      <Icon size={20} />
-                      <span className="truncate max-w-[80px] text-center">{item.label}</span>
-                    </NavLink>
-                  );
-                })}
-                <button
-                  onClick={() => { setMoreOpen(false); handleLogout(); }}
-                  className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border border-red-500/20 bg-red-500/5 text-[11px] text-red-400 hover:bg-red-500/10"
-                >
-                  <LogOut size={20} />
-                  <span>تسجيل الخروج</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

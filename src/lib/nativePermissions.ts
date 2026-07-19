@@ -29,11 +29,8 @@ async function requestLocation() {
 
 async function requestPush() {
   try {
-    const { PushNotifications } = await import('@capacitor/push-notifications');
-    const perm = await PushNotifications.requestPermissions();
-    if (perm.receive === 'granted') {
-      await PushNotifications.register();
-    }
+    const { registerNativePush } = await import('./nativePush');
+    await registerNativePush();
   } catch { /* ignore */ }
 }
 

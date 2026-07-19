@@ -9,6 +9,8 @@ import { OfflineBanner } from './components/OfflineBanner';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import BackButtonHandler from './components/BackButtonHandler';
 import { startLiveLocation } from './lib/liveLocation';
+import { supabase } from './integrations/supabase/client';
+import { registerNativePush, unregisterNativePush, isNativePlatform } from './lib/nativePush';
 
 // lazy pages – code splitting
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -133,7 +135,25 @@ export default function App() {
     startLiveLocation();
     const onHint = () => toast.info('اضغط زر الرجوع مرة أخرى للخروج من التطبيق');
     window.addEventListener('app:back-exit-hint', onHint);
-    return () => window.removeEventListener('app:back-exit-hint', onHint);
+
+    // Native push: (re)register on every auth state change so the device token
+    // is always attached to the currently signed-in user.
+    let authSub: { unsubscribe: () => void } | null = null;
+    if (isNativePlatform()) {
+      const { data } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+          registerNativePush().catch(() => {});
+        } else if (event === 'SIGNED_OUT') {
+          unregisterNativePush().catch(() => {});
+        }
+      });
+      authSub = data.subscription;
+    }
+
+    return () => {
+      window.removeEventListener('app:back-exit-hint', onHint);
+      authSub?.unsubscribe();
+    };
   }, []);
 
   return (
