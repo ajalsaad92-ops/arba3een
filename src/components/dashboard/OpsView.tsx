@@ -12,7 +12,7 @@ import { formatNumber } from '../../lib/utils';
 export const OpsView = React.memo(function OpsView({ agg, effectiveFilter, selectedOffice, setSelectedOffice, activeEmergencies }: any) {
   const { state } = useOps();
   const { officeById } = useOffices();
-  const insights = useMemo(() => buildInsights(state.todayReports, state.historicalReports, state.emergencies, state.users), [state.todayReports, state.historicalReports, state.emergencies, state.users]);
+  const insights = useMemo(() => buildInsights(state.todayReports, state.historicalReports, state.emergencies, state.users, state.fieldDefinitions), [state.todayReports, state.historicalReports, state.emergencies, state.users, state.fieldDefinitions]);
 
   return (
     <div className="h-full relative">
