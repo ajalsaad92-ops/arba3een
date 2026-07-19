@@ -10,6 +10,7 @@ import { FormField, EmptyState } from '../components/FormField';
 import type { Role, Profile } from '../data/types';
 import { validateUsername, validatePassword, passwordStrength, validateText } from '../lib/validation';
 import { useDebounce } from '../hooks/useUtils';
+import { PERMISSION_CATALOG, PERMISSION_GROUPS, defaultPermissionsForRole, allPermissions } from '../lib/permissions';
 
 const ROLE_LABELS: Record<Role, string> = {
   director: 'مدير عام',
@@ -26,13 +27,7 @@ const ROLE_COLORS: Record<Role, string> = {
   viewer: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
 };
 
-const PERMS = [
-  { key: 'canExport', label: 'تصدير Excel', desc: 'يسمح بتصدير التقارير' },
-  { key: 'canAddCrossings', label: 'إضافة منافذ', desc: 'إدارة المعابر الحدودية' },
-  { key: 'canViewAllOffices', label: 'مشاهدة كل المكاتب', desc: 'تجاوز قيود المكتب' },
-  { key: 'canOpenWindow', label: 'فتح النافذة يدوياً', desc: 'التحكم بنافذة التقرير' },
-  { key: 'canEditReports', label: 'تعديل التقارير', desc: 'تعديل تقارير الآخرين' },
-];
+// Permission list is now defined centrally in src/lib/permissions.ts
 
 export default function AdminPage() {
   const { state, dispatch, actions } = useOps();
