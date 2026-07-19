@@ -73,16 +73,16 @@ export default function DashboardPage() {
     if (!dr) {
       const yestStr = operationalDateDaysAgo(1);
       return {
-        aggToday: computeAggregates(state.todayReports, effectiveFilter, extraKeys),
-        aggYesterday: computeAggregates(state.historicalReports.filter(r=>r.reportDate===yestStr), effectiveFilter, extraKeys),
+        aggToday: computeAggregates(state.todayReports, effectiveFilter, extraKeys, state.fieldDefinitions),
+        aggYesterday: computeAggregates(state.historicalReports.filter(r=>r.reportDate===yestStr), effectiveFilter, extraKeys, state.fieldDefinitions),
         rangeLabel: 'اليوم',
       };
     }
     const all = [...state.historicalReports, ...state.todayReports];
     const inRange = all.filter(r => r.reportDate >= dr.from && r.reportDate <= dr.to);
     return {
-      aggToday: computeAggregates(inRange, effectiveFilter, extraKeys),
-      aggYesterday: computeAggregates([], effectiveFilter, extraKeys),
+      aggToday: computeAggregates(inRange, effectiveFilter, extraKeys, state.fieldDefinitions),
+      aggYesterday: computeAggregates([], effectiveFilter, extraKeys, state.fieldDefinitions),
       rangeLabel: dr.from === dr.to ? dr.from : `${dr.from} → ${dr.to}`,
     };
   }, [state.dateRange, state.todayReports, state.historicalReports, effectiveFilter, state.fieldDefinitions]);
