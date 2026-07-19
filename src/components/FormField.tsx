@@ -46,7 +46,7 @@ export function FormField({ label, error, hint, required, children, id, counter 
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-[#16211D] ${className}`} />;
+  return <div className={`animate-pulse rounded-md bg-[#232323] ${className}`} />;
 }
 
 export function EmptyState({ icon: Icon, title, description, action }: {
@@ -71,7 +71,7 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
       <div className="text-sm font-bold text-red-300 mb-1">حدث خطأ</div>
       <div className="text-xs text-slate-400">{message || 'تعذّر تحميل البيانات'}</div>
       {onRetry && (
-        <button onClick={onRetry} className="mt-3 px-4 py-1.5 rounded-md bg-[#16211D] hover:bg-[#1F2D28] text-slate-200 text-xs font-bold">
+        <button onClick={onRetry} className="mt-3 px-4 py-1.5 rounded-md bg-[#232323] hover:bg-[#2c2c2c] text-slate-200 text-xs font-bold">
           إعادة المحاولة
         </button>
       )}

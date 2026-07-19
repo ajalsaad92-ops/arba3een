@@ -96,25 +96,25 @@ export default function SupervisorPanelPage() {
   const activeEmergencies = state.emergencies.filter(e => e.status !== 'resolved' && permittedIds.includes(e.officeId));
 
   return (
-    <div className="h-full overflow-y-auto bg-[#070B09] p-3 md:p-5" dir="rtl">
+    <div className="h-full overflow-y-auto bg-[#0d0d0d] p-3 md:p-5" dir="rtl">
       <div className="max-w-6xl mx-auto space-y-4">
         <div>
           <div className="text-2xl font-display font-black text-amber-400">لوحة المشرف</div>
           <div className="text-xs text-slate-400 mt-1">إدارة نافذة الإرسال وطلبات التمديد والطوارئ</div>
         </div>
 
-        <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-4">
+        <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-4">
           <div className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> نافذة التقرير اليومي</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <FormField label="وقت الفتح" error={timeError && timeError.includes('الفتح') ? timeError : undefined} id="tw-open">
               <input id="tw-open" type="time" value={openTime}
                 onChange={e=>{ setOpenTime(e.target.value); validateTimes(e.target.value, closeTime); }}
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" />
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" />
             </FormField>
             <FormField label="وقت الإغلاق" error={timeError && !timeError.includes('الفتح') ? timeError : undefined} id="tw-close">
               <input id="tw-close" type="time" value={closeTime}
                 onChange={e=>{ setCloseTime(e.target.value); validateTimes(openTime, e.target.value); }}
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" />
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" />
             </FormField>
           </div>
           {timeError && <div className="text-[11px] text-red-400 mb-3">{timeError}</div>}
@@ -143,7 +143,7 @@ export default function SupervisorPanelPage() {
           </div>
         </div>
 
-        <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-4">
+        <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-4">
           <div className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2">
             <Timer className="w-4 h-4" /> طلبات التمديد
             {!!visibleExtensions.length && <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">{visibleExtensions.length}</span>}
@@ -157,7 +157,7 @@ export default function SupervisorPanelPage() {
                 const canReviewAsManager = user.role === 'manager' && isOwnOffice && ex.status === 'pending';
                 const canReviewAsSupervisor = isDirector || (user.role === 'supervisor' && permittedIds.includes(ex.officeId) && ex.status === 'forwarded_to_supervisor');
                 return (
-                  <div key={ex.id} className="bg-[#070B09] border border-[#16211D] rounded-lg p-3">
+                  <div key={ex.id} className="bg-[#0d0d0d] border border-[#232323] rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 font-bold text-sm">{ex.requestedByName.charAt(0)}</div>
                       <div className="flex-1 min-w-0">
@@ -166,7 +166,7 @@ export default function SupervisorPanelPage() {
                       </div>
                       <StatusBadge status={ex.status} />
                     </div>
-                    {ex.reason && <div className="text-xs text-slate-300 bg-[#0E1512] border border-[#16211D] rounded p-2 mb-2">{ex.reason}</div>}
+                    {ex.reason && <div className="text-xs text-slate-300 bg-[#1a1a1a] border border-[#232323] rounded p-2 mb-2">{ex.reason}</div>}
                     {(canReviewAsManager || canReviewAsSupervisor) && (
                       <div className="flex gap-2">
                         {canReviewAsManager && (
@@ -187,7 +187,7 @@ export default function SupervisorPanelPage() {
           )}
         </div>
 
-        <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-4">
+        <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-4">
           <div className="text-sm font-bold text-amber-400 mb-3">حالة الإرسال — {permittedIds.length} مكتب</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[340px] overflow-y-auto pr-1">
             {officeReports.map(({ office, report }) => {
@@ -215,7 +215,7 @@ export default function SupervisorPanelPage() {
             <div className="text-sm font-bold text-red-300 mb-3 flex items-center gap-2"><AlertOctagon className="w-4 h-4" /> طوارئ نشطة ({activeEmergencies.length})</div>
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {activeEmergencies.map((e:any)=>(
-                <div key={e.id} className="bg-[#070B09] border border-red-500/20 rounded-lg p-3">
+                <div key={e.id} className="bg-[#0d0d0d] border border-red-500/20 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <Bell className="w-3.5 h-3.5 text-red-400" />
                     <span className="text-sm font-bold">{e.emergencyType}</span>

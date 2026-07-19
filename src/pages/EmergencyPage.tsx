@@ -107,9 +107,9 @@ export default function EmergencyPage() {
   const descCountColor = descLen < 20 ? 'text-red-400' : descLen > 1800 ? 'text-amber-400' : 'text-slate-500';
 
   return (
-    <div className="h-full overflow-y-auto bg-[#070B09] p-3 md:p-6">
+    <div className="h-full overflow-y-auto bg-[#0d0d0d] p-3 md:p-6">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-gradient-to-br from-red-900/20 to-[#070B09] border-2 border-red-500/30 rounded-2xl p-5 md:p-6">
+        <div className="bg-gradient-to-br from-red-900/20 to-[#0d0d0d] border-2 border-red-500/30 rounded-2xl p-5 md:p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
               <AlertOctagon className="w-7 h-7" />
@@ -126,7 +126,7 @@ export default function EmergencyPage() {
                 id="em-type"
                 value={type}
                 onChange={e => { setType(e.target.value); if (errors.type) setErrors(s => { const n={...s}; delete n.type; return n; }); }}
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-lg px-3 py-3 text-sm text-white focus:border-red-500/40 focus:outline-none focus:ring-1 focus:ring-red-500/20"
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg px-3 py-3 text-sm text-white focus:border-red-500/40 focus:outline-none focus:ring-1 focus:ring-red-500/20"
               >
                 <option value="">— اختر نوع الحالة —</option>
                 {EMERGENCY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -146,7 +146,7 @@ export default function EmergencyPage() {
                 value={description}
                 onChange={e => { setDescription(e.target.value.slice(0,2000)); if (errors.description) setErrors(s=>{const n={...s}; delete n.description; return n;}); }}
                 placeholder="اشرح الحالة بتفاصيل كافية..."
-                className="w-full bg-[#16211D] border border-[#1F2D28] rounded-lg px-3 py-3 text-sm text-white placeholder-slate-500 focus:border-red-500/40 focus:outline-none focus:ring-1 focus:ring-red-500/20 min-h-32 resize-none"
+                className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg px-3 py-3 text-sm text-white placeholder-slate-500 focus:border-red-500/40 focus:outline-none focus:ring-1 focus:ring-red-500/20 min-h-32 resize-none"
                 aria-describedby={errors.description ? "em-desc-error" : undefined}
               />
               <div className={`text-[10px] mt-1 ${descCountColor}`} aria-live="polite">{descLen} حرف — الحد الأدنى 20</div>
@@ -169,7 +169,7 @@ export default function EmergencyPage() {
                   placeholder="MGRS يدوياً (اختياري)"
                   maxLength={30}
                   dir="ltr"
-                  className="bg-[#16211D] border border-[#1F2D28] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-red-500/40 focus:outline-none text-left"
+                  className="bg-[#232323] border border-[#2c2c2c] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-red-500/40 focus:outline-none text-left"
                 />
               </div>
               {coords && (
@@ -199,7 +199,7 @@ export default function EmergencyPage() {
           ) : (
           <div className="space-y-2">
             {emergencies.slice(0, 8).map(em => (
-              <div key={em.id} className="bg-[#0E1512] border border-[#16211D] rounded-lg p-3">
+              <div key={em.id} className="bg-[#1a1a1a] border border-[#232323] rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <div className={`w-2 h-2 rounded-full ${
                     em.status === 'active' ? 'bg-red-500 animate-pulse' :

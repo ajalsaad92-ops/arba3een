@@ -39,7 +39,7 @@ export default function AppShell() {
   // But show loading just in case
   if (!state.currentUser) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#070B09]">
+      <div className="h-full flex items-center justify-center bg-[#0d0d0d]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
           <div className="text-xs text-slate-500 font-display">جاري التحميل...</div>
@@ -89,19 +89,19 @@ export default function AppShell() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070B09] text-slate-100" dir="rtl">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#0d0d0d] text-slate-100" dir="rtl">
       {/* Sidebar — hidden on mobile, replaced by bottom nav */}
       <aside
-        className={`hidden md:flex ${collapsed ? 'w-16' : 'w-56'} shrink-0 bg-[#070B09] border-l border-[#16211D] flex-col transition-all duration-300 relative`}
+        className={`hidden md:flex ${collapsed ? 'w-16' : 'w-56'} shrink-0 bg-[#0d0d0d] border-l border-[#232323] flex-col transition-all duration-300 relative`}
       >
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -left-3 top-6 z-10 w-6 h-6 rounded-full bg-[#16211D] border border-[#1F2D28] flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/40 transition-colors"
+          className="absolute -left-3 top-6 z-10 w-6 h-6 rounded-full bg-[#232323] border border-[#2c2c2c] flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/40 transition-colors"
         >
           <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? '' : 'rotate-180'}`} />
         </button>
 
-        <div className="p-4 border-b border-[#16211D] flex items-center gap-3">
+        <div className="p-4 border-b border-[#232323] flex items-center gap-3">
           <div className="w-9 h-9 shrink-0 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
             <Hexagon className="w-5 h-5 text-black fill-black/20" />
           </div>
@@ -124,7 +124,7 @@ export default function AppShell() {
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group ${
                     isActive
                       ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-[inset_0_1px_0_rgba(245,158,11,0.1)]'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#0E1512] border border-transparent'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1a1a1a] border border-transparent'
                   }`
                 }
               >
@@ -135,9 +135,9 @@ export default function AppShell() {
           })}
         </nav>
 
-        <div className="p-2 border-t border-[#16211D]">
+        <div className="p-2 border-t border-[#232323]">
           {!collapsed && (
-            <div className="p-3 mb-2 rounded-lg bg-[#0E1512] border border-[#16211D]">
+            <div className="p-3 mb-2 rounded-lg bg-[#1a1a1a] border border-[#232323]">
               <div className="text-sm font-semibold truncate">{user.fullNameAr}</div>
               <div className="text-[11px] text-slate-500 mb-2 truncate">{user.officeId}</div>
               <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full border ${roleColors[user.role]}`}>
@@ -158,7 +158,7 @@ export default function AppShell() {
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-14 shrink-0 bg-[#070B09] border-b border-[#16211D] flex items-center justify-between px-3 sm:px-4 gap-2 sm:gap-3">
+        <header className="h-14 shrink-0 bg-[#0d0d0d] border-b border-[#232323] flex items-center justify-between px-3 sm:px-4 gap-2 sm:gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="md:hidden w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shrink-0">
               <Hexagon className="w-4 h-4 text-black fill-black/20" />
@@ -188,7 +188,7 @@ export default function AppShell() {
             <div className="relative">
               <button
                 onClick={() => { setBellOpen(o => !o); dispatch({ type: 'CLEAR_UNREAD' }); }}
-                className="relative w-9 h-9 rounded-lg bg-[#0E1512] border border-[#16211D] flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/30 transition-colors"
+                className="relative w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#232323] flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/30 transition-colors"
               >
                 <Bell size={16} />
                 {state.unreadNotifications > 0 && (
@@ -200,8 +200,8 @@ export default function AppShell() {
               {bellOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setBellOpen(false)} />
-                  <div className="absolute left-0 mt-2 w-80 bg-[#0E1512] border border-[#16211D] rounded-xl shadow-2xl z-40 max-h-[400px] overflow-y-auto">
-                    <div className="sticky top-0 bg-[#0E1512] z-10 p-3 border-b border-[#16211D] flex items-center justify-between">
+                  <div className="absolute left-0 mt-2 w-80 bg-[#1a1a1a] border border-[#232323] rounded-xl shadow-2xl z-40 max-h-[400px] overflow-y-auto">
+                    <div className="sticky top-0 bg-[#1a1a1a] z-10 p-3 border-b border-[#232323] flex items-center justify-between">
                       <span className="font-bold text-sm">الإشعارات</span>
                       <div className="flex items-center gap-2">
                         <button
@@ -213,7 +213,7 @@ export default function AppShell() {
                         <span className="text-[10px] text-slate-500">{state.lastActivity.filter(a => !(a as any).read).length} جديدة</span>
                       </div>
                     </div>
-                    <div className="divide-y divide-[#16211D]">
+                    <div className="divide-y divide-[#232323]">
                       {state.lastActivity
                         .filter(a => !(isViewer && a.type === 'emergency'))
                         .map((a, i) => {
@@ -222,7 +222,7 @@ export default function AppShell() {
                           <div
                             key={i}
                             onClick={() => handleNotificationClick(a)}
-                            className={`p-3 cursor-pointer transition-colors ${isRead ? 'bg-[#070B09]/50' : 'bg-[#16211D]/30 hover:bg-[#16211D]/50'}`}
+                            className={`p-3 cursor-pointer transition-colors ${isRead ? 'bg-[#0d0d0d]/50' : 'bg-[#232323]/30 hover:bg-[#232323]/50'}`}
                           >
                             <div className="flex items-start gap-2">
                               <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
@@ -243,7 +243,7 @@ export default function AppShell() {
                         <div className="p-6 text-center text-xs text-slate-500">لا توجد إشعارات جديدة</div>
                       )}
                     </div>
-                    <div className="p-2 border-t border-[#16211D]">
+                    <div className="p-2 border-t border-[#232323]">
                       <PushNotificationToggle />
                     </div>
                   </div>
@@ -267,7 +267,7 @@ export default function AppShell() {
         {isDirector && <EmergencyBanner />}
 
         {/* Page content */}
-        <main className="flex-1 overflow-hidden bg-[#070B09] pb-16 md:pb-0">
+        <main className="flex-1 overflow-hidden bg-[#0d0d0d] pb-16 md:pb-0">
           <Outlet />
         </main>
 
@@ -277,7 +277,7 @@ export default function AppShell() {
           const primary = visible.slice(0, 4);
           const overflow = visible.slice(4);
           return (
-            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#070B09]/95 backdrop-blur border-t border-[#16211D] flex items-stretch">
+            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0d0d0d]/95 backdrop-blur border-t border-[#232323] flex items-stretch">
               {primary.map(item => {
                 const Icon = item.icon;
                 return (
@@ -327,8 +327,8 @@ export default function AppShell() {
         {moreOpen && (
           <div className="md:hidden fixed inset-0 z-50" dir="rtl">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
-            <div className="absolute bottom-0 inset-x-0 bg-[#070B09] border-t border-[#16211D] rounded-t-2xl p-4 pb-6">
-              <div className="w-10 h-1 rounded-full bg-[#16211D] mx-auto mb-4" />
+            <div className="absolute bottom-0 inset-x-0 bg-[#0d0d0d] border-t border-[#232323] rounded-t-2xl p-4 pb-6">
+              <div className="w-10 h-1 rounded-full bg-[#232323] mx-auto mb-4" />
               <div className="text-sm font-bold text-slate-200 mb-3 px-1">القائمة</div>
               <div className="grid grid-cols-3 gap-2">
                 {navItems.filter(i => i.show).slice(4).map(item => {
@@ -342,7 +342,7 @@ export default function AppShell() {
                         `flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border text-[11px] transition-colors ${
                           isActive
                             ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : 'text-slate-300 bg-[#0E1512] border-[#16211D] hover:text-slate-100'
+                            : 'text-slate-300 bg-[#1a1a1a] border-[#232323] hover:text-slate-100'
                         }`
                       }
                     >

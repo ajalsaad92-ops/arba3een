@@ -44,7 +44,7 @@ export function getHeatColor(intensity: number): { background: string; border: s
   const a = lower.a + (upper.a - lower.a) * t;
   const background = `rgba(${r}, ${g}, ${b}, ${a})`;
   const border = `rgba(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)}, ${Math.min(1, a + 0.1)})`;
-  const textColor = v > 0.55 ? '#fff' : v > 0.25 ? '#070B09' : '#94A3B8';
+  const textColor = v > 0.55 ? '#fff' : v > 0.25 ? '#0d0d0d' : '#94A3B8';
   const label = v < 0.1 ? 'فارغ' : v < 0.25 ? 'منخفض' : v < 0.5 ? 'متوسط' : v < 0.75 ? 'مرتفع' : v < 0.9 ? 'عالي جداً' : 'حرج';
   return { background, border, textColor, label };
 }

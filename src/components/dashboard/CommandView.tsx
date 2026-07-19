@@ -39,25 +39,25 @@ export const CommandView = React.memo(function CommandView({ agg, trend, aggYest
       <div className="lg:w-[45%] flex flex-col gap-3 lg:overflow-y-auto">
         <CustomKpiGrid agg={agg} aggYesterday={aggYesterday} trend={trend} activeEmergencies={activeEmergencies} />
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-3">
+          <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
             <div className="text-xs font-bold text-slate-300 mb-2">توزيع الزوار بالمحافظات</div>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie data={governorateData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
-                  {governorateData.map((_:any,i:number)=><Cell key={i} fill={GOVERNORATE_COLORS[i % GOVERNORATE_COLORS.length]} stroke="#070B09" />)}
+                  {governorateData.map((_:any,i:number)=><Cell key={i} fill={GOVERNORATE_COLORS[i % GOVERNORATE_COLORS.length]} stroke="#0d0d0d" />)}
                 </Pie>
-                <Tooltip contentStyle={{ background:'#0E1512', border:'1px solid #16211D', borderRadius:8, fontSize:11 }} />
+                <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid #232323', borderRadius:8, fontSize:11 }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="text-[10px] text-slate-500 text-center mt-1">المجموع: {formatNumber(agg.visitors)} زائر</div>
           </div>
-          <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-3">
+          <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
             <div className="text-xs font-bold text-slate-300 mb-2">ترتيب المكاتب — الفعاليات</div>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={eventsRanked} layout="vertical" margin={{ left:5, right:10, top:5, bottom:5 }}>
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={60} tick={{ fill:'#94A3B8', fontSize:8 }} />
-                <Tooltip contentStyle={{ background:'#0E1512', border:'1px solid #16211D', borderRadius:8, fontSize:10 }} />
+                <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid #232323', borderRadius:8, fontSize:10 }} />
                 <Bar dataKey="value" fill="#F59E0B" radius={[0,4,4,0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -93,7 +93,7 @@ export const CommandView = React.memo(function CommandView({ agg, trend, aggYest
           </div>
         )}
       </div>
-      <div className="lg:w-[55%] bg-[#0E1512] border border-[#16211D] rounded-xl overflow-hidden relative h-[55vh] lg:h-auto">
+      <div className="lg:w-[55%] bg-[#1a1a1a] border border-[#232323] rounded-xl overflow-hidden relative h-[55vh] lg:h-auto">
         <IraqMap onSelectOffice={setSelectedOffice} selectedOfficeId={selectedOffice?.id} filterOfficeIds={effectiveFilter} height="100%" />
       </div>
       {detailEm && <EmergencyDetailCard emergency={detailEm} users={state.users} onClose={()=>setDetailEm(null)} />}
@@ -124,7 +124,7 @@ function ReportStatusTable({ effectiveFilter, onSelect }: { effectiveFilter: str
   const { offices } = useOffices();
   const list = offices.filter(o => effectiveFilter.includes(o.id));
   return (
-    <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-3">
+    <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs font-bold text-slate-300">حالة إرسال التقارير — اليوم</div>
         <div className="text-[10px] text-slate-500">{state.todayReports.length} / {list.length}</div>
@@ -137,8 +137,8 @@ function ReportStatusTable({ effectiveFilter, onSelect }: { effectiveFilter: str
             <X className="w-3 h-3 text-red-400" />;
           const visitors = report ? (report.visitorsIn + report.visitorsOut) : 0;
           return (
-            <button key={office.id} onClick={()=>onSelect(office)} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#16211D]/60 text-xs">
-              <div className="w-5 h-5 rounded-full bg-[#16211D] flex items-center justify-center">{statusIcon}</div>
+            <button key={office.id} onClick={()=>onSelect(office)} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#232323]/60 text-xs">
+              <div className="w-5 h-5 rounded-full bg-[#232323] flex items-center justify-center">{statusIcon}</div>
               <span className="flex-1 text-right truncate text-slate-200">{office.nameAr}</span>
               <span className="font-mono text-amber-300">{report ? formatNumber(visitors) : '—'}</span>
             </button>

@@ -231,10 +231,10 @@ export default function ReportPage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-[#070B09]">
-      <div className="lg:hidden p-3 bg-[#0E1512] border-b border-[#16211D]"><TimeLockBar /></div>
+    <div className="h-full overflow-y-auto bg-[#0d0d0d]">
+      <div className="lg:hidden p-3 bg-[#1a1a1a] border-b border-[#232323]"><TimeLockBar /></div>
       <div className="max-w-3xl mx-auto p-3 md:p-4">
-        <div className="bg-gradient-to-l from-[#0E1512] to-[#070B09] border border-[#16211D] rounded-xl p-4 mb-4">
+        <div className="bg-gradient-to-l from-[#1a1a1a] to-[#0d0d0d] border border-[#232323] rounded-xl p-4 mb-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400"><Send className="w-5 h-5" /></div>
             <div className="flex-1 min-w-0">
@@ -248,7 +248,7 @@ export default function ReportPage() {
               <span>اكتمال: <b className="text-amber-300">{filledFields}/{totalFields}</b></span>
               <span className="font-mono">{completionPct}%</span>
             </div>
-            <div className="h-1.5 rounded-full bg-[#16211D] overflow-hidden"><div className="h-full bg-gradient-to-l from-amber-500 to-amber-300 transition-all" style={{ width: `${completionPct}%` }} /></div>
+            <div className="h-1.5 rounded-full bg-[#232323] overflow-hidden"><div className="h-full bg-gradient-to-l from-amber-500 to-amber-300 transition-all" style={{ width: `${completionPct}%` }} /></div>
             {!!Object.keys(formErrors).length && <div className="mt-2 text-[10px] text-red-300">⚠ {Object.keys(formErrors).length} أخطاء</div>}
           </div>
           {reportExists && <div className="mt-3 p-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2"><Check className="w-3.5 h-3.5" /> تم إرسال تقرير اليوم</div>}
@@ -257,14 +257,14 @@ export default function ReportPage() {
               <div className="flex items-center gap-2 mb-2 font-bold"><History className="w-3.5 h-3.5" /> مسودة غير مُرسلة</div>
               <div className="flex gap-2">
                 <button onClick={restoreDraft} className="flex-1 py-1.5 rounded-md bg-blue-500 text-black font-bold">استئناف</button>
-                <button onClick={discardDraft} className="px-3 py-1.5 rounded-md bg-[#16211D] text-slate-300">تجاهل</button>
+                <button onClick={discardDraft} className="px-3 py-1.5 rounded-md bg-[#232323] text-slate-300">تجاهل</button>
               </div>
             </div>
           )}
         </div>
 
         {plan.length === 0 ? (
-          <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-8 text-center text-sm text-slate-500">لا توجد حقول مفعّلة</div>
+          <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-8 text-center text-sm text-slate-500">لا توجد حقول مفعّلة</div>
         ) : (
           <div className="space-y-3">
             {plan.map(({ group, fields }) => {
@@ -272,9 +272,9 @@ export default function ReportPage() {
               const filledHere = fields.filter(isFieldFilled).length;
               const hasErr = fields.some(f => formErrors[f.fieldKey]);
               return (
-                <div key={group.id} className={`bg-[#0E1512] border rounded-xl overflow-hidden ${hasErr ? 'border-red-500/40' : 'border-[#16211D]'}`}>
+                <div key={group.id} className={`bg-[#1a1a1a] border rounded-xl overflow-hidden ${hasErr ? 'border-red-500/40' : 'border-[#232323]'}`}>
                   <button onClick={()=>setExpandedCards(prev=>{ const n=new Set(prev); n.has(group.id)?n.delete(group.id):n.add(group.id); return n; })}
-                    className="w-full p-4 flex items-center gap-3 hover:bg-[#16211D]/40">
+                    className="w-full p-4 flex items-center gap-3 hover:bg-[#232323]/40">
                     <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-sm font-black">{group.sortOrder}</div>
                     <div className="flex-1 text-right"><div className="font-bold text-sm">{group.titleAr} {hasErr && <span className="text-red-400 text-[10px]">⚠</span>}</div>
                       <div className="text-[10px] text-slate-500">{filledHere}/{fields.length}</div></div>
@@ -300,7 +300,7 @@ export default function ReportPage() {
           </div>
         )}
 
-        <div className="mt-4 bg-[#0E1512] border border-[#16211D] rounded-xl p-4 space-y-3">
+        <div className="mt-4 bg-[#1a1a1a] border border-[#232323] rounded-xl p-4 space-y-3">
           <div className="text-xs text-slate-400 font-bold">بيانات الموقع</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button onClick={async ()=>{ const fix = await requestLiveLocation(); if(fix){ setReporterLat(fix.lat); setReporterLng(fix.lng); toast.success('تم تحديد موقعك'); } else { toast.error('فشل'); } }}
@@ -309,11 +309,11 @@ export default function ReportPage() {
             </button>
             <div>
               <input placeholder="MGRS (اختياري)" value={mgrs} onChange={e=>{ setMgrs(e.target.value); validateMgrsLocal(e.target.value); }}
-                className={`w-full bg-[#16211D] border rounded-lg px-3 py-2.5 text-sm text-white ${mgrsError ? 'border-red-500/60':'border-[#1F2D28] focus:border-amber-500/40'} focus:outline-none`} />
+                className={`w-full bg-[#232323] border rounded-lg px-3 py-2.5 text-sm text-white ${mgrsError ? 'border-red-500/60':'border-[#2c2c2c] focus:border-amber-500/40'} focus:outline-none`} />
               {mgrsError && <div className="text-[10px] text-red-400 mt-1">{mgrsError}</div>}
             </div>
           </div>
-          {reporterLat != null && <div className="text-[10px] text-slate-500 bg-[#070B09] border border-[#16211D] rounded p-2">📍 {reporterLat.toFixed(5)}, {reporterLng?.toFixed(5)}</div>}
+          {reporterLat != null && <div className="text-[10px] text-slate-500 bg-[#0d0d0d] border border-[#232323] rounded p-2">📍 {reporterLat.toFixed(5)}, {reporterLng?.toFixed(5)}</div>}
           <div className="text-[10px] text-slate-500">السيرفر: <span className="text-slate-300 font-mono">{state.serverTime.toLocaleTimeString('en-GB',{hour12:false})}</span></div>
           {extensionActive && <div className="p-2.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-xs text-blue-300">تمديد نشط</div>}
           <button onClick={handleSubmit} disabled={submitting || (status==='locked' && !extensionActive) || !!Object.keys(formErrors).length}
@@ -337,13 +337,13 @@ export default function ReportPage() {
       )}
       {showExtension && (
         <div className="fixed inset-0 z-[600] bg-black/60 flex items-end justify-center" onClick={()=>setShowExtension(false)}>
-          <div onClick={e=>e.stopPropagation()} className="w-full max-w-lg bg-[#070B09] border-t-2 border-red-500/50 rounded-t-2xl p-5">
+          <div onClick={e=>e.stopPropagation()} className="w-full max-w-lg bg-[#0d0d0d] border-t-2 border-red-500/50 rounded-t-2xl p-5">
             <div className="text-lg font-black text-red-300 mb-2">انتهى وقت الإرسال</div>
             <textarea value={extensionReason} onChange={e=>setExtensionReason(e.target.value.slice(0,1000))} maxLength={1000}
-              placeholder="سبب طلب التمديد..." className="w-full bg-[#16211D] border border-[#1F2D28] rounded-lg p-3 text-sm text-white min-h-20" />
+              placeholder="سبب طلب التمديد..." className="w-full bg-[#232323] border border-[#2c2c2c] rounded-lg p-3 text-sm text-white min-h-20" />
             <div className="text-[10px] text-slate-500 mb-3">{extensionReason.length}/1000</div>
             <div className="flex gap-2">
-              <button onClick={()=>setShowExtension(false)} className="flex-1 py-2.5 rounded-lg bg-[#16211D] text-slate-300">إلغاء</button>
+              <button onClick={()=>setShowExtension(false)} className="flex-1 py-2.5 rounded-lg bg-[#232323] text-slate-300">إلغاء</button>
               <button onClick={submitExtension} disabled={extensionReason.trim().length < 5} className="flex-1 py-2.5 rounded-lg bg-amber-500 text-black font-black disabled:opacity-50">رفع الطلب</button>
             </div>
           </div>
@@ -367,7 +367,7 @@ function DynamicFieldRenderer({ field, value, error, onChange, location, route, 
   location: Pt | null; route: Pt[]; onOpenPicker:(m:'single'|'multi'|'route',l:string)=>void;
   onRemoveRoutePoint:(i:number)=>void; onClearLocation:()=>void;
 }) {
-  const inputCls = `w-full bg-[#16211D] border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 ${error ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/20' : 'border-[#1F2D28] focus:border-amber-500/40 focus:ring-amber-500/20'}`;
+  const inputCls = `w-full bg-[#232323] border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 ${error ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/20' : 'border-[#2c2c2c] focus:border-amber-500/40 focus:ring-amber-500/20'}`;
   const Label = <label className="text-xs text-slate-300 mb-1.5 block font-semibold flex items-center justify-between"><span>{field.labelAr}</span>{field.maxLength && <span className="text-[10px] text-slate-500">{String(value??'').length}/{field.maxLength}</span>}</label>;
   const helper = field.descriptionAr ? <div className="text-[10px] text-slate-500 mt-1">{field.descriptionAr}</div> : null;
 
@@ -383,7 +383,7 @@ function DynamicFieldRenderer({ field, value, error, onChange, location, route, 
         <button onClick={onClearLocation} className="text-red-400"><X className="w-3.5 h-3.5" /></button>
       </div>
     ) : (
-      <button onClick={()=>onOpenPicker('single', field.labelAr)} className="w-full flex items-center justify-center gap-2 p-2.5 bg-[#16211D] border border-dashed border-[#1F2D28] rounded-lg text-slate-400 hover:text-amber-400 text-xs">
+      <button onClick={()=>onOpenPicker('single', field.labelAr)} className="w-full flex items-center justify-center gap-2 p-2.5 bg-[#232323] border border-dashed border-[#2c2c2c] rounded-lg text-slate-400 hover:text-amber-400 text-xs">
         <MapPinned className="w-4 h-4" /> فتح الخريطة
       </button>
     )}{helper}</div>
@@ -393,13 +393,13 @@ function DynamicFieldRenderer({ field, value, error, onChange, location, route, 
     return <div>{Label}
       <div className="space-y-1.5">
         {route.map((wp,i)=>(
-          <div key={i} className="flex items-center gap-2 p-2 bg-[#16211D] border border-[#1F2D28] rounded-lg text-xs">
+          <div key={i} className="flex items-center gap-2 p-2 bg-[#232323] border border-[#2c2c2c] rounded-lg text-xs">
             <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div>
             <span className="flex-1 font-mono">{wp.lat.toFixed(5)}, {wp.lng.toFixed(5)}</span>
             <button onClick={()=>onRemoveRoutePoint(i)} className="text-red-400"><X className="w-3.5 h-3.5" /></button>
           </div>
         ))}
-        <button onClick={()=>onOpenPicker(isRoute?'route':'multi', field.labelAr)} className="w-full p-2 bg-[#16211D] border border-dashed border-[#1F2D28] rounded-lg text-slate-400 hover:text-amber-400 text-xs">
+        <button onClick={()=>onOpenPicker(isRoute?'route':'multi', field.labelAr)} className="w-full p-2 bg-[#232323] border border-dashed border-[#2c2c2c] rounded-lg text-slate-400 hover:text-amber-400 text-xs">
           {route.length ? `تعديل (${route.length} نقطة)` : 'فتح الخريطة'}
         </button>
       </div>{helper}</div>;
@@ -410,7 +410,7 @@ function DynamicFieldRenderer({ field, value, error, onChange, location, route, 
 function SelectField({ field, value, onChange }:{ field: ReportFieldDefinition; value:any; onChange:(v:any)=>void }) {
   const options = field.options ?? [];
   const allowFree = field.allowFreeText;
-  const cls = 'flex-1 bg-[#16211D] border border-[#1F2D28] rounded-lg px-3 py-2.5 text-sm text-white focus:border-amber-500/40 focus:outline-none';
+  const cls = 'flex-1 bg-[#232323] border border-[#2c2c2c] rounded-lg px-3 py-2.5 text-sm text-white focus:border-amber-500/40 focus:outline-none';
   if (!field.withQuantity) {
     const v = typeof value === 'string' ? value : '';
     const isOtherDraft = v === '__other__';
@@ -431,19 +431,19 @@ function SelectField({ field, value, onChange }:{ field: ReportFieldDefinition; 
     {rows.map((r:any,i:number)=>{
       const isOtherDraft = r.item === '__other__';
       const isFree = !!r.item && !isOtherDraft && !options.includes(r.item);
-      return <div key={i} className="flex flex-wrap items-center gap-1.5 bg-[#070B09] border border-[#16211D] rounded-lg p-2">
+      return <div key={i} className="flex flex-wrap items-center gap-1.5 bg-[#0d0d0d] border border-[#232323] rounded-lg p-2">
         <select value={isOtherDraft || isFree ? '__other__' : r.item} onChange={e=>{ const n=[...rows]; n[i]={...n[i], item: e.target.value}; update(n); }} className={cls}>
           <option value="">— اختر —</option>
           {options.map(o=><option key={o} value={o}>{o}</option>)}
           {allowFree && <option value="__other__">أخرى…</option>}
         </select>
         {allowFree && (isOtherDraft || isFree) && <input type="text" value={isOtherDraft ? '' : r.item} onChange={e=>{ const n=[...rows]; n[i]={...n[i], item: e.target.value.slice(0,200)}; update(n); }} placeholder="اسم المادة" className={cls} />}
-        <input type="number" min={1} max={999999} value={r.qty} onChange={e=>{ const n=[...rows]; n[i]={...n[i], qty: Math.max(1, Math.min(999999, Number(e.target.value)||1))}; update(n); }} className="w-20 bg-[#16211D] border border-[#1F2D28] rounded-lg px-2 py-2.5 text-sm text-center" />
+        <input type="number" min={1} max={999999} value={r.qty} onChange={e=>{ const n=[...rows]; n[i]={...n[i], qty: Math.max(1, Math.min(999999, Number(e.target.value)||1))}; update(n); }} className="w-20 bg-[#232323] border border-[#2c2c2c] rounded-lg px-2 py-2.5 text-sm text-center" />
         {rows.length > 1 && <button onClick={()=>update(rows.filter((_,idx)=>idx!==i))} className="p-2 rounded bg-red-500/10 text-red-300"><X className="w-4 h-4" /></button>}
       </div>;
     })}
     <button onClick={()=> rows.length<50 && onChange([...rows, {item:'',qty:1}])} disabled={rows.length>=50}
-      className="w-full p-2 bg-[#16211D] border border-dashed border-[#1F2D28] rounded-lg text-amber-400 text-xs font-bold disabled:opacity-40">
+      className="w-full p-2 bg-[#232323] border border-dashed border-[#2c2c2c] rounded-lg text-amber-400 text-xs font-bold disabled:opacity-40">
       <Plus className="w-4 h-4 inline ml-1" /> إضافة مادة {rows.length>0 && `(${rows.length}/50)`}
     </button>
   </div>;
@@ -458,17 +458,17 @@ function PreviousReportsPanel({ currentUserRole, currentUserOfficeId }:{ current
     return scoped.sort((a,b)=> new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).slice(0,20);
   }, [state.todayReports, state.historicalReports, currentUserRole, currentUserOfficeId]);
   const [open, setOpen] = useState<string|null>(null);
-  return <div className="mt-4 bg-[#0E1512] border border-[#16211D] rounded-xl overflow-hidden">
-    <div className="p-4 border-b border-[#16211D] flex items-center gap-2">
+  return <div className="mt-4 bg-[#1a1a1a] border border-[#232323] rounded-xl overflow-hidden">
+    <div className="p-4 border-b border-[#232323] flex items-center gap-2">
       <History className="w-4 h-4 text-blue-300" />
       <div className="font-bold text-sm">التقارير السابقة</div>
       <div className="text-[10px] text-slate-500 mr-auto">آخر {all.length}</div>
     </div>
     {!all.length ? <div className="p-6 text-center text-xs text-slate-500">لا توجد تقارير</div> :
-    <ul className="divide-y divide-[#16211D] max-h-[420px] overflow-y-auto">
+    <ul className="divide-y divide-[#232323] max-h-[420px] overflow-y-auto">
       {all.map(r=>{
         const isOpen = open===r.id;
-        return <li key={r.id} className="p-3 hover:bg-[#16211D]/30">
+        return <li key={r.id} className="p-3 hover:bg-[#232323]/30">
           <button onClick={()=>setOpen(isOpen?null:r.id)} className="w-full text-right flex items-center gap-3">
             <div className="flex-1 min-w-0"><div className="font-bold text-sm">{officeById(r.officeId)?.nameAr || r.officeId}</div>
               <div className="text-[10px] text-slate-500">{r.reportDate}</div></div>
@@ -479,7 +479,7 @@ function PreviousReportsPanel({ currentUserRole, currentUserOfficeId }:{ current
             ['زوار داخل', r.visitorsIn], ['زوار خارج', r.visitorsOut],
             ['عجلات', r.vehiclesCount], ['مواكب', r.processionsCount],
             ['حوادث', r.incidentsCount], ['وفيات', r.deathsCount],
-          ].map(([l,v])=> <div key={l as string} className="bg-[#070B09] border border-[#16211D] rounded px-2 py-1 flex justify-between"><span className="text-slate-500">{l}</span><b>{v as number}</b></div>)}
+          ].map(([l,v])=> <div key={l as string} className="bg-[#0d0d0d] border border-[#232323] rounded px-2 py-1 flex justify-between"><span className="text-slate-500">{l}</span><b>{v as number}</b></div>)}
           </div>}
         </li>;
       })}

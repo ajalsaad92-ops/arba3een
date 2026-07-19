@@ -66,7 +66,7 @@ export default function MapLayerControl({ position = 'right', variant = 'vertica
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold border transition-all ${
                 on
                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                  : 'bg-[#070B09]/80 text-slate-400 border-[#16211D] hover:border-slate-500'
+                  : 'bg-[#0d0d0d]/80 text-slate-400 border-[#232323] hover:border-slate-500'
               }`}
             >
               <Icon className={`w-3.5 h-3.5 ${on ? l.color : ''}`} />
