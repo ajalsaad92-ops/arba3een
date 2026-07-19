@@ -40,6 +40,30 @@ export default function ReportPage() {
   const [reporterLng, setReporterLng] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState(false);
+  const [editReqField, setEditReqField] = useState<ReportFieldDefinition | null>(null);
+
+  // Latest report for this office (today first, else most recent historical)
+  const priorReport: DailyReport | undefined = useMemo(() => {
+    const t = state.todayReports.find(r => r.officeId === user.officeId);
+    if (t) return t;
+    const hist = state.historicalReports.filter(r => r.officeId === user.officeId);
+    return hist.sort((a,b) => (b.reportDate + b.submittedAt).localeCompare(a.reportDate + a.submittedAt))[0];
+  }, [state.todayReports, state.historicalReports, user.officeId]);
+
+  const priorValueOf = (f: ReportFieldDefinition): any => {
+    if (!priorReport) return undefined;
+    if (f.isBuiltIn) return (priorReport as any)[f.fieldKey];
+    return priorReport.extraFields?.[f.fieldKey];
+  };
+  const hasPriorValue = (f: ReportFieldDefinition): boolean => {
+    const v = priorValueOf(f);
+    if (v === undefined || v === null || v === '') return false;
+    if (Array.isArray(v) && v.length === 0) return false;
+    if (typeof v === 'number' && v === 0) return false;
+    return true;
+  };
+  const isLocked = (f: ReportFieldDefinition): boolean => !!f.isFrozen && hasPriorValue(f);
+
 
   const reportExists = state.todayReports.find(r => r.officeId === user.officeId);
   const today = operationalDate();
