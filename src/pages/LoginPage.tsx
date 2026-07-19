@@ -78,10 +78,7 @@ export default function LoginPage() {
           <div className="pt-2 border-t border-[#232323]">
             <div className="text-[11px] text-slate-500 text-center">
               للحصول على حساب، تواصل مع المدير العام
-                </button>
-              ))}
             </div>
-            <div className="text-[10px] text-slate-500 mt-2 text-center">كلمة المرور للتجربة: <b className="text-slate-300 font-mono">123456</b></div>
           </div>
         </form>
 
