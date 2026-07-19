@@ -280,7 +280,7 @@ export default function AppShell() {
           const primary = visible.slice(0, 4);
           const overflow = visible.slice(4);
           return (
-            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0d0d0d]/95 backdrop-blur border-t border-[#232323] flex items-stretch">
+            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0d0d0d]/95 backdrop-blur border-t border-[#232323] flex items-stretch" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
               {primary.map(item => {
                 const Icon = item.icon;
                 return (
