@@ -881,7 +881,8 @@ async function applyFrozenChange(row: any): Promise<void> {
       }
       await supabase.from('daily_reports').update(update).eq('id', latest.id);
     } else {
-      const extras = { ...(latest.extra_fields || {}), [row.field_key]: val };
+      const cur = (latest as any).extra_fields;
+      const extras = { ...(cur && typeof cur === 'object' ? cur : {}), [row.field_key]: val };
       await supabase.from('daily_reports').update({ extra_fields: extras }).eq('id', latest.id);
     }
   } catch (e) { log('applyFrozenChange', e); }
