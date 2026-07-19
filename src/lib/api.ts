@@ -392,11 +392,13 @@ export const api = {
     filters?: { officeId?: string; fromDate?: string; toDate?: string }
   ): Promise<{ data: DailyReport[]; total: number; page: number; pageSize: number }> {
     try {
-      const today = operationalDate();
+      // Historical view honours user-supplied date range as-is (inclusive of
+      // today). If no `toDate` is passed we still cap to yesterday so the
+      // legacy "past reports" default behaviour is preserved.
       let query = supabase.from('daily_reports').select('*', { count: 'exact' })
-        .lt('report_date', today)
         .order('report_date', { ascending: false })
         .order('submitted_at', { ascending: false });
+      if (!filters?.toDate) query = query.lt('report_date', operationalDate());
       if (filters?.officeId) query = query.eq('office_id', filters.officeId);
       if (filters?.fromDate) query = query.gte('report_date', filters.fromDate);
       if (filters?.toDate) query = query.lte('report_date', filters.toDate);
