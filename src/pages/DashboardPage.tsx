@@ -3,7 +3,7 @@ import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
 import KpiCustomizer from '../components/KpiCustomizer';
 import DateRangeFilter from '../components/DateRangeFilter';
-import { Search, Map, Activity, BarChart3 } from 'lucide-react';
+import { Search, Map, Activity } from 'lucide-react';
 import { CommandView } from '../components/dashboard/CommandView';
 import { OpsView } from '../components/dashboard/OpsView';
 import { AnalyticsView } from '../components/dashboard/AnalyticsView';
