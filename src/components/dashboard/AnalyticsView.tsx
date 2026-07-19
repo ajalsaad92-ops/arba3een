@@ -107,8 +107,8 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
             icon={Users} size="lg" trend={trend(visitorFlow==='in'?agg.visitorsIn:agg.visitorsOut, visitorFlow==='in'?aggYesterday.visitorsIn:aggYesterday.visitorsOut)}
             sparklineData={sparklineFor(visitorFlow==='in' ? 'visitorsIn':'visitorsOut')} borderGlow tone="amber" />
           <div className="absolute top-2 left-2 flex rounded-md overflow-hidden border border-amber-500/30 text-[10px] font-bold">
-            <button onClick={()=>setVisitorFlow('in')} className={visitorFlow==='in'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#0B0F19] text-amber-300'}>وافدون</button>
-            <button onClick={()=>setVisitorFlow('out')} className={visitorFlow==='out'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#0B0F19] text-amber-300'}>مغادرون</button>
+            <button onClick={()=>setVisitorFlow('in')} className={visitorFlow==='in'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#070B09] text-amber-300'}>وافدون</button>
+            <button onClick={()=>setVisitorFlow('out')} className={visitorFlow==='out'?'px-2 py-0.5 bg-amber-500 text-black':'px-2 py-0.5 bg-[#070B09] text-amber-300'}>مغادرون</button>
           </div>
         </div>
         <KpiCard label="الوفيات" value={agg.deaths} icon={AlertOctagon} size="lg" trend={trend(agg.deaths, aggYesterday.deaths)} sparklineData={sparklineFor('deaths')} tone="red" />
@@ -123,7 +123,7 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-        <div className="lg:col-span-3 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+        <div className="lg:col-span-3 bg-[#0E1512] border border-[#16211D] rounded-xl p-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-bold text-slate-200">{activeMetric.label} — آخر 14 يوم</div>
             <div className="flex items-center gap-1">
@@ -136,7 +136,7 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
                 const Icon=t.icon as any;
                 const active = visitorChartType===t.id;
                 return <button key={t.id} onClick={()=>setVisitorChartType(t.id as any)}
-                  className={`px-2 py-1 rounded-md text-[10px] font-bold ${active?'bg-amber-500 text-black':'bg-[#0B0F19] text-slate-400 border border-[#1E293B]'}`}>
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold ${active?'bg-amber-500 text-black':'bg-[#070B09] text-slate-400 border border-[#16211D]'}`}>
                   <Icon className="w-3 h-3 inline ml-1" />{t.label}
                 </button>;
               })}
@@ -144,7 +144,7 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
           </div>
           <div className="flex items-center gap-2 mb-3 flex-wrap text-[11px]">
             <span className="text-slate-500">الفئة:</span>
-            <select value={chartMetric} onChange={e=>setChartMetric(e.target.value)} className="bg-[#0B0F19] border border-[#1E293B] rounded px-2 py-1 text-slate-200">
+            <select value={chartMetric} onChange={e=>setChartMetric(e.target.value)} className="bg-[#070B09] border border-[#16211D] rounded px-2 py-1 text-slate-200">
               {CHART_METRICS.map(m=><option key={m.id} value={m.id}>{m.label}</option>)}
             </select>
             <span className="text-slate-500 mr-3">المكاتب: {selectedChartOffices.length}</span>
@@ -153,44 +153,44 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
                 const on = selectedChartOffices.includes(o.id);
                 return <button key={o.id} onClick={()=>{
                   setSelectedChartOffices(p=> on ? p.filter(x=>x!==o.id) : [...p, o.id]);
-                }} className={`px-2 py-0.5 rounded text-[10px] border ${on?'bg-amber-500/20 text-amber-300 border-amber-500/40':'bg-[#0B0F19] text-slate-400 border-[#1E293B]'}`}>{o.nameAr.replace('مكتب ','')}</button>;
+                }} className={`px-2 py-0.5 rounded text-[10px] border ${on?'bg-amber-500/20 text-amber-300 border-amber-500/40':'bg-[#070B09] text-slate-400 border-[#16211D]'}`}>{o.nameAr.replace('مكتب ','')}</button>;
               })}
             </div>
           </div>
           <ResponsiveContainer width="100%" height={240}>
             {visitorChartType==='line' ? (
               <LineChart data={areaData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#16211D" />
                 <XAxis dataKey="date" tick={{ fill:'#94A3B8', fontSize:10 }} />
                 <YAxis tick={{ fill:'#94A3B8', fontSize:10 }} />
-                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Tooltip contentStyle={{ background:'#0E1512', border:'1px solid #16211D' }} />
                 <Legend wrapperStyle={{ fontSize:10 }} />
                 {officesForChart.map((o:Office,i:number)=> <Line key={o.code} type="monotone" dataKey={o.code} stroke={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} strokeWidth={2} dot={false} name={o.nameAr.replace('مكتب ','')} />)}
               </LineChart>
             ) : visitorChartType==='vertical' ? (
               <BarChart data={areaData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#16211D" />
                 <XAxis dataKey="date" tick={{ fill:'#94A3B8', fontSize:10 }} />
                 <YAxis tick={{ fill:'#94A3B8', fontSize:10 }} />
-                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Tooltip contentStyle={{ background:'#0E1512', border:'1px solid #16211D' }} />
                 <Legend wrapperStyle={{ fontSize:10 }} />
                 {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} name={o.nameAr.replace('مكتب ','')} radius={[2,2,0,0]} />)}
               </BarChart>
             ) : visitorChartType==='horizontal' ? (
               <BarChart data={areaData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#16211D" />
                 <XAxis type="number" tick={{ fill:'#94A3B8', fontSize:10 }} />
                 <YAxis type="category" dataKey="date" width={44} tick={{ fill:'#94A3B8', fontSize:10 }} />
-                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Tooltip contentStyle={{ background:'#0E1512', border:'1px solid #16211D' }} />
                 <Legend wrapperStyle={{ fontSize:10 }} />
                 {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8]} name={o.nameAr.replace('مكتب ','')} radius={[0,2,2,0]} />)}
               </BarChart>
             ) : (
               <AreaChart data={areaData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#16211D" />
                 <XAxis dataKey="date" tick={{ fill:'#94A3B8', fontSize:10 }} />
                 <YAxis tick={{ fill:'#94A3B8', fontSize:10 }} />
-                <Tooltip contentStyle={{ background:'#111827', border:'1px solid #1E293B' }} />
+                <Tooltip contentStyle={{ background:'#0E1512', border:'1px solid #16211D' }} />
                 <Legend wrapperStyle={{ fontSize:10 }} />
                 {officesForChart.map((o:Office,i:number)=> {
                   const c = ['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#F97316','#06B6D4','#EC4899'][i%8];
@@ -202,7 +202,7 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
 
         </div>
 
-        <div className="lg:col-span-2 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+        <div className="lg:col-span-2 bg-[#0E1512] border border-[#16211D] rounded-xl p-4">
           <div className="text-sm font-bold text-slate-200 mb-3">خريطة حرارية — 7 أيام</div>
           <div className="space-y-1 max-h-60 overflow-y-auto">
             {availableOffices.map((office: Office) => {
@@ -230,7 +230,7 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
         </div>
       </div>
 
-      <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+      <div className="bg-[#0E1512] border border-[#16211D] rounded-xl p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-sm font-bold text-slate-200">تصدير شامل</div>
           <button

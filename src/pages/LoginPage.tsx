@@ -47,18 +47,18 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-[#070B09] flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <div className="text-3xl font-black text-amber-400 font-display">أربعين</div>
           <div className="text-xs text-slate-400 mt-1">مركز القيادة والعمليات</div>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 space-y-4" noValidate>
+        <form onSubmit={handleLogin} className="bg-[#0E1512] border border-[#16211D] rounded-2xl p-6 space-y-4" noValidate>
           <FormField label="البريد الإلكتروني" required error={errors.email} id="login-email">
             <input id="login-email" type="email" dir="ltr" value={email} onChange={e=>{ setEmail(e.target.value); if(errors.email) setErrors(s=>({...s, email: undefined} as any)); }}
               placeholder="you@ops.iq"
-              className="w-full bg-[#0B0F19] border border-[#263244] rounded-lg px-3 py-3 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+              className="w-full bg-[#070B09] border border-[#1F2D28] rounded-lg px-3 py-3 text-sm text-white text-left placeholder-slate-500 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
               autoComplete="email" />
           </FormField>
 
@@ -66,7 +66,7 @@ export default function LoginPage() {
             <div className="relative">
               <input id="login-pass" type={showPass ? 'text' : 'password'} value={password}
                 onChange={e=>{ setPassword(e.target.value); if(errors.password) setErrors(s=>({...s, password: undefined} as any)); }}
-                className="w-full bg-[#0B0F19] border border-[#263244] rounded-lg px-3 py-3 pl-10 text-sm text-white focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                className="w-full bg-[#070B09] border border-[#1F2D28] rounded-lg px-3 py-3 pl-10 text-sm text-white focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
                 autoComplete="current-password" dir="ltr" />
               <button type="button" onClick={()=>setShowPass(s=>!s)}
                 className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-200" aria-label={showPass ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>
@@ -81,7 +81,7 @@ export default function LoginPage() {
             {submitting ? 'جاري تسجيل الدخول…' : 'تسجيل الدخول'}
           </button>
 
-          <div className="pt-2 border-t border-[#1E293B]">
+          <div className="pt-2 border-t border-[#16211D]">
             <div className="text-[11px] text-slate-500 mb-2 font-bold">دخول سريع للتجربة:</div>
             <div className="grid grid-cols-2 gap-2">
               {quick.map(q => (

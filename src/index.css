@@ -1,32 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #0B0F19;
-  --surface-1: #111827;
-  --surface-2: #1E293B;
-  --surface-3: #263244;
-  --primary: #F59E0B;
-  --primary-glow: rgba(245, 158, 11, 0.12);
-  --success: #10B981;
-  --danger: #EF4444;
-  --warning: #F97316;
-  --info: #3B82F6;
-  --text-1: #F8FAFC;
-  --text-2: #94A3B8;
-  --text-3: #475569;
-  --border: rgba(30, 41, 59, 0.8);
-  --border-active: rgba(245, 158, 11, 0.4);
+/* ─── Emerald / Gold Command Theme ─────────────────────────────────
+   Remap Tailwind's `amber-*` palette to a refined gold scale so every
+   existing `text-amber-400`, `bg-amber-500`, etc. across the app picks
+   up the new identity without touching component files. */
+@theme {
+  --color-amber-50:  #FBF7E8;
+  --color-amber-100: #F5EDCA;
+  --color-amber-200: #EDDDA0;
+  --color-amber-300: #E1C878;
+  --color-amber-400: #D4B458;
+  --color-amber-500: #C9A84C;
+  --color-amber-600: #A88938;
+  --color-amber-700: #856C2A;
+  --color-amber-800: #5E4B1E;
+  --color-amber-900: #3A2E13;
+
+  --color-emerald-300: #6EE7B7;
+  --color-emerald-400: #34D399;
+  --color-emerald-500: #10B981;
+  --color-emerald-600: #0D9668;
+  --color-emerald-700: #0D7A5F;
+  --color-emerald-800: #0A5A47;
+  --color-emerald-900: #063A2E;
 }
 
-* {
-  box-sizing: border-box;
+:root {
+  /* Surfaces – deep obsidian with a subtle green undertone */
+  --bg: #070B09;
+  --surface-1: #0E1512;
+  --surface-2: #16211D;
+  --surface-3: #1F2D28;
+
+  /* Accents */
+  --primary: #C9A84C;              /* gold */
+  --primary-glow: rgba(201, 168, 76, 0.14);
+  --accent: #0D7A5F;               /* emerald sovereign */
+  --accent-glow: rgba(13, 122, 95, 0.18);
+
+  --success: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --info: #3B82F6;
+
+  --text-1: #F5F0E0;               /* warm cream headings */
+  --text-2: #9AA79E;                /* sage muted */
+  --text-3: #4E5B54;
+  --border: rgba(31, 45, 40, 0.85);
+  --border-active: rgba(201, 168, 76, 0.42);
+
+  --gradient-hero: linear-gradient(135deg, #0D7A5F 0%, #063A2E 45%, #070B09 100%);
+  --gradient-gold: linear-gradient(135deg, #E1C878 0%, #C9A84C 55%, #856C2A 100%);
+  --shadow-elegant: 0 12px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(201, 168, 76, 0.06);
 }
+
+* { box-sizing: border-box; }
 
 html, body, #root {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 800px at 85% -10%, rgba(13, 122, 95, 0.10), transparent 60%),
+    radial-gradient(900px 600px at -10% 100%, rgba(201, 168, 76, 0.06), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text-1);
   font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
   direction: rtl;
@@ -47,55 +85,47 @@ h1, h2, h3, h4, .display-number, .font-display {
   letter-spacing: -0.02em;
 }
 
-input, textarea, select, button {
-  font-family: 'Tajawal', sans-serif;
-}
+input, textarea, select, button { font-family: 'Tajawal', sans-serif; }
+input::placeholder, textarea::placeholder { color: #4E5B54; }
 
-input::placeholder, textarea::placeholder {
-  color: #475569;
+/* Text gradient utility for premium headings */
+.text-gold-gradient {
+  background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #0B0F19;
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb {
-  background: #263244;
+  background: linear-gradient(180deg, #1F2D28, #16211D);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
+::-webkit-scrollbar-thumb:hover { background: #2A3D36; }
 
-/* Leaflet overrides for dark theme */
+/* Leaflet overrides for command theme */
 .leaflet-container {
-  background: #0B0F19 !important;
+  background: #070B09 !important;
   font-family: 'Tajawal', sans-serif !important;
 }
 .leaflet-control-zoom a {
-  background: #111827 !important;
-  color: #F8FAFC !important;
-  border: 1px solid #1E293B !important;
+  background: #0E1512 !important;
+  color: #F5F0E0 !important;
+  border: 1px solid #1F2D28 !important;
 }
-.leaflet-control-zoom a:hover {
-  background: #1E293B !important;
-}
+.leaflet-control-zoom a:hover { background: #16211D !important; }
 .leaflet-control-attribution {
-  background: rgba(11, 15, 25, 0.7) !important;
-  color: #94A3B8 !important;
+  background: rgba(7, 11, 9, 0.75) !important;
+  color: #9AA79E !important;
   font-size: 10px !important;
 }
-.leaflet-control-attribution a {
-  color: #F59E0B !important;
-}
+.leaflet-control-attribution a { color: #C9A84C !important; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: #111827 !important;
-  color: #F8FAFC !important;
-  border: 1px solid #1E293B;
+  background: #0E1512 !important;
+  color: #F5F0E0 !important;
+  border: 1px solid #1F2D28;
 }
 
 /* Pulse animations */
@@ -103,102 +133,109 @@ input::placeholder, textarea::placeholder {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
-.animate-pulse-alert {
-  animation: pulse-alert 1.5s ease-in-out infinite;
-}
+.animate-pulse-alert { animation: pulse-alert 1.5s ease-in-out infinite; }
 
 @keyframes ripple {
   0% { transform: scale(0.6); opacity: 1; }
   100% { transform: scale(2.5); opacity: 0; }
 }
-.animate-ripple {
-  animation: ripple 1.5s ease-out infinite;
-}
+.animate-ripple { animation: ripple 1.5s ease-out infinite; }
 
 @keyframes ticker {
   0% { transform: translateX(100%); }
   100% { transform: translateX(-100%); }
 }
-.animate-ticker {
-  animation: ticker 40s linear infinite;
-}
-/* RTL news ticker: content enters from the left and flows to the right,
-   matching the natural Arabic right-to-left reading flow. */
+.animate-ticker { animation: ticker 40s linear infinite; }
+
 @keyframes ticker-rtl {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
-.animate-ticker-rtl {
-  animation: ticker-rtl 45s linear infinite;
-}
+.animate-ticker-rtl { animation: ticker-rtl 45s linear infinite; }
 
-/* Seamless right-to-left marquee. Content is duplicated, so translating the
-   strip left by exactly one copy (-50% of the doubled strip) loops with no
-   visible jump. Motion is always leftward = natural Arabic right-to-left. */
 @keyframes marquee-rtl {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
-.animate-marquee-rtl {
-  animation: marquee-rtl linear infinite;
-}
+.animate-marquee-rtl { animation: marquee-rtl linear infinite; }
 
-@keyframes flowDash {
-  to { stroke-dashoffset: -40; }
-}
-.animate-flow {
-  stroke-dasharray: 10 6;
-  animation: flowDash 1.2s linear infinite;
-}
+@keyframes flowDash { to { stroke-dashoffset: -40; } }
+.animate-flow { stroke-dasharray: 10 6; animation: flowDash 1.2s linear infinite; }
 
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-in-up {
-  animation: fadeInUp 0.3s ease-out;
-}
+.animate-fade-in-up { animation: fadeInUp 0.3s ease-out; }
 
 @keyframes slideInRight {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
-.animate-slide-in-right {
-  animation: slideInRight 0.3s ease-out;
-}
+.animate-slide-in-right { animation: slideInRight 0.3s ease-out; }
 
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out;
-}
+.animate-slide-up { animation: slideUp 0.3s ease-out; }
 
 @keyframes ping-slow {
   0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
   70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
-.animate-ping-slow {
-  animation: ping-slow 1.6s ease-out infinite;
+.animate-ping-slow { animation: ping-slow 1.6s ease-out infinite; }
+
+/* Subtle gold shimmer for premium accents */
+@keyframes shimmer-gold {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-gold {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(201, 168, 76, 0.18) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-gold 3.5s ease-in-out infinite;
 }
 
 .grid-pattern {
   background-image:
-    linear-gradient(rgba(245, 158, 11, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(201, 168, 76, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 76, 0.045) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 .glow-amber {
-  box-shadow: 0 0 30px rgba(245, 158, 11, 0.08), inset 0 1px 0 rgba(245, 158, 11, 0.06);
+  box-shadow:
+    0 0 40px rgba(201, 168, 76, 0.10),
+    inset 0 1px 0 rgba(201, 168, 76, 0.08);
 }
 .glow-emerald {
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.08);
+  box-shadow: 0 0 40px rgba(13, 122, 95, 0.18);
 }
 .glow-crimson {
   box-shadow: 0 0 30px rgba(239, 68, 68, 0.18);
+}
+
+/* Refined card surface — used on KPI/report/emergency cards */
+.card-surface {
+  background:
+    linear-gradient(180deg, rgba(31, 45, 40, 0.4), rgba(14, 21, 18, 0.9));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+}
+.card-surface:hover {
+  border-color: rgba(201, 168, 76, 0.28);
+  box-shadow: var(--shadow-elegant);
+  transition: border-color .25s ease, box-shadow .25s ease;
 }
 
 /* Custom leaflet marker containers - hide default icon */
@@ -207,6 +244,4 @@ input::placeholder, textarea::placeholder {
   border: none;
 }
 
-.no-tap-highlight {
-  -webkit-tap-highlight-color: transparent;
-}
+.no-tap-highlight { -webkit-tap-highlight-color: transparent; }

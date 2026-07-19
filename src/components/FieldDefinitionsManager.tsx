@@ -110,7 +110,7 @@ export default function FieldDefinitionsManager() {
         {grouped.map(({ group, fields }) => {
           const expanded = expandedGroup === group.id;
           return (
-            <div key={group.id} className="bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden">
+            <div key={group.id} className="bg-[#0E1512] border border-[#16211D] rounded-xl overflow-hidden">
               <div className="p-3 flex items-center gap-2">
                 <button
                   onClick={() => setExpandedGroup(expanded ? null : group.id)}
@@ -121,7 +121,7 @@ export default function FieldDefinitionsManager() {
                   <div className="text-[10px] text-slate-500">({fields.length})</div>
                   {group.isHidden && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">مخفية</span>}
                 </button>
-                <button onClick={() => { setEditingGroup(group); setCreatingGroup(false); }} className="p-1.5 rounded hover:bg-[#1E293B] text-slate-400" title="تعديل المجموعة">
+                <button onClick={() => { setEditingGroup(group); setCreatingGroup(false); }} className="p-1.5 rounded hover:bg-[#16211D] text-slate-400" title="تعديل المجموعة">
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button onClick={() => deleteGroup(group)} className="p-1.5 rounded hover:bg-red-500/10 text-red-400" title="حذف المجموعة">
@@ -129,19 +129,19 @@ export default function FieldDefinitionsManager() {
                 </button>
               </div>
               {expanded && (
-                <div className="border-t border-[#1E293B] divide-y divide-[#1E293B]">
+                <div className="border-t border-[#16211D] divide-y divide-[#16211D]">
                   {fields.map(f => {
                     const Tm = TYPE_META[f.fieldType] || TYPE_META.text;
                     const TIcon = Tm.icon;
                     return (
                       <div key={f.id} className={`p-3 flex items-center gap-3 ${f.isHidden ? 'opacity-50' : ''}`}>
-                        <div className="w-8 h-8 rounded-md bg-[#0B0F19] border border-[#1E293B] flex items-center justify-center text-slate-400">
+                        <div className="w-8 h-8 rounded-md bg-[#070B09] border border-[#16211D] flex items-center justify-center text-slate-400">
                           <TIcon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-slate-200 truncate">{f.labelAr}</div>
                           <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1E293B] text-slate-400">{Tm.label}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#16211D] text-slate-400">{Tm.label}</span>
                             {f.isBuiltIn && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">أساسي</span>}
                             {f.countInStats && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300">إحصائيات</span>}
                             {f.allowedUserIds.length > 0 && (
@@ -152,10 +152,10 @@ export default function FieldDefinitionsManager() {
                           </div>
                           {f.descriptionAr && <div className="text-[10px] text-slate-500 mt-1 truncate">{f.descriptionAr}</div>}
                         </div>
-                        <button onClick={() => toggleFieldHidden(f)} className="p-1.5 rounded hover:bg-[#1E293B] text-slate-400" title={f.isHidden ? 'إظهار' : 'إخفاء'}>
+                        <button onClick={() => toggleFieldHidden(f)} className="p-1.5 rounded hover:bg-[#16211D] text-slate-400" title={f.isHidden ? 'إظهار' : 'إخفاء'}>
                           {f.isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
-                        <button onClick={() => { setEditingField(f); setCreatingInGroup(null); }} className="p-1.5 rounded hover:bg-[#1E293B] text-slate-300" title="تعديل">
+                        <button onClick={() => { setEditingField(f); setCreatingInGroup(null); }} className="p-1.5 rounded hover:bg-[#16211D] text-slate-300" title="تعديل">
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button onClick={() => deleteField(f)} className="p-1.5 rounded hover:bg-red-500/10 text-red-400" title={f.isBuiltIn ? 'حذف (حقل أساسي — يُفضّل الإخفاء)' : 'حذف'}>
@@ -167,7 +167,7 @@ export default function FieldDefinitionsManager() {
                   <div className="p-2">
                     <button
                       onClick={() => { setCreatingInGroup(group.id); setEditingField(null); }}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#0B0F19] border border-dashed border-[#1E293B] hover:border-amber-500/40 text-amber-400 text-xs font-bold"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#070B09] border border-dashed border-[#16211D] hover:border-amber-500/40 text-amber-400 text-xs font-bold"
                     >
                       <Plus className="w-3.5 h-3.5" /> إضافة حقل لهذه المجموعة
                     </button>
@@ -236,8 +236,8 @@ function GroupEditor({ initial, isNew, onCancel, onSaved }: any) {
         <input type="checkbox" checked={hidden} onChange={e => setHidden(e.target.checked)} className="accent-amber-500" />
         إخفاء المجموعة (لن تظهر لأي مستخدم)
       </label>
-      <div className="flex gap-2 pt-3 mt-3 border-t border-[#1E293B]">
-        <button onClick={onCancel} className="flex-1 py-2 rounded-lg bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-sm font-bold">إلغاء</button>
+      <div className="flex gap-2 pt-3 mt-3 border-t border-[#16211D]">
+        <button onClick={onCancel} className="flex-1 py-2 rounded-lg bg-[#16211D] hover:bg-[#1F2D28] text-slate-300 text-sm font-bold">إلغاء</button>
         <button onClick={save} className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold flex items-center justify-center gap-2"><Save className="w-4 h-4"/> حفظ</button>
       </div>
     </Modal>
@@ -324,7 +324,7 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
                 onClick={() => setFieldType(t)}
                 className={`p-2 rounded-md text-[11px] flex flex-col items-center gap-1 border transition-colors ${
                   active ? 'border-amber-500/60 bg-amber-500/15 text-amber-300' :
-                  'border-[#1E293B] bg-[#0B0F19] text-slate-400 hover:border-[#263244]'
+                  'border-[#16211D] bg-[#070B09] text-slate-400 hover:border-[#1F2D28]'
                 }`}
               >
                 <Tn className="w-4 h-4" />
@@ -365,7 +365,7 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
       )}
 
       {fieldType === 'select' && (
-        <div className="mt-2 rounded-lg bg-[#0B0F19] border border-[#1E293B] p-3 space-y-2">
+        <div className="mt-2 rounded-lg bg-[#070B09] border border-[#16211D] p-3 space-y-2">
           <FieldRow label="خيارات القائمة (خيار واحد في كل سطر)">
             <textarea
               value={optionsText}
@@ -407,9 +407,9 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
       </label>
 
       <FieldRow label={`تخصيص الحقل لمستخدمين محدّدين (${allowedUserIds.length === 0 ? 'الافتراضي: للكل' : allowedUserIds.length + ' مستخدم'})`}>
-        <div className="bg-[#0B0F19] border border-[#1E293B] rounded-md p-2 max-h-44 overflow-y-auto grid grid-cols-1 gap-1">
+        <div className="bg-[#070B09] border border-[#16211D] rounded-md p-2 max-h-44 overflow-y-auto grid grid-cols-1 gap-1">
           {users.map((u: any) => (
-            <label key={u.id} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer hover:bg-[#1E293B]/40 px-1 py-0.5 rounded">
+            <label key={u.id} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer hover:bg-[#16211D]/40 px-1 py-0.5 rounded">
               <input type="checkbox" checked={allowedUserIds.includes(u.id)} onChange={() => toggleUser(u.id)} className="accent-amber-500" />
               <span className="flex-1">{u.fullNameAr}</span>
               <span className="text-[10px] text-slate-500">{u.role}</span>
@@ -419,8 +419,8 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
         </div>
       </FieldRow>
 
-      <div className="flex gap-2 pt-3 mt-3 border-t border-[#1E293B]">
-        <button onClick={onCancel} className="flex-1 py-2 rounded-lg bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-sm font-bold">إلغاء</button>
+      <div className="flex gap-2 pt-3 mt-3 border-t border-[#16211D]">
+        <button onClick={onCancel} className="flex-1 py-2 rounded-lg bg-[#16211D] hover:bg-[#1F2D28] text-slate-300 text-sm font-bold">إلغاء</button>
         <button onClick={save} className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold flex items-center justify-center gap-2"><Save className="w-4 h-4"/> حفظ</button>
       </div>
     </Modal>
@@ -428,7 +428,7 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────
-const inputCls = 'w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none';
+const inputCls = 'w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none';
 
 function FieldRow({ label, children }: any) {
   return (
@@ -442,10 +442,10 @@ function FieldRow({ label, children }: any) {
 function Modal({ title, onClose, children }: any) {
   return (
     <div className="fixed inset-0 z-[700] bg-black/70 flex items-center justify-center p-3 animate-fade-in-up" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} className="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-[#0B0F19] border border-amber-500/30 rounded-2xl shadow-2xl">
-        <div className="p-4 border-b border-[#1E293B] flex items-center justify-between sticky top-0 bg-[#0B0F19] z-10">
+      <div onClick={e => e.stopPropagation()} className="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-[#070B09] border border-amber-500/30 rounded-2xl shadow-2xl">
+        <div className="p-4 border-b border-[#16211D] flex items-center justify-between sticky top-0 bg-[#070B09] z-10">
           <div className="font-display font-black text-amber-400 text-sm">{title}</div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-[#1E293B] hover:bg-[#263244] flex items-center justify-center text-slate-400">
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-[#16211D] hover:bg-[#1F2D28] flex items-center justify-center text-slate-400">
             <X className="w-4 h-4" />
           </button>
         </div>

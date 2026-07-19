@@ -192,7 +192,7 @@ export default function AdminPage() {
   const pwInfo = passwordStrength(draft.password || '');
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0B0F19] p-3 md:p-5" dir="rtl">
+    <div className="h-full overflow-y-auto bg-[#070B09] p-3 md:p-5" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
@@ -208,22 +208,22 @@ export default function AdminPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-2 bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden">
-            <div className="p-3 border-b border-[#1E293B]">
+          <div className="lg:col-span-2 bg-[#0E1512] border border-[#16211D] rounded-xl overflow-hidden">
+            <div className="p-3 border-b border-[#16211D]">
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input value={searchRaw} onChange={e=>{ setSearchRaw(e.target.value); setPage(1); }}
                   placeholder="بحث بالاسم / الدور / المكتب..."
-                  className="w-full bg-[#0B0F19] border border-[#1E293B] rounded-md pr-9 pl-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none" />
+                  className="w-full bg-[#070B09] border border-[#16211D] rounded-md pr-9 pl-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500/40 focus:outline-none" />
               </div>
             </div>
-            <div className="divide-y divide-[#1E293B] max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-[#16211D] max-h-[600px] overflow-y-auto">
               {paginated.length===0 && <EmptyState title="لا يوجد مستخدمون" description="جرّب تغيير كلمات البحث" />}
               {paginated.map(u => {
                 const loc = lastLocOf(u.id);
                 const stale = loc ? isStale(loc.updatedAt) : false;
                 return (
-                  <div key={u.id} className={`p-3 hover:bg-[#1E293B]/40 cursor-pointer ${editing?.id===u.id ? 'bg-amber-500/10 border-r-2 border-amber-500':''}`} onClick={()=>startEdit(u)}>
+                  <div key={u.id} className={`p-3 hover:bg-[#16211D]/40 cursor-pointer ${editing?.id===u.id ? 'bg-amber-500/10 border-r-2 border-amber-500':''}`} onClick={()=>startEdit(u)}>
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold">{u.fullNameAr.charAt(0)}</div>
                       <div className="flex-1 min-w-0">
@@ -239,7 +239,7 @@ export default function AdminPage() {
                           <Navigation className="w-3 h-3" /> {relativeTime(loc.updatedAt)}
                         </button>
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border bg-[#0B0F19] text-slate-500 border-[#1E293B] flex items-center gap-1"><MapPin className="w-3 h-3" /> لا يوجد موقع</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border bg-[#070B09] text-slate-500 border-[#16211D] flex items-center gap-1"><MapPin className="w-3 h-3" /> لا يوجد موقع</span>
                       )}
                     </div>
                   </div>
@@ -247,48 +247,48 @@ export default function AdminPage() {
               })}
             </div>
             {totalPages > 1 && (
-              <div className="p-2 border-t border-[#1E293B] flex items-center justify-between text-[11px] text-slate-400">
+              <div className="p-2 border-t border-[#16211D] flex items-center justify-between text-[11px] text-slate-400">
                 <span>صفحة {page} / {totalPages}</span>
                 <div className="flex gap-1">
-                  <button disabled={page<=1} onClick={()=>setPage(p=>p-1)} className="px-2 py-1 rounded bg-[#1E293B] disabled:opacity-30">السابق</button>
-                  <button disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)} className="px-2 py-1 rounded bg-[#1E293B] disabled:opacity-30">التالي</button>
+                  <button disabled={page<=1} onClick={()=>setPage(p=>p-1)} className="px-2 py-1 rounded bg-[#16211D] disabled:opacity-30">السابق</button>
+                  <button disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)} className="px-2 py-1 rounded bg-[#16211D] disabled:opacity-30">التالي</button>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="lg:col-span-3 bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+          <div className="lg:col-span-3 bg-[#0E1512] border border-[#16211D] rounded-xl p-4">
             {!creating && !editing ? (
               <EmptyState icon={Shield} title="اختر مستخدماً للتعديل" description="أو أنشئ مستخدماً جديداً من الزر بالأعلى" />
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-bold text-amber-400">{creating ? 'مستخدم جديد' : `تعديل: ${editing?.fullNameAr}`}</div>
-                  <button onClick={()=>{ setCreating(false); setEditing(null); setDraft({}); }} className="p-1 rounded hover:bg-[#1E293B]"><X className="w-4 h-4 text-slate-400" /></button>
+                  <button onClick={()=>{ setCreating(false); setEditing(null); setDraft({}); }} className="p-1 rounded hover:bg-[#16211D]"><X className="w-4 h-4 text-slate-400" /></button>
                 </div>
 
                 <FormField label="الاسم الكامل" required id="adm-name">
                   <input id="adm-name" value={draft.fullNameAr ?? ''} onChange={e=>setDraft(d=>({...d, fullNameAr: e.target.value}))}
-                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" />
+                    className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" />
                 </FormField>
 
                 <FormField label={creating ? 'اسم المستخدم (للدخول)' : 'تغيير اسم المستخدم (اختياري)'} hint={username ? `سيُسجّل الدخول: ${username.toLowerCase().replace(/[^a-z0-9._-]+/g,'')||'username'}@ops.iq` : undefined} error={usernameError} id="adm-user">
                   <input id="adm-user" value={username} onChange={e=>{ setUsername(e.target.value); setUsernameError(''); }}
                     placeholder="ahmed.karbala" dir="ltr"
-                    className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white text-left focus:border-amber-500/40 focus:outline-none" />
+                    className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white text-left focus:border-amber-500/40 focus:outline-none" />
                 </FormField>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <FormField label="الدور" required id="adm-role">
                     <select id="adm-role" value={draft.role ?? 'agent'} onChange={e=>setDraft(d=>({...d, role: e.target.value as Role}))}
-                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white">
+                      className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white">
                       {Object.entries(ROLE_LABELS).map(([k,v])=> <option key={k} value={k}>{v}</option>)}
                     </select>
                   </FormField>
                   {draft.role !== 'director' && (
                     <FormField label="المكتب" required id="adm-office">
                       <select id="adm-office" value={draft.officeId ?? ''} onChange={e=>setDraft(d=>({...d, officeId: e.target.value}))}
-                        className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white">
+                        className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white">
                         {offices.map(o=> <option key={o.id} value={o.id}>{o.nameAr}</option>)}
                       </select>
                     </FormField>
@@ -299,9 +299,9 @@ export default function AdminPage() {
                   <FormField label={creating ? 'كلمة المرور' : 'كلمة مرور جديدة'} required={creating} id="adm-pass"
                     hint={draft.password ? `قوة كلمة المرور: ${pwInfo.label}` : undefined}>
                     <input id="adm-pass" type="password" value={draft.password ?? ''} onChange={e=>setDraft(d=>({...d, password: e.target.value}))}
-                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" dir="ltr" />
+                      className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" dir="ltr" />
                     {draft.password && (
-                      <div className="mt-1.5 h-1.5 rounded-full bg-[#1E293B] overflow-hidden">
+                      <div className="mt-1.5 h-1.5 rounded-full bg-[#16211D] overflow-hidden">
                         <div className="h-full transition-all" style={{ width: `${(pwInfo.score+1)*20}%`, background: pwInfo.color }} />
                       </div>
                     )}
@@ -309,13 +309,13 @@ export default function AdminPage() {
                   <FormField label="تأكيد كلمة المرور" required={!!draft.password || creating} id="adm-pass2"
                     error={draft.password && draft.confirmPassword && draft.password !== draft.confirmPassword ? 'كلمتا المرور غير متطابقتين' : undefined}>
                     <input id="adm-pass2" type="password" value={draft.confirmPassword ?? ''} onChange={e=>setDraft(d=>({...d, confirmPassword: e.target.value}))}
-                      className="w-full bg-[#1E293B] border border-[#263244] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" dir="ltr" />
+                      className="w-full bg-[#16211D] border border-[#1F2D28] rounded-md px-3 py-2 text-sm text-white focus:border-amber-500/40 focus:outline-none" dir="ltr" />
                   </FormField>
                 </div>
 
                 {draft.role === 'supervisor' && (
                   <FormField label="المكاتب المسموح بها" hint="اتركه فارغاً للسماح بالكل">
-                    <div className="bg-[#0B0F19] border border-[#1E293B] rounded-md p-2 max-h-32 overflow-y-auto grid grid-cols-2 gap-1 text-xs">
+                    <div className="bg-[#070B09] border border-[#16211D] rounded-md p-2 max-h-32 overflow-y-auto grid grid-cols-2 gap-1 text-xs">
                       {offices.map(o=>(
                         <label key={o.id} className="flex items-center gap-1.5 cursor-pointer text-slate-300">
                           <input type="checkbox" checked={draft.permittedOfficeIds?.includes(o.id) || false}
@@ -334,7 +334,7 @@ export default function AdminPage() {
                       const on = (draft.specialPermissions as any)?.[p.key] || false;
                       return (
                         <button type="button" key={p.key} onClick={()=>togglePerm(p.key)}
-                          className={`text-right p-2.5 rounded-lg border text-xs transition-all ${on ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-[#0B0F19] border-[#1E293B] text-slate-300 hover:border-[#263244]'}`}>
+                          className={`text-right p-2.5 rounded-lg border text-xs transition-all ${on ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-[#070B09] border-[#16211D] text-slate-300 hover:border-[#1F2D28]'}`}>
                           <div className="font-bold">{p.label} {on && <Check className="w-3 h-3 inline text-emerald-400" />}</div>
                           <div className="text-[10px] text-slate-500 mt-0.5">{p.desc}</div>
                         </button>
@@ -348,7 +348,7 @@ export default function AdminPage() {
                     <Save className="w-4 h-4" /> {creating ? 'إنشاء الحساب' : 'حفظ التعديلات'}
                   </button>
                   {editing && (
-                    <button onClick={()=>toggleActive(editing)} className="px-4 py-2.5 rounded-lg bg-[#1E293B] hover:bg-[#263244] text-slate-300 text-sm">
+                    <button onClick={()=>toggleActive(editing)} className="px-4 py-2.5 rounded-lg bg-[#16211D] hover:bg-[#1F2D28] text-slate-300 text-sm">
                       {editing.isActive ? 'تعطيل' : 'تفعيل'}
                     </button>
                   )}
@@ -369,10 +369,10 @@ function TrackingModal({ user, loc, stale, onClose }: { user: Profile; loc: any;
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4" dir="rtl">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-[#0B0F19] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-[#1E293B]">
+      <div className="relative w-full max-w-md bg-[#070B09] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-[#16211D]">
           <div className="text-sm font-bold text-amber-400">تتبّع: {user.fullNameAr}</div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[#1E293B]"><X className="w-4 h-4 text-slate-400" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[#16211D]"><X className="w-4 h-4 text-slate-400" /></button>
         </div>
         <div className="p-4 space-y-3">
           {!loc ? <div className="text-center text-sm text-slate-500 py-6">لا توجد بيانات موقع</div> : (
@@ -381,10 +381,10 @@ function TrackingModal({ user, loc, stale, onClose }: { user: Profile; loc: any;
                 {stale ? 'الاتصال مفقود — آخر موقع معروف' : 'متصل — تحديث مباشر'}
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">خط العرض</div><div className="font-mono">{loc.lat.toFixed(5)}</div></div>
-                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">خط الطول</div><div className="font-mono">{loc.lng.toFixed(5)}</div></div>
-                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">الدقة</div><div>±{Math.round(loc.accuracyMeters)} م</div></div>
-                <div className="bg-[#111827] border border-[#1E293B] rounded p-3"><div className="text-slate-500">آخر تحديث</div><div>{relativeTime(loc.updatedAt)}</div></div>
+                <div className="bg-[#0E1512] border border-[#16211D] rounded p-3"><div className="text-slate-500">خط العرض</div><div className="font-mono">{loc.lat.toFixed(5)}</div></div>
+                <div className="bg-[#0E1512] border border-[#16211D] rounded p-3"><div className="text-slate-500">خط الطول</div><div className="font-mono">{loc.lng.toFixed(5)}</div></div>
+                <div className="bg-[#0E1512] border border-[#16211D] rounded p-3"><div className="text-slate-500">الدقة</div><div>±{Math.round(loc.accuracyMeters)} م</div></div>
+                <div className="bg-[#0E1512] border border-[#16211D] rounded p-3"><div className="text-slate-500">آخر تحديث</div><div>{relativeTime(loc.updatedAt)}</div></div>
               </div>
               <a href={`https://www.google.com/maps?q=${loc.lat},${loc.lng}`} target="_blank" rel="noopener noreferrer"
                 className="block text-center w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm">فتح في الخريطة</a>

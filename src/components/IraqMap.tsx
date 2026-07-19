@@ -79,10 +79,10 @@ function createOfficeIcon(submitted: boolean, selected: boolean, kurdistan: bool
     iconSize: [32,32], iconAnchor: [16,16],
   });
 }
-const borderIcon = L.divIcon({ className:'border-marker', html:`<div style="width:20px;height:20px;transform:rotate(45deg);background:#10B981;border:2px solid #0B0F19;box-shadow:0 2px 4px rgba(0,0,0,.4)"></div>`, iconSize:[20,20], iconAnchor:[10,10]});
+const borderIcon = L.divIcon({ className:'border-marker', html:`<div style="width:20px;height:20px;transform:rotate(45deg);background:#10B981;border:2px solid #070B09;box-shadow:0 2px 4px rgba(0,0,0,.4)"></div>`, iconSize:[20,20], iconAnchor:[10,10]});
 const agentIcon = L.divIcon({ className:'agent-marker', html:`<div style="width:10px;height:10px;border-radius:50%;background:#3B82F6;border:2px solid #fff;box-shadow:0 0 6px rgba(59,130,246,.8)"></div>`, iconSize:[14,14], iconAnchor:[7,7]});
 const eventIcon = L.divIcon({ className:'event-marker', html:`<div style="width:10px;height:10px;border-radius:50%;background:#3B82F6;border:2px solid #fff"></div>`, iconSize:[14,14], iconAnchor:[7,7]});
-const procIcon = L.divIcon({ className:'proc-marker', html:`<div style="width:12px;height:12px;background:#F59E0B;border:2px solid #0B0F19;transform:rotate(45deg)"></div>`, iconSize:[14,14], iconAnchor:[7,7]});
+const procIcon = L.divIcon({ className:'proc-marker', html:`<div style="width:12px;height:12px;background:#F59E0B;border:2px solid #070B09;transform:rotate(45deg)"></div>`, iconSize:[14,14], iconAnchor:[7,7]});
 
 function MapController({ selectedOfficeId, offices, onSelect }: { selectedOfficeId: string | null; offices: Office[]; onSelect?: (o: Office | null) => void }) {
   const map = useMap();
@@ -198,7 +198,7 @@ function IraqMapInner({ onSelectOffice, selectedOfficeId, height = '100%', filte
           if (!code) return null;
           const [lat,lng] = geometryCentroid(feat.geometry);
           return <Marker key={`lbl-${code}`} position={[lat,lng]} interactive={false}
-            icon={L.divIcon({ className:'gov-label', html:`<div style="color:#1E293B;font-family:Cairo;font-size:10px;font-weight:700;text-shadow:0 0 3px #fff,0 0 3px #fff;white-space:nowrap;pointer-events:none">${NAMES_AR[code]||code}</div>`, iconSize:[80,14], iconAnchor:[40,7] })} />;
+            icon={L.divIcon({ className:'gov-label', html:`<div style="color:#16211D;font-family:Cairo;font-size:10px;font-weight:700;text-shadow:0 0 3px #fff,0 0 3px #fff;white-space:nowrap;pointer-events:none">${NAMES_AR[code]||code}</div>`, iconSize:[80,14], iconAnchor:[40,7] })} />;
         })}
 
         {/* offices */}

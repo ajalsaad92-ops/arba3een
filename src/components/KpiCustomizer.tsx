@@ -27,7 +27,7 @@ export default function KpiCustomizer() {
     <div className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111827] border border-[#1E293B] text-[11px] text-slate-300 hover:border-amber-500/30 transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0E1512] border border-[#16211D] text-[11px] text-slate-300 hover:border-amber-500/30 transition-colors"
         title="تخصيص الإحصائيات الظاهرة"
       >
         <Settings className="w-3.5 h-3.5 text-amber-400" />
@@ -37,8 +37,8 @@ export default function KpiCustomizer() {
       {open && (
         <>
           <div className="fixed inset-0 z-[800]" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-64 bg-[#111827] border border-[#1E293B] rounded-xl shadow-2xl z-[801] overflow-hidden">
-            <div className="px-3 py-2 border-b border-[#1E293B] flex items-center justify-between">
+          <div className="absolute right-0 mt-2 w-64 bg-[#0E1512] border border-[#16211D] rounded-xl shadow-2xl z-[801] overflow-hidden">
+            <div className="px-3 py-2 border-b border-[#16211D] flex items-center justify-between">
               <span className="text-xs font-bold text-slate-200">تخصيص الإحصائيات</span>
               <button onClick={() => setOpen(false)} className="text-slate-500 hover:text-white"><X className="w-3.5 h-3.5" /></button>
             </div>
@@ -50,7 +50,7 @@ export default function KpiCustomizer() {
                   <button
                     key={k.id}
                     onClick={() => toggle(k.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-2 rounded-md text-xs text-right hover:bg-[#1E293B]/60 ${on ? 'text-amber-300' : 'text-slate-400'}`}
+                    className={`w-full flex items-center gap-2 px-2 py-2 rounded-md text-xs text-right hover:bg-[#16211D]/60 ${on ? 'text-amber-300' : 'text-slate-400'}`}
                   >
                     <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-amber-500 border-amber-500' : 'border-slate-500'}`}>
                       {on && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
