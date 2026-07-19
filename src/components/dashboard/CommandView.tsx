@@ -19,20 +19,25 @@ export const CommandView = React.memo(function CommandView({ agg, trend, aggYest
   const canHandleEmergencies = user.role === 'director' || user.role === 'supervisor';
   const [detailEm, setDetailEm] = useState<any>(null);
 
+  const visitorsHidden = isBuiltInFieldHidden(state.fieldDefinitions, 'visitorsIn') && isBuiltInFieldHidden(state.fieldDefinitions, 'visitorsOut');
+  const eventsHidden = isBuiltInFieldHidden(state.fieldDefinitions, 'eventsCount');
+
   const governorateData = useMemo(() => {
+    if (visitorsHidden) return [];
     const map: Record<string, number> = {};
     state.todayReports.filter((r:any) => effectiveFilter.includes(r.officeId)).forEach((r:any) => {
       const gov = officeById(r.officeId)?.governorateAr || r.officeId;
       map[gov] = (map[gov] || 0) + r.visitorsIn + r.visitorsOut;
     });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a,b)=>b.value-a.value);
-  }, [state.todayReports, effectiveFilter, officeById]);
+  }, [state.todayReports, effectiveFilter, officeById, visitorsHidden]);
 
   const eventsRanked = useMemo(() => {
+    if (eventsHidden) return [];
     return state.todayReports.filter((r:any)=> effectiveFilter.includes(r.officeId))
       .map((r:any)=>({ name: officeById(r.officeId)?.nameAr ?? r.officeId, value: r.eventsCount, officeId: r.officeId }))
       .sort((a:any,b:any)=>b.value-a.value).slice(0,10);
-  }, [state.todayReports, effectiveFilter, officeById]);
+  }, [state.todayReports, effectiveFilter, officeById, eventsHidden]);
 
   return (
     <div className="h-full flex flex-col lg:flex-row gap-3 p-3 overflow-y-auto lg:overflow-hidden">
