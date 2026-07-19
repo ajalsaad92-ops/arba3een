@@ -59,7 +59,9 @@ export default function AppShell() {
     { to: '/history', label: 'السجل والتصدير', icon: History, show: !isAgent && !isViewer },
     { to: '/supervisor-panel', label: 'لوحة المشرف', icon: Timer, show: isSupervisorPlus },
     { to: '/report-fields', label: 'حقول التقرير', icon: Settings2, show: isSupervisorPlus },
+    { to: '/frozen-requests', label: 'طلبات التجميد', icon: Lock, show: !isViewer },
     { to: '/admin', label: 'المستخدمون', icon: Users, show: isDirector },
+
   ];
 
   // Where each notification type should take the user when clicked.
