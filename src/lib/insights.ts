@@ -260,7 +260,7 @@ export function buildInsights(
     { key: 'incidentsDetails', label: 'حوادث' },
     { key: 'violationsDetails', label: 'خروقات' },
     { key: 'visitsSummary', label: 'زيارات' },
-    { key: 'deploymentLocations', label: 'مواقع الانتشار الميداني' },
+    
     { key: 'otherNotes', label: 'ملاحظات' },
   ];
   todayReports.forEach(r => {
