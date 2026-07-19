@@ -9,18 +9,186 @@ export interface Insight {
   icon: 'up' | 'down' | 'alert' | 'star' | 'info' | 'idle' | 'service' | 'news';
   tone: 'positive' | 'negative' | 'warning' | 'info';
   text: string;
-  /** Optional office/source name shown as a leading badge (TV-headline style). */
+  /** Day-scope badge shown at the start of each headline. */
   source?: string;
+  day?: 'today' | 'yesterday';
 }
 
-function sum(rs: DailyReport[], key: (r: DailyReport) => number) {
-  return rs.reduce((a, r) => a + (key(r) || 0), 0);
-}
-
-const clip = (s: string, n = 180) => {
+const clip = (s: string, n = 220) => {
   const t = String(s).replace(/\s+/g, ' ').trim();
   return t.length > n ? t.slice(0, n - 1) + '…' : t;
 };
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+/** Aggregate a numeric metric per-governorate. */
+function perGov(reports: DailyReport[], pick: (r: DailyReport) => number) {
+  const map = new Map<string, number>();
+  reports.forEach(r => {
+    const v = pick(r) || 0;
+    if (v <= 0) return;
+    const gov = officeById(r.officeId)?.governorateAr || r.officeId;
+    map.set(gov, (map.get(gov) || 0) + v);
+  });
+  return [...map.entries()]
+    .map(([gov, total]) => ({ gov, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+function govPhrase(list: { gov: string; total: number }[]): string {
+  if (list.length === 0) return '';
+  if (list.length === 1) return `في محافظة ${list[0].gov}`;
+  if (list.length === 2) return `في محافظتَي ${list[0].gov} و${list[1].gov}`;
+  const head = list.slice(0, 3).map(x => x.gov).join('، ');
+  const rest = list.length - 3;
+  return rest > 0
+    ? `في محافظات ${head} و${rest} محافظات أخرى`
+    : `في محافظات ${head}`;
+}
+
+function compareText(today: number, yest: number): string {
+  if (yest <= 0) return today > 0 ? ' (بدون بيانات مقارنة من أمس)' : '';
+  const diff = today - yest;
+  if (diff === 0) return ' — بنفس مستوى أمس';
+  const pct = Math.round((Math.abs(diff) / yest) * 100);
+  return diff > 0
+    ? ` — بزيادة ${pct}% عن أمس (+${fmt(diff)})`
+    : ` — بانخفاض ${pct}% عن أمس (${fmt(diff)})`;
+}
+
+interface MetricSpec {
+  key: string;
+  pick: (r: DailyReport) => number;
+  narrate: (total: number, top: { gov: string; total: number }[]) => string;
+  tone: Insight['tone'];
+  icon: Insight['icon'];
+}
+
+function buildMetricSpecs(
+  fieldDefinitions: ReportFieldDefinition[],
+): MetricSpec[] {
+  const isHidden = (k: string) => isBuiltInFieldHidden(fieldDefinitions, k);
+  const specs: MetricSpec[] = [];
+
+  if (!isHidden('visitorsIn')) specs.push({
+    key: 'visitorsIn',
+    pick: r => r.visitorsIn || 0,
+    narrate: (t, g) => `توافد ${fmt(t)} زائر قادم إلى مواقع مقر المديرية ${govPhrase(g)}`,
+    tone: 'positive', icon: 'up',
+  });
+  if (!isHidden('visitorsOut')) specs.push({
+    key: 'visitorsOut',
+    pick: r => r.visitorsOut || 0,
+    narrate: (t, g) => `غادر ${fmt(t)} زائر عائد ${govPhrase(g)}`,
+    tone: 'info', icon: 'down',
+  });
+  if (!isHidden('vehiclesCount')) specs.push({
+    key: 'vehiclesCount',
+    pick: r => r.vehiclesCount || 0,
+    narrate: (t, g) => `رُصدت حركة ${fmt(t)} عجلة ${govPhrase(g)}`,
+    tone: 'info', icon: 'info',
+  });
+  if (!isHidden('processionsCount')) specs.push({
+    key: 'processionsCount',
+    pick: r => r.processionsCount || 0,
+    narrate: (t, g) => `شهدت الساحات انطلاق ${fmt(t)} موكب ${govPhrase(g)}`,
+    tone: 'info', icon: 'star',
+  });
+  if (!isHidden('deploymentCount')) specs.push({
+    key: 'deploymentCount',
+    pick: r => r.deploymentCount || 0,
+    narrate: (t, g) => `تم نشر ${fmt(t)} من عناصر الأمن والمتطوعين ${govPhrase(g)}`,
+    tone: 'info', icon: 'info',
+  });
+  if (!isHidden('violationsCount')) specs.push({
+    key: 'violationsCount',
+    pick: r => r.violationsCount || 0,
+    narrate: (t, g) => `تم رصد ${fmt(t)} خرق أمني ${govPhrase(g)}`,
+    tone: 'warning', icon: 'alert',
+  });
+  if (!isHidden('incidentsCount')) specs.push({
+    key: 'incidentsCount',
+    pick: r => r.incidentsCount || 0,
+    narrate: (t, g) => `وقعت ${fmt(t)} حادثة ${govPhrase(g)}`,
+    tone: 'warning', icon: 'alert',
+  });
+  if (!isHidden('eventsCount')) specs.push({
+    key: 'eventsCount',
+    pick: r => r.eventsCount || 0,
+    narrate: (t, g) => `أُقيمت ${fmt(t)} فعالية ${govPhrase(g)}`,
+    tone: 'info', icon: 'star',
+  });
+  if (!isHidden('deathsCount')) specs.push({
+    key: 'deathsCount',
+    pick: r => r.deathsCount || 0,
+    narrate: (t, g) => `سُجّلت ${fmt(t)} حالة وفاة ${govPhrase(g)}`,
+    tone: 'negative', icon: 'alert',
+  });
+  if (!isHidden('resourcesDistributed')) specs.push({
+    key: 'resourcesDistributed',
+    pick: r => extraFieldNumericValue((r as any).resourcesDistributed),
+    narrate: (t, g) => `قُدّمت ${fmt(t)} خدمة للزوار ${govPhrase(g)}`,
+    tone: 'positive', icon: 'service',
+  });
+
+  // Dynamic custom numeric / select-with-quantity fields
+  fieldDefinitions
+    .filter(f => !f.isBuiltIn && !f.isHidden && (f.fieldType === 'number' || (f.fieldType === 'select' && f.withQuantity)))
+    .forEach(f => {
+      const label = f.statLabelAr || f.labelAr || f.fieldKey;
+      specs.push({
+        key: `x:${f.fieldKey}`,
+        pick: r => extraFieldNumericValue(r.extraFields?.[f.fieldKey]),
+        narrate: (t, g) => `تم تسجيل ${fmt(t)} ${label} ${govPhrase(g)}`,
+        tone: 'info', icon: 'info',
+      });
+    });
+
+  return specs;
+}
+
+/** Narrate a single day's reports as news headlines. */
+function narrateDay(
+  reports: DailyReport[],
+  compareTo: DailyReport[],
+  specs: MetricSpec[],
+  day: 'today' | 'yesterday',
+): Insight[] {
+  const out: Insight[] = [];
+  const label = day === 'today' ? 'اليوم' : 'أمس';
+  const source = day === 'today' ? 'موجز اليوم' : 'موجز أمس';
+
+  specs.forEach(spec => {
+    const totalToday = reports.reduce((a, r) => a + (spec.pick(r) || 0), 0);
+    if (totalToday <= 0) return;
+    const top = perGov(reports, spec.pick).slice(0, 4);
+    const totalYest = compareTo.reduce((a, r) => a + (spec.pick(r) || 0), 0);
+    const sentence = spec.narrate(totalToday, top) + ` ${label}` + compareText(totalToday, totalYest);
+    out.push({
+      id: `${day}-${spec.key}`,
+      icon: spec.icon,
+      tone: spec.tone,
+      text: sentence,
+      source,
+      day,
+    });
+  });
+
+  // Coverage headline
+  const submitted = reports.length;
+  if (submitted > 0) {
+    out.push({
+      id: `${day}-coverage`,
+      icon: 'info',
+      tone: 'info',
+      source,
+      day,
+      text: `استلمت غرفة العمليات ${submitted} تقريراً من أصل ${OFFICES.length} مكتباً ${label}`,
+    });
+  }
+
+  return out;
+}
 
 export function buildInsights(
   todayReports: DailyReport[],
@@ -29,9 +197,12 @@ export function buildInsights(
   _users: Profile[],
   fieldDefinitions: ReportFieldDefinition[] = [],
 ): Insight[] {
-  const out: Insight[] = [];
-  const yestStr = operationalDateDaysAgo(1);
-  const yReports = historicalReports.filter(r => r.reportDate === yestStr);
+  const today0 = operationalDateDaysAgo(0);
+  const yest0 = operationalDateDaysAgo(1);
+  const dayBefore = operationalDateDaysAgo(2);
+  const yReports = historicalReports.filter(r => r.reportDate === yest0);
+  const dbReports = historicalReports.filter(r => r.reportDate === dayBefore);
+
   const isHidden = (key: string) => isBuiltInFieldHidden(fieldDefinitions, key);
   const hiddenExtraKeys = new Set(
     fieldDefinitions.filter(f => !f.isBuiltIn && f.isHidden).map(f => f.fieldKey),
@@ -41,165 +212,49 @@ export function buildInsights(
     return f?.statLabelAr || f?.labelAr || key;
   };
 
-  // 1) Visitors trend today vs yesterday
-  if (!isHidden('visitorsIn') || !isHidden('visitorsOut')) {
-    const vToday = sum(todayReports, r => (isHidden('visitorsIn') ? 0 : (r.visitorsIn || 0)) + (isHidden('visitorsOut') ? 0 : (r.visitorsOut || 0)));
-    const vYest  = sum(yReports,    r => (isHidden('visitorsIn') ? 0 : (r.visitorsIn || 0)) + (isHidden('visitorsOut') ? 0 : (r.visitorsOut || 0)));
-    if (vToday > 0 || vYest > 0) {
-      if (vYest === 0) {
-        out.push({ id: 'v0', icon: 'up', tone: 'info', text: `إجمالي زوار اليوم: ${vToday.toLocaleString('en-US')}` });
-      } else {
-        const diff = vToday - vYest;
-        const pct = Math.round((diff / vYest) * 100);
-        out.push({
-          id: 'v1',
-          icon: diff >= 0 ? 'up' : 'down',
-          tone: diff >= 0 ? 'positive' : 'negative',
-          text: diff >= 0
-            ? `زيادة في عدد الزوار اليوم عن أمس بـ ${Math.abs(pct)}% (+${Math.abs(diff).toLocaleString('en-US')})`
-            : `انخفاض في عدد الزوار اليوم عن أمس بـ ${Math.abs(pct)}% (-${Math.abs(diff).toLocaleString('en-US')})`,
-        });
-      }
-    }
+  const specs = buildMetricSpecs(fieldDefinitions);
 
-    // Top governorate by visitors today
-    if (todayReports.length > 0) {
-      const byGov: Record<string, { gov: string; total: number }> = {};
-      todayReports.forEach(r => {
-        const off = officeById(r.officeId);
-        const gov = off?.governorateAr || r.officeId;
-        const t = (isHidden('visitorsIn') ? 0 : (r.visitorsIn || 0)) + (isHidden('visitorsOut') ? 0 : (r.visitorsOut || 0));
-        if (!byGov[gov]) byGov[gov] = { gov, total: t };
-        else byGov[gov].total += t;
-      });
-      const top = Object.values(byGov).sort((a, b) => b.total - a.total)[0];
-      if (top && top.total > 0) {
-        out.push({ id: 'v2', icon: 'star', tone: 'info', text: `أكثر محافظة استقبالاً للزوار اليوم: ${top.gov} بـ ${top.total.toLocaleString('en-US')}` });
-      }
-    }
-  }
+  // ===== TODAY BLOCK =====
+  const todayBlock: Insight[] = [];
 
-  // 2) Built-in numeric aggregates — one headline per active KPI
-  const numericBuiltIns: { key: keyof DailyReport; label: string; tone: Insight['tone']; icon: Insight['icon'] }[] = [
-    { key: 'vehiclesCount',    label: 'حركة العجلات',       tone: 'info',     icon: 'info' },
-    { key: 'processionsCount', label: 'المواكب الفعّالة',    tone: 'info',     icon: 'info' },
-    { key: 'deathsCount',      label: 'الوفيات',            tone: 'negative', icon: 'alert' },
-    { key: 'violationsCount',  label: 'الخروقات الأمنية',   tone: 'warning',  icon: 'alert' },
-    { key: 'eventsCount',      label: 'الفعاليات',          tone: 'info',     icon: 'star' },
-    { key: 'incidentsCount',   label: 'الحوادث',            tone: 'warning',  icon: 'alert' },
-    { key: 'deploymentCount',  label: 'القوات المنتشرة',    tone: 'info',     icon: 'info' },
-  ];
-  numericBuiltIns.forEach(({ key, label, tone, icon }) => {
-    if (isHidden(String(key))) return;
-    const total = sum(todayReports, r => Number((r as any)[key]) || 0);
-    if (total > 0) {
-      out.push({ id: `bi-${String(key)}`, icon, tone, text: `${label} اليوم: ${total.toLocaleString('en-US')}` });
-      // top office for this metric
-      const top = [...todayReports].sort((a, b) => (Number((b as any)[key]) || 0) - (Number((a as any)[key]) || 0))[0];
-      const v = Number((top as any)?.[key]) || 0;
-      if (top && v > 0) {
-        const off = officeById(top.officeId);
-        out.push({
-          id: `bi-top-${String(key)}`,
-          icon: 'star',
-          tone: 'info',
-          text: `الأعلى في ${label}: ${off?.governorateAr || top.officeId} (${v.toLocaleString('en-US')})`,
-        });
-      }
-    }
-  });
-
-  // 3) Services / resources distributed
-  if (!isHidden('resourcesDistributed')) {
-    const resByOffice = todayReports
-      .map(r => ({ off: officeById(r.officeId), val: extraFieldNumericValue((r as any).resourcesDistributed), r }))
-      .filter(x => x.val > 0)
-      .sort((a, b) => b.val - a.val);
-    const totalRes = resByOffice.reduce((a, x) => a + x.val, 0);
-    if (totalRes > 0) {
-      out.push({ id: 's-total', icon: 'service', tone: 'positive', text: `إجمالي الخدمات الموزعة اليوم: ${totalRes.toLocaleString('en-US')}` });
-    }
-    if (resByOffice[0]) {
-      out.push({
-        id: 's1',
-        icon: 'service',
-        tone: 'positive',
-        text: `${resByOffice[0].off?.nameAr || resByOffice[0].r.officeId} قدّم ${resByOffice[0].val.toLocaleString('en-US')} خدمة اليوم`,
-      });
-    }
-  }
-
-  // 4) Dynamic custom numeric / select-with-quantity fields
-  fieldDefinitions
-    .filter(f => !f.isBuiltIn && !f.isHidden && (f.fieldType === 'number' || (f.fieldType === 'select' && f.withQuantity)))
-    .forEach(f => {
-      let total = 0;
-      const perOffice: { officeId: string; val: number }[] = [];
-      todayReports.forEach(r => {
-        const raw = r.extraFields?.[f.fieldKey];
-        const val = extraFieldNumericValue(raw);
-        if (val > 0) {
-          total += val;
-          perOffice.push({ officeId: r.officeId, val });
-        }
-      });
-      if (total > 0) {
-        const label = f.statLabelAr || f.labelAr;
-        out.push({ id: `xn-${f.fieldKey}`, icon: 'info', tone: 'info', text: `${label} اليوم: ${total.toLocaleString('en-US')}` });
-        const top = perOffice.sort((a, b) => b.val - a.val)[0];
-        if (top) {
-          out.push({
-            id: `xn-top-${f.fieldKey}`,
-            icon: 'star',
-            tone: 'info',
-            text: `الأعلى في ${label}: ${officeById(top.officeId)?.governorateAr || top.officeId} (${top.val.toLocaleString('en-US')})`,
-          });
-        }
-      }
-    });
-
-  // 5) Active + resolved emergencies
+  // Lead: active emergencies for today first (top of newscast)
   const active = emergencies.filter(e => e.status === 'active');
-  active.slice(0, 5).forEach((e, idx) => {
-    out.push({
-      id: `e-a-${e.id || idx}`,
+  active.slice(0, 3).forEach((e, idx) => {
+    todayBlock.push({
+      id: `today-e-${e.id || idx}`,
       icon: 'alert',
       tone: 'negative',
-      source: officeById(e.officeId)?.governorateAr,
-      text: `حالة طارئة نشطة: ${e.emergencyType}${e.description ? ' — ' + clip(e.description, 100) : ''}`,
+      source: 'عاجل',
+      day: 'today',
+      text: `حالة طارئة نشطة في محافظة ${officeById(e.officeId)?.governorateAr || e.officeId}: ${e.emergencyType}${e.description ? ' — ' + clip(e.description, 120) : ''}`,
     });
   });
-  if (active.length > 1) {
-    out.push({ id: 'e-sum', icon: 'alert', tone: 'negative', text: `يوجد ${active.length} حالات طارئة نشطة بحاجة معالجة` });
+  if (active.length > 3) {
+    todayBlock.push({
+      id: 'today-e-more',
+      icon: 'alert',
+      tone: 'negative',
+      source: 'عاجل',
+      day: 'today',
+      text: `يوجد ${active.length} حالات طارئة نشطة تحتاج إلى معالجة في هذه اللحظة`,
+    });
   }
-  const today0 = operationalDateDaysAgo(0);
-  const resolvedToday = emergencies.filter(e => e.status === 'resolved' && (e.resolvedAt || e.createdAt) && String(e.resolvedAt || e.createdAt).slice(0,10) >= today0);
+  const resolvedToday = emergencies.filter(e => e.status === 'resolved' && (e.resolvedAt || e.createdAt) && String(e.resolvedAt || e.createdAt).slice(0, 10) >= today0);
   if (resolvedToday.length > 0) {
-    out.push({ id: 'e-res', icon: 'up', tone: 'positive', text: `تم حلّ ${resolvedToday.length} حالة طارئة اليوم` });
-  }
-
-  // 6) Offices missing today's report
-  const submittedIds = new Set(todayReports.map(r => r.officeId));
-  const missing = OFFICES.filter(o => !submittedIds.has(o.id));
-  if (missing.length > 0) {
-    out.push({
-      id: 'm1',
-      icon: 'idle',
-      tone: 'warning',
-      text: `${missing.length} مكتب لم يُرسل تقرير اليوم${missing.length <= 3 ? ' — ' + missing.map(m => m.nameAr.replace('مكتب ', '')).join('، ') : ''}`,
+    todayBlock.push({
+      id: 'today-e-res',
+      icon: 'up',
+      tone: 'positive',
+      source: 'موجز اليوم',
+      day: 'today',
+      text: `تمّت معالجة ${resolvedToday.length} حالة طارئة اليوم بنجاح`,
     });
   }
 
-  // 7) Coverage
-  out.push({ id: 'ent', icon: 'info', tone: 'info', text: `إجمالي التقارير المُدخلة اليوم: ${todayReports.length} من ${OFFICES.length} مكتب` });
+  // Metric headlines for today (compare vs yesterday)
+  todayBlock.push(...narrateDay(todayReports, yReports, specs, 'today'));
 
-  // 8) Late submissions
-  const late = todayReports.filter(r => r.isLateSubmission);
-  if (late.length > 0) {
-    out.push({ id: 'late', icon: 'idle', tone: 'warning', text: `${late.length} تقرير وصل متأخراً اليوم` });
-  }
-
-  // 9) News-style headlines: free-text notes from data-entry, respecting hidden fields
+  // Field notes as news (today)
   const textParts: { key: keyof DailyReport; label: string }[] = [
     { key: 'eventsDetails', label: 'فعاليات' },
     { key: 'incidentsDetails', label: 'حوادث' },
@@ -209,37 +264,87 @@ export function buildInsights(
     { key: 'otherNotes', label: 'ملاحظات' },
   ];
   todayReports.forEach(r => {
-    const officeName = (officeById(r.officeId)?.nameAr || r.officeId).replace('مكتب ', '');
+    const gov = officeById(r.officeId)?.governorateAr || r.officeId;
     textParts.forEach(p => {
       if (isHidden(String(p.key))) return;
       const raw = (r as any)[p.key];
       if (typeof raw === 'string' && raw.trim().length > 2) {
-        out.push({
-          id: `news-${r.officeId}-${String(p.key)}`,
+        todayBlock.push({
+          id: `today-news-${r.officeId}-${String(p.key)}`,
           icon: 'news',
           tone: 'info',
-          source: officeName,
+          source: `محافظة ${gov}`,
+          day: 'today',
           text: `${p.label}: ${clip(raw)}`,
         });
       }
     });
-    // Custom free-text / select fields added via the field manager (skip hidden).
     if (r.extraFields) {
       Object.entries(r.extraFields).forEach(([key, v], idx) => {
         if (hiddenExtraKeys.has(key)) return;
         const label = labelForExtra(key);
         if (typeof v === 'string' && v.trim().length > 2) {
-          out.push({ id: `news-x-${r.officeId}-${idx}`, icon: 'news', tone: 'info', source: officeName, text: `${label}: ${clip(v)}` });
+          todayBlock.push({ id: `today-nx-${r.officeId}-${idx}`, icon: 'news', tone: 'info', source: `محافظة ${gov}`, day: 'today', text: `${label}: ${clip(v)}` });
         } else if (Array.isArray(v) && v.length > 0) {
           const items = v
             .map((it: any) => typeof it === 'string' ? it : (it && it.item ? `${it.item}${it.qty ? ` (${it.qty})` : ''}` : ''))
             .filter(Boolean)
             .join('، ');
-          if (items) out.push({ id: `news-xa-${r.officeId}-${idx}`, icon: 'news', tone: 'info', source: officeName, text: `${label}: ${clip(items)}` });
+          if (items) todayBlock.push({ id: `today-nxa-${r.officeId}-${idx}`, icon: 'news', tone: 'info', source: `محافظة ${gov}`, day: 'today', text: `${label}: ${clip(items)}` });
         }
       });
     }
   });
 
-  return out;
+  // Missing offices today
+  const submittedIds = new Set(todayReports.map(r => r.officeId));
+  const missing = OFFICES.filter(o => !submittedIds.has(o.id));
+  if (missing.length > 0) {
+    todayBlock.push({
+      id: 'today-missing',
+      icon: 'idle',
+      tone: 'warning',
+      source: 'موجز اليوم',
+      day: 'today',
+      text: `${missing.length} مكتب لم يُرسل تقرير اليوم بعد${missing.length <= 4 ? ' — ' + missing.map(m => m.nameAr.replace('مكتب ', '')).join('، ') : ''}`,
+    });
+  }
+
+  // ===== YESTERDAY BLOCK =====
+  const yestBlock: Insight[] = [];
+  yestBlock.push(...narrateDay(yReports, dbReports, specs, 'yesterday'));
+
+  // Yesterday's headlines from text fields (only the most informative)
+  yReports.forEach(r => {
+    const gov = officeById(r.officeId)?.governorateAr || r.officeId;
+    textParts.forEach(p => {
+      if (isHidden(String(p.key))) return;
+      const raw = (r as any)[p.key];
+      if (typeof raw === 'string' && raw.trim().length > 2) {
+        yestBlock.push({
+          id: `yest-news-${r.officeId}-${String(p.key)}`,
+          icon: 'news',
+          tone: 'info',
+          source: `أمس · محافظة ${gov}`,
+          day: 'yesterday',
+          text: `${p.label}: ${clip(raw)}`,
+        });
+      }
+    });
+  });
+
+  // If today has zero data, still show a friendly lead-in so ticker isn't empty.
+  if (todayBlock.length === 0 && yestBlock.length === 0) {
+    return [{
+      id: 'idle',
+      icon: 'info',
+      tone: 'info',
+      source: 'موجز',
+      day: 'today',
+      text: 'لا توجد بيانات جديدة حتى الآن — سيتم تحديث الموجز فور استلام أول تقرير.',
+    }];
+  }
+
+  // Sequence: today → yesterday, then CSS marquee repeats infinitely.
+  return [...todayBlock, ...yestBlock];
 }
