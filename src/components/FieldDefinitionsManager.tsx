@@ -296,6 +296,7 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
           : [],
         withQuantity: fieldType === 'select' ? withQuantity : false,
         allowFreeText: fieldType === 'select' ? allowFreeText : false,
+        isFrozen: isFrozen,
       });
       toast.success(isNew ? 'تم إنشاء الحقل' : 'تم الحفظ');
       onSaved();
