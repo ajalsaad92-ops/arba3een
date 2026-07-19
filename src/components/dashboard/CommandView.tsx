@@ -333,23 +333,24 @@ function AnalyticsSection({ effectiveFilter }: any) {
                 {officesForChart.map((o:Office,i:number)=> <Line key={o.code} type="monotone" dataKey={o.code} stroke={SERIES_COLORS[i%8]} strokeWidth={2.5} dot={{ r:3 }} activeDot={{ r:5 }} name={o.nameAr.replace('مكتب ','')} />)}
               </LineChart>
             ) : visitorChartType==='vertical' ? (
-              <BarChart data={areaData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart data={areaData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barCategoryGap="18%" barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" vertical={false} />
                 <XAxis dataKey="date" tick={{ fill:'#64748B', fontSize:10 }} axisLine={{ stroke:'#232323' }} tickLine={false} />
                 <YAxis tick={{ fill:'#64748B', fontSize:10 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ background:'#0d0d0d', border:'1px solid #2a2a2a', borderRadius:8, fontSize:11 }} cursor={{ fill:'#F59E0B', fillOpacity:0.05 }} />
                 <Legend wrapperStyle={{ fontSize:10, paddingTop:12 }} iconType="circle" />
-                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={SERIES_COLORS[i%8]} name={o.nameAr.replace('مكتب ','')} radius={[4,4,0,0]} />)}
+                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={SERIES_COLORS[i%8]} name={o.nameAr.replace('مكتب ','')} radius={[6,6,0,0]} minPointSize={3} />)}
               </BarChart>
             ) : visitorChartType==='horizontal' ? (
-              <BarChart data={areaData} layout="vertical" margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+              <BarChart data={areaData} layout="vertical" margin={{ top: 10, right: 20, left: 0, bottom: 0 }} barCategoryGap="18%" barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" horizontal={false} />
                 <XAxis type="number" tick={{ fill:'#64748B', fontSize:10 }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="date" width={48} tick={{ fill:'#64748B', fontSize:10 }} axisLine={{ stroke:'#232323' }} tickLine={false} />
                 <Tooltip contentStyle={{ background:'#0d0d0d', border:'1px solid #2a2a2a', borderRadius:8, fontSize:11 }} cursor={{ fill:'#F59E0B', fillOpacity:0.05 }} />
                 <Legend wrapperStyle={{ fontSize:10, paddingTop:12 }} iconType="circle" />
-                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={SERIES_COLORS[i%8]} name={o.nameAr.replace('مكتب ','')} radius={[0,4,4,0]} />)}
+                {officesForChart.map((o:Office,i:number)=> <Bar key={o.code} dataKey={o.code} fill={SERIES_COLORS[i%8]} name={o.nameAr.replace('مكتب ','')} radius={[0,6,6,0]} minPointSize={3} />)}
               </BarChart>
+
             ) : (
               <AreaChart data={areaData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
