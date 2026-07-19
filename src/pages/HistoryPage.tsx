@@ -1,12 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
-import { FileSpreadsheet, Check, Clock } from 'lucide-react';
-import { formatNumber } from '../lib/utils';
-import * as XLSX from 'xlsx';
+import { FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import { operationalDate, operationalDateDaysAgo } from '../lib/opDate';
 import { EmptyState, Skeleton } from '../components/FormField';
+import { ArbaeenTemplateTable } from '../components/ArbaeenTemplateTable';
+import { exportArbaeenTemplate } from '../lib/exportArbaeenExcel';
 
 export default function HistoryPage() {
   const { state, actions, dispatch } = useOps();
