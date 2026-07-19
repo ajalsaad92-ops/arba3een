@@ -216,13 +216,12 @@ function computeDayAggregate(reports: any[], officeIds: string[], defs: ReportFi
   return base;
 }
 
-function AnalyticsSection({ agg, aggYesterday, trend, effectiveFilter, setSelectedOffice }: any) {
+function AnalyticsSection({ effectiveFilter }: any) {
   const { state } = useOps();
   const { offices } = useOffices();
   type VisitorChartType = 'area'|'line'|'vertical'|'horizontal';
   const [visitorChartType, setVisitorChartType] = usePersisted<VisitorChartType>('dash:visitorChartType', 'area');
   const [chartMetric, setChartMetric] = usePersisted<string>('dash:chartMetric', 'visitorsIn');
-  const [visitorFlow, setVisitorFlow] = usePersisted<'in'|'out'>('dash:visitorFlow','in');
 
   const availableOffices = useMemo(()=> offices.filter((o:Office)=> effectiveFilter.includes(o.id)), [offices, effectiveFilter]);
   const [selectedChartOffices, setSelectedChartOffices] = usePersisted<string[]>('dash:selectedChartOffices', availableOffices.slice(0,5).map(o=>o.id));
@@ -245,27 +244,6 @@ function AnalyticsSection({ agg, aggYesterday, trend, effectiveFilter, setSelect
   const activeMetric = CHART_METRICS.find(m=>m.id===chartMetric) || CHART_METRICS[0] || BUILTIN_CHART_METRICS[0];
   const officesForChart = useMemo(()=> availableOffices.filter(o=> selectedChartOffices.includes(o.id)).slice(0,8), [availableOffices, selectedChartOffices]);
 
-  const visibleIds = useMemo(
-    () => new Set(getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis)),
-    [state.customKpis, state.fieldDefinitions, state.hiddenKpis]
-  );
-  const additionalKpis = useMemo(() => {
-    const alreadyShown = new Set(['visitors', 'vehicles', 'deaths', 'violations', 'events', 'emergencies']);
-    const visible = [...visibleIds].filter(id => !alreadyShown.has(id));
-    const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
-    return visible.map(id => catalog.find(k => k.id === id)).filter(Boolean);
-  }, [visibleIds, state.fieldDefinitions]);
-
-  const sparklineFor = (key: string) => {
-    const days:number[] = [];
-    for (let d=13; d>=0; d--) {
-      const ds = operationalDateDaysAgo(d);
-      const dayAgg = computeDayAggregate(state.historicalReports.filter((r:any)=>r.reportDate===ds), effectiveFilter, state.fieldDefinitions);
-      days.push((dayAgg as any)[key] || 0);
-    }
-    days.push((agg as any)[key] || 0);
-    return days;
-  };
 
   const areaData = useMemo(()=>{
     const days:any[]=[];
