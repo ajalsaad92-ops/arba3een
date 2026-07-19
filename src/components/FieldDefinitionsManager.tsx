@@ -408,6 +408,14 @@ function FieldEditor({ initial, groupId, users, onCancel, onSaved }: any) {
         إخفاء الحقل (لن يظهر لأي مستخدم في نموذج التقرير)
       </label>
 
+      <label className="flex items-start gap-2 text-xs text-slate-300 mt-2 p-2 rounded-md bg-blue-500/5 border border-blue-500/30">
+        <input type="checkbox" checked={isFrozen} onChange={e => setIsFrozen(e.target.checked)} className="accent-blue-400 mt-0.5" />
+        <span>
+          <b className="text-blue-300">تجميد الحقل:</b> يُدخَل مرة واحدة ثم يُقفل. أي تعديل لاحق يتطلب طلب رسمي بموافقة المشرف ثم المدير العام.
+        </span>
+      </label>
+
+
       <FieldRow label={`تخصيص الحقل لمستخدمين محدّدين (${allowedUserIds.length === 0 ? 'الافتراضي: للكل' : allowedUserIds.length + ' مستخدم'})`}>
         <div className="bg-[#0d0d0d] border border-[#232323] rounded-md p-2 max-h-44 overflow-y-auto grid grid-cols-1 gap-1">
           {users.map((u: any) => (
