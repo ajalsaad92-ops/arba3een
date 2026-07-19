@@ -113,8 +113,8 @@ export default function FrozenRequestsPage() {
             {filtered.map(r => {
               const sm = STATUS_META[r.status];
               const off = officeById(r.officeId);
-              const canAct = (r.status === 'pending_supervisor' && (isSupervisor || isDirector))
-                          || (r.status === 'pending_director' && isDirector);
+              const canAct = (isSupervisor || isDirector) &&
+                (r.status === 'pending_supervisor' || r.status === 'pending_director');
               return (
                 <div key={r.id} className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-4">
                   <div className="flex items-start gap-3 flex-wrap">
