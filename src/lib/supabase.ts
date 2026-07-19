@@ -1,26 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../integrations/supabase/types'
+// Single Supabase client for the whole app.
+// Re-export the auto-generated client so there is exactly one GoTrueClient
+// instance sharing the auth storage key (fixes the "Multiple GoTrueClient
+// instances detected" warning and prevents session races).
+export { supabase } from '../integrations/supabase/client'
 
-// Runtime env first, then the project's public Cloud connection as a safe
-// fallback for published Vite builds where env vars were not injected.
-const env = import.meta.env as Record<string, string | undefined>
-const CLOUD_URL = 'https://yqwspssnpeyvzhpdoqpy.supabase.co'
-const CLOUD_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxd3Nwc3NucGV5dnpocGRvcXB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTc5MTcsImV4cCI6MjA5Njg3MzkxN30.lAFrMYqlkmBmnMWFo_ypo5rlxmC-RV9HTqg0mU5_M-o'
-
-const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL || CLOUD_URL
-const supabaseAnonKey =
-  env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  env.VITE_SUPABASE_ANON_KEY ||
-  env.SUPABASE_ANON_KEY ||
-  env.SUPABASE_PUBLISHABLE_KEY ||
-  CLOUD_PUBLISHABLE_KEY
-
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
-
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-})
+// Kept for legacy call sites — the generated client is always configured.
+export const isSupabaseConfigured = true
