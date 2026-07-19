@@ -155,7 +155,7 @@ export default function EmergencyPage() {
               <div className={`text-[10px] mt-1 ${descCountColor}`} aria-live="polite">{descLen} حرف — الحد الأدنى 20</div>
             </FormField>
 
-            <FormField label="الموقع" error={errors.location || errors.mgrs} hint="GPS أو MGRS — أحدهما يكفي" id="em-loc">
+            <FormField label="الموقع (اختياري)" error={errors.location || errors.mgrs} hint="GPS أو MGRS — اختياري" id="em-loc">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   type="button"
