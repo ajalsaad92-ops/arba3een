@@ -6,11 +6,12 @@ import { operationalDateDaysAgo } from '../../lib/opDate';
 import { Users, Truck, AlertOctagon, Activity, X, Download, BarChart3, TrendingUp, BarChart2 } from 'lucide-react';
 import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
 import { extraFieldNumericValue } from '../../lib/extraFieldStats';
-import { getEffectiveKpiCatalog, getVisibleKpiIds } from '../../lib/kpiCatalog';
+import { getEffectiveKpiCatalog, getVisibleKpiIds, isBuiltInFieldHidden } from '../../lib/kpiCatalog';
 import { getHeatColor, toIntensity } from '../Heatmap';
 import { exportComprehensiveReports } from '../../lib/exportReports';
 import { toast } from 'sonner';
 import type { Office } from '../../data/offices';
+import type { ReportFieldDefinition } from '../../data/types';
 
 function usePersisted<T>(key: string, initial: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [v, setV] = React.useState<T>(()=>{ try{ const r=localStorage.getItem(key); return r?JSON.parse(r):initial;} catch {return initial;} });
@@ -18,28 +19,34 @@ function usePersisted<T>(key: string, initial: T): [T, React.Dispatch<React.SetS
   return [v, setV];
 }
 
-const CHART_METRICS = [
-  { id: 'visitorsIn', label: 'الوافدون', get: (r:any)=>r.visitorsIn||0 },
-  { id: 'visitorsOut', label: 'المغادرون', get: (r:any)=>r.visitorsOut||0 },
-  { id: 'vehicles', label: 'العجلات', get: (r:any)=>r.vehiclesCount||0 },
-  { id: 'processions', label: 'المواكب', get: (r:any)=>r.processionsCount||0 },
-  { id: 'deaths', label: 'الوفيات', get: (r:any)=>r.deathsCount||0 },
-  { id: 'violations', label: 'الخروقات', get: (r:any)=>r.violationsCount||0 },
-  { id: 'events', label: 'الفعاليات', get: (r:any)=>r.eventsCount||0 },
-  { id: 'incidents', label: 'الحوادث', get: (r:any)=>r.incidentsCount||0 },
+const ALL_CHART_METRICS = [
+  { id: 'visitorsIn', label: 'الوافدون', field: 'visitorsIn', get: (r:any)=>r.visitorsIn||0 },
+  { id: 'visitorsOut', label: 'المغادرون', field: 'visitorsOut', get: (r:any)=>r.visitorsOut||0 },
+  { id: 'vehicles', label: 'العجلات', field: 'vehiclesCount', get: (r:any)=>r.vehiclesCount||0 },
+  { id: 'processions', label: 'المواكب', field: 'processionsCount', get: (r:any)=>r.processionsCount||0 },
+  { id: 'deaths', label: 'الوفيات', field: 'deathsCount', get: (r:any)=>r.deathsCount||0 },
+  { id: 'violations', label: 'الخروقات', field: 'violationsCount', get: (r:any)=>r.violationsCount||0 },
+  { id: 'events', label: 'الفعاليات', field: 'eventsCount', get: (r:any)=>r.eventsCount||0 },
+  { id: 'incidents', label: 'الحوادث', field: 'incidentsCount', get: (r:any)=>r.incidentsCount||0 },
 ];
 
-function computeAggregates(reports: any[], officeIds: string[], extraKeys:string[]=[]){
+function computeAggregates(reports: any[], officeIds: string[], extraKeys:string[]=[], defs: ReportFieldDefinition[]=[]){
   const filt = officeIds.length===0 ? reports : reports.filter(r=>officeIds.includes(r.officeId));
   const base: Record<string,number> = { visitors:0, visitorsIn:0, visitorsOut:0, vehicles:0, processions:0, deaths:0, violations:0, events:0, incidents:0, resources:0, deployment:0 };
   for(const k of extraKeys) base[`x:${k}`]=0;
+  const h = (key:string) => isBuiltInFieldHidden(defs, key);
   for(const r of filt){
-    base.visitorsIn += r.visitorsIn||0; base.visitorsOut += r.visitorsOut||0;
-    base.visitors += (r.visitorsIn||0)+(r.visitorsOut||0);
-    base.vehicles += r.vehiclesCount||0; base.processions += r.processionsCount||0;
-    base.deaths += r.deathsCount||0; base.violations += r.violationsCount||0;
-    base.events += r.eventsCount||0; base.incidents += r.incidentsCount||0;
-    base.resources += extraFieldNumericValue(r.resourcesDistributed); base.deployment += r.deploymentCount||0;
+    if(!h('visitorsIn')) base.visitorsIn += r.visitorsIn||0;
+    if(!h('visitorsOut')) base.visitorsOut += r.visitorsOut||0;
+    base.visitors = base.visitorsIn + base.visitorsOut;
+    if(!h('vehiclesCount')) base.vehicles += r.vehiclesCount||0;
+    if(!h('processionsCount')) base.processions += r.processionsCount||0;
+    if(!h('deathsCount')) base.deaths += r.deathsCount||0;
+    if(!h('violationsCount')) base.violations += r.violationsCount||0;
+    if(!h('eventsCount')) base.events += r.eventsCount||0;
+    if(!h('incidentsCount')) base.incidents += r.incidentsCount||0;
+    if(!h('resourcesDistributed')) base.resources += extraFieldNumericValue(r.resourcesDistributed);
+    if(!h('deploymentCount')) base.deployment += r.deploymentCount||0;
     if(r.extraFields){ for(const k of extraKeys){ base[`x:${k}`] += extraFieldNumericValue(r.extraFields[k]); }}
   }
   return base;
