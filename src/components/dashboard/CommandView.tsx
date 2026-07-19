@@ -44,30 +44,35 @@ export const CommandView = React.memo(function CommandView({ agg, trend, aggYest
       <div className="lg:w-[45%] flex flex-col gap-3 lg:overflow-y-auto">
         <CustomKpiGrid agg={agg} aggYesterday={aggYesterday} trend={trend} activeEmergencies={activeEmergencies} />
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
-            <div className="text-xs font-bold text-slate-300 mb-2">توزيع الزوار بالمحافظات</div>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={governorateData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
-                  {governorateData.map((_:any,i:number)=><Cell key={i} fill={GOVERNORATE_COLORS[i % GOVERNORATE_COLORS.length]} stroke="#0d0d0d" />)}
-                </Pie>
-                <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid #232323', borderRadius:8, fontSize:11 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="text-[10px] text-slate-500 text-center mt-1">المجموع: {formatNumber(agg.visitors)} زائر</div>
-          </div>
-          <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
-            <div className="text-xs font-bold text-slate-300 mb-2">ترتيب المكاتب — الفعاليات</div>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={eventsRanked} layout="vertical" margin={{ left:5, right:10, top:5, bottom:5 }}>
-                <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" width={60} tick={{ fill:'#94A3B8', fontSize:8 }} />
-                <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid #232323', borderRadius:8, fontSize:10 }} />
-                <Bar dataKey="value" fill="#F59E0B" radius={[0,4,4,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {!visitorsHidden && (
+            <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
+              <div className="text-xs font-bold text-slate-300 mb-2">توزيع الزوار بالمحافظات</div>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={governorateData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
+                    {governorateData.map((_:any,i:number)=><Cell key={i} fill={GOVERNORATE_COLORS[i % GOVERNORATE_COLORS.length]} stroke="#0d0d0d" />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid #232323', borderRadius:8, fontSize:11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="text-[10px] text-slate-500 text-center mt-1">المجموع: {formatNumber(agg.visitors)} زائر</div>
+            </div>
+          )}
+          {!eventsHidden && (
+            <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-3">
+              <div className="text-xs font-bold text-slate-300 mb-2">ترتيب المكاتب — الفعاليات</div>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={eventsRanked} layout="vertical" margin={{ left:5, right:10, top:5, bottom:5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="name" width={60} tick={{ fill:'#94A3B8', fontSize:8 }} />
+                  <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid #232323', borderRadius:8, fontSize:10 }} />
+                  <Bar dataKey="value" fill="#F59E0B" radius={[0,4,4,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
+
 
         {/* report status table */}
         <ReportStatusTable effectiveFilter={effectiveFilter} onSelect={setSelectedOffice} />
