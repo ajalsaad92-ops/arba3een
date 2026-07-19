@@ -2,9 +2,17 @@ import { useState } from 'react';
 import { useOps } from '../store/opsStore';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Zap } from 'lucide-react';
 import { FormField } from '../components/FormField';
 import { validateEmail } from '../lib/validation';
+
+const DEMO_ACCOUNTS: { label: string; email: string; password: string }[] = [
+  { label: 'مدير عام',   email: 'u-director@ops.iq',   password: '123456' },
+  { label: 'مشرف',       email: 'u-supervisor@ops.iq', password: '123456' },
+  { label: 'مدير مكتب',  email: 'u-manager@ops.iq',    password: '123456' },
+  { label: 'مُدخل بيانات', email: 'u-agent@ops.iq',    password: '123456' },
+];
+
 
 export default function LoginPage() {
   const { actions, dispatch } = useOps();
@@ -24,20 +32,30 @@ export default function LoginPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleLogin = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!validate()) return;
+  const doSignIn = async (em: string, pw: string) => {
     setSubmitting(true);
     try {
-      const { user, error } = await actions.signIn(email, password);
+      const { user, error } = await actions.signIn(em, pw);
       if (error || !user) { toast.error(error || 'فشل تسجيل الدخول'); return; }
-      // Set the authenticated user synchronously so the protected route is ready
-      // on the very first navigation (prevents the "login twice" bounce).
       dispatch({ type: 'AUTH_SUCCESS', user });
       toast.success(`أهلاً ${user.fullNameAr}`);
       nav(user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
     } finally { setSubmitting(false); }
   };
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!validate()) return;
+    await doSignIn(email, password);
+  };
+
+  const quickLogin = async (acc: { email: string; password: string }) => {
+    setEmail(acc.email);
+    setPassword(acc.password);
+    setErrors({});
+    await doSignIn(acc.email, acc.password);
+  };
+
 
 
   return (
@@ -74,6 +92,24 @@ export default function LoginPage() {
             <LogIn className="w-4 h-4" />
             {submitting ? 'جاري تسجيل الدخول…' : 'تسجيل الدخول'}
           </button>
+
+          <div className="pt-3 border-t border-[#232323] space-y-2">
+            <div className="flex items-center justify-center gap-2 text-[11px] text-amber-400/80">
+              <Zap className="w-3 h-3" />
+              <span>دخول سريع (للتجربة)</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {DEMO_ACCOUNTS.map(acc => (
+                <button key={acc.email} type="button" disabled={submitting}
+                  onClick={()=>quickLogin(acc)}
+                  className="px-2 py-2 rounded-lg bg-[#0d0d0d] border border-[#2c2c2c] hover:border-amber-500/50 hover:bg-amber-500/5 text-[12px] text-slate-200 font-bold disabled:opacity-50 transition-colors">
+                  {acc.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+
 
           <div className="pt-2 border-t border-[#232323]">
             <div className="text-[11px] text-slate-500 text-center">
