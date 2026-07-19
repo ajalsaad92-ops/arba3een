@@ -165,10 +165,37 @@ export interface ReportFieldDefinition {
   withQuantity: boolean;
   /** For `select` fields: add an "أخرى" option that lets the user type freely. */
   allowFreeText: boolean;
+  /** When true, the field is entered once and locked; changes require supervisor + director approval. */
+  isFrozen: boolean;
 }
 
 /** A single picked item for a `select`+quantity field. */
 export interface SelectQtyItem {
   item: string;
   qty: number;
+}
+
+export type FrozenChangeStatus = 'pending_supervisor' | 'pending_director' | 'approved' | 'rejected';
+
+export interface FrozenFieldChangeRequest {
+  id: string;
+  officeId: string;
+  fieldKey: string;
+  fieldLabelAr: string | null;
+  currentValue: any;
+  requestedValue: any;
+  reason: string;
+  status: FrozenChangeStatus;
+  requestedById: string;
+  requestedByName: string | null;
+  supervisorApprovedById?: string | null;
+  supervisorApprovedAt?: string | null;
+  directorApprovedById?: string | null;
+  directorApprovedAt?: string | null;
+  rejectedById?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  appliedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
