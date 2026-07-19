@@ -6,12 +6,20 @@ export interface Profile {
   role: Role;
   officeId: string;
   permittedOfficeIds: string[];
+  /**
+   * Per-user permission overrides. Any key from `PERMISSION_CATALOG`
+   * (see `src/lib/permissions.ts`) may appear here. When a key is
+   * missing, the role-based default from `ROLE_DEFAULTS` is used.
+   * The legacy keys below are kept for backward compatibility with
+   * existing rows and callers.
+   */
   specialPermissions: {
-    canExport: boolean;
-    canAddCrossings: boolean;
-    canViewAllOffices: boolean;
-    canOpenWindow: boolean;
-    canEditReports: boolean;
+    canExport?: boolean;
+    canAddCrossings?: boolean;
+    canViewAllOffices?: boolean;
+    canOpenWindow?: boolean;
+    canEditReports?: boolean;
+    [key: string]: boolean | undefined;
   };
   isActive: boolean;
   createdAt: string;
