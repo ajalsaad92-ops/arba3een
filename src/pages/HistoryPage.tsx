@@ -1,12 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useOps } from '../store/opsStore';
 import { useOffices } from '../lib/offices';
-import { FileSpreadsheet, Check, Clock } from 'lucide-react';
-import { formatNumber } from '../lib/utils';
-import * as XLSX from 'xlsx';
+import { FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import { operationalDate, operationalDateDaysAgo } from '../lib/opDate';
 import { EmptyState, Skeleton } from '../components/FormField';
+import { ArbaeenTemplateTable } from '../components/ArbaeenTemplateTable';
+import { exportArbaeenTemplate } from '../lib/exportArbaeenExcel';
 
 export default function HistoryPage() {
   const { state, actions, dispatch } = useOps();
@@ -43,25 +43,17 @@ export default function HistoryPage() {
   const meta = state.historicalMeta;
   const totalPages = Math.max(1, Math.ceil(meta.total / PAGE_SIZE));
 
-  // status filter client-side (we could move this server-side too – simple for now)
+  // Client-side status filter — the on-screen table below aggregates per-office
+  // for the whole filtered period, matching the official Excel template layout.
   const filtered = useMemo(() => {
     if (statusFilter === 'all') return reports;
     return reports.filter(r => statusFilter === 'late' ? r.isLateSubmission : !r.isLateSubmission);
   }, [reports, statusFilter]);
 
-  const totals = useMemo(() => filtered.reduce((acc, r) => ({
-    visitorsIn: acc.visitorsIn + (r.visitorsIn || 0),
-    visitorsOut: acc.visitorsOut + (r.visitorsOut || 0),
-    vehicles: acc.vehicles + (r.vehiclesCount || 0),
-    processions: acc.processions + (r.processionsCount || 0),
-    events: acc.events + (r.eventsCount || 0),
-    incidents: acc.incidents + (r.incidentsCount || 0),
-    deaths: acc.deaths + (r.deathsCount || 0),
-  }), { visitorsIn: 0, visitorsOut: 0, vehicles: 0, processions: 0, events: 0, incidents: 0, deaths: 0 }), [filtered]);
-
   const handleExport = async () => {
     try {
       const toastId = toast.loading('جاري تجهيز التصدير...');
+      // Fetch ALL matching reports for the range so the template totals are complete.
       let all: any[] = [];
       let p = 1, total = Infinity;
       while (all.length < total && p <= 25) {
@@ -69,41 +61,33 @@ export default function HistoryPage() {
         all = all.concat(res.data);
         total = res.total; p++;
       }
+      if (statusFilter !== 'all') {
+        all = all.filter((r: any) => statusFilter === 'late' ? r.isLateSubmission : !r.isLateSubmission);
+      }
       if (!all.length) { toast.error('لا توجد بيانات', { id: toastId }); return; }
-      const wb = XLSX.utils.book_new();
-      const sheet = all.map(r => ({
-        'التاريخ': r.reportDate,
-        'المكتب': officeById(r.officeId)?.nameAr ?? r.officeId,
-        'المحافظة': officeById(r.officeId)?.governorateAr ?? '',
-        'داخلون': r.visitorsIn, 'خارجون': r.visitorsOut,
-        'العجلات': r.vehiclesCount, 'المواكب': r.processionsCount,
-        'الفعاليات': r.eventsCount, 'الحوادث': r.incidentsCount,
-        'الوفيات': r.deathsCount,
-        'الحالة': r.isLateSubmission ? 'متأخر' : 'في الوقت',
-      }));
-      const ws = XLSX.utils.json_to_sheet(sheet);
-      ws['!views'] = [{ RTL: true }];
-      XLSX.utils.book_append_sheet(wb, ws, 'التقارير');
-      XLSX.writeFile(wb, `احصائيات_${fromDate}_الى_${toDate}.xlsx`);
+      await exportArbaeenTemplate(all, state.fieldDefinitions, {
+        toDate,
+        fileName: `احصاء_الاربعين_${fromDate}_الى_${toDate}.xlsx`,
+      });
       toast.success(`تم تصدير ${all.length} تقرير`, { id: toastId });
-      // reload current page
       actions.loadHistoricalPage(page, PAGE_SIZE, filters, dispatch);
     } catch (e: any) { toast.error(e?.message || 'فشل التصدير'); }
   };
 
-  const toggleExpand = (id: string) => setExpanded(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  // (row-level expand no longer used with the template table view)
+  void expanded; void setExpanded; void officeById;
 
   return (
     <div className="h-full overflow-y-auto bg-[#0d0d0d] p-3 md:p-5" dir="rtl">
-      <div className="max-w-7xl mx-auto space-y-4">
+      <div className="max-w-[1600px] mx-auto space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="text-2xl font-display font-black text-amber-400">السجل التاريخي</div>
-            <div className="text-xs text-slate-400 mt-1">{loading ? 'جاري التحميل…' : `${meta.total} تقرير إجمالي — صفحة ${page} / ${totalPages}`}</div>
+            <div className="text-xs text-slate-400 mt-1">{loading ? 'جاري التحميل…' : `${meta.total} تقرير في النطاق — العرض تراكمي حسب القالب الرسمي`}</div>
           </div>
           <button onClick={handleExport} disabled={loading}
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm shadow-lg">
-            <FileSpreadsheet className="w-4 h-4" /> تصدير Excel
+            <FileSpreadsheet className="w-4 h-4" /> تصدير Excel (القالب الرسمي)
           </button>
         </div>
 
@@ -138,6 +122,13 @@ export default function HistoryPage() {
         </div>
 
         <div className="bg-[#1a1a1a] border border-[#232323] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#232323] flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <div className="text-sm font-bold text-amber-300">احصائية مسيرة الاربعين — مديرية شؤون المحافظات</div>
+              <div className="text-[11px] text-slate-500">تجميع تراكمي حسب المكتب لكامل الفترة المحددة ({fromDate} → {toDate})</div>
+            </div>
+            <div className="text-[11px] text-slate-500">{filtered.length} تقرير تم تجميعه</div>
+          </div>
           {loading ? (
             <div className="p-6 space-y-2">
               {[...Array(6)].map((_,i)=> <Skeleton key={i} className="h-10 w-full" />)}
@@ -145,70 +136,10 @@ export default function HistoryPage() {
           ) : filtered.length === 0 ? (
             <EmptyState title="لا توجد تقارير" description="جرّب تغيير الفلاتر أو النطاق الزمني" />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-[#0d0d0d] border-b border-[#232323] text-slate-400">
-                  <tr>
-                    <th className="px-3 py-2 text-right">التاريخ</th>
-                    <th className="px-3 py-2 text-right">المكتب</th>
-                    <th className="px-3 py-2 text-right">داخلون</th>
-                    <th className="px-3 py-2 text-right">خارجون</th>
-                    <th className="px-3 py-2 text-right">عجلات</th>
-                    <th className="px-3 py-2 text-right">مواكب</th>
-                    <th className="px-3 py-2 text-right">وفيات</th>
-                    <th className="px-3 py-2 text-right">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#232323]">
-                  {filtered.map(r => {
-                    const isExp = expanded.has(r.id);
-                    return (
-                      <React.Fragment key={r.id}>
-                        <tr onClick={()=>toggleExpand(r.id)} className="hover:bg-[#232323]/40 cursor-pointer">
-                          <td className="px-3 py-2 text-slate-300 font-mono">{r.reportDate}</td>
-                          <td className="px-3 py-2 text-slate-200 font-semibold">{officeById(r.officeId)?.nameAr ?? r.officeId}</td>
-                          <td className="px-3 py-2 text-emerald-400 tabular-nums">{formatNumber(r.visitorsIn)}</td>
-                          <td className="px-3 py-2 text-amber-400 tabular-nums">{formatNumber(r.visitorsOut)}</td>
-                          <td className="px-3 py-2 tabular-nums">{formatNumber(r.vehiclesCount)}</td>
-                          <td className="px-3 py-2 tabular-nums">{r.processionsCount}</td>
-                          <td className="px-3 py-2 text-red-400 tabular-nums">{r.deathsCount}</td>
-                          <td className="px-3 py-2">
-                            {r.isLateSubmission
-                              ? <span className="text-amber-400 flex items-center gap-1"><Clock className="w-3 h-3" /> متأخر</span>
-                              : <span className="text-emerald-400 flex items-center gap-1"><Check className="w-3 h-3" /> في الوقت</span>}
-                          </td>
-                        </tr>
-                        {isExp && (
-                          <tr className="bg-[#0d0d0d]">
-                            <td colSpan={8} className="px-4 py-3 text-[11px] text-slate-300">
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {r.incidentsDetails && <div><b className="text-slate-500">حوادث:</b> {r.incidentsDetails}</div>}
-                                {r.violationsDetails && <div><b className="text-slate-500">خروقات:</b> {r.violationsDetails}</div>}
-                                {r.otherNotes && <div><b className="text-slate-500">ملاحظات:</b> {r.otherNotes}</div>}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="bg-amber-500/5 border-t-2 border-amber-500/30 text-amber-300 font-bold">
-                  <tr>
-                    <td colSpan={2} className="px-3 py-3">مجموع الصفحة</td>
-                    <td className="px-3 py-3">{formatNumber(totals.visitorsIn)}</td>
-                    <td className="px-3 py-3">{formatNumber(totals.visitorsOut)}</td>
-                    <td className="px-3 py-3">{formatNumber(totals.vehicles)}</td>
-                    <td className="px-3 py-3">{totals.processions}</td>
-                    <td className="px-3 py-3 text-red-400">{totals.deaths}</td>
-                    <td className="px-3 py-3 text-[10px] text-slate-400">{filtered.length} تقرير</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+            <ArbaeenTemplateTable reports={filtered} fieldDefs={state.fieldDefinitions} />
           )}
           <div className="p-3 border-t border-[#232323] flex items-center justify-between text-xs">
-            <div className="text-slate-500">إجمالي: {meta.total} — صفحة {page} / {totalPages}</div>
+            <div className="text-slate-500">صفحة البيانات: {page} / {totalPages} — الإجمالي {meta.total}</div>
             <div className="flex gap-1">
               <button disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)} className="px-3 py-1 rounded bg-[#232323] hover:bg-[#2c2c2c] disabled:opacity-30">السابق</button>
               <button disabled={page >= totalPages || loading} onClick={() => setPage(p => p + 1)} className="px-3 py-1 rounded bg-[#232323] hover:bg-[#2c2c2c] disabled:opacity-30">التالي</button>
