@@ -45,21 +45,17 @@ export default function FrozenRequestsPage() {
   const filtered = useMemo(() => {
     if (tab === 'mine') return items.filter(r => r.requestedById === user.id);
     if (tab === 'done') return items.filter(r => r.status === 'approved' || r.status === 'rejected');
-    // pending
-    return items.filter(r =>
-      isDirector ? r.status === 'pending_director' :
-      isSupervisor ? r.status === 'pending_supervisor' :
-      false
-    );
-  }, [items, tab, user.id, isDirector, isSupervisor]);
+    // pending: any pending request is visible to both supervisor and director.
+    return items.filter(r => r.status === 'pending_supervisor' || r.status === 'pending_director');
+  }, [items, tab, user.id]);
 
   const approve = async (r: FrozenFieldChangeRequest) => {
     if (!isDirector && !isSupervisor) return;
     setBusyId(r.id);
     const t = toast.loading('جاري الموافقة...');
     try {
-      await api.approveFrozenRequest(r.id, user.id, isDirector && r.status === 'pending_director' ? 'director' : 'supervisor');
-      toast.success('تمت الموافقة', { id: t });
+      await api.approveFrozenRequest(r.id, user.id, isDirector ? 'director' : 'supervisor');
+      toast.success('تمت الموافقة وتطبيق التعديل', { id: t });
       await load();
     } catch (e: any) { toast.error(e?.message || 'فشل', { id: t }); }
     finally { setBusyId(null); }
