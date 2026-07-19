@@ -3,7 +3,7 @@
  * Same hierarchical Arabic headers, same 16-office rows, same totals row.
  * Rendered from aggregated report data supplied by the caller.
  */
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   TEMPLATE_OFFICES,
   TEMPLATE_COLUMNS,
