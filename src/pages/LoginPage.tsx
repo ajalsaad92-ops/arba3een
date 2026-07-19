@@ -19,6 +19,9 @@ const DEMO_ACCOUNTS: { label: string; email: string; password: string }[] = [
 export default function LoginPage() {
   const { actions, dispatch } = useOps();
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get('next');
+  const safeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
