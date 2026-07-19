@@ -64,6 +64,28 @@ export default function ReportPage() {
   };
   const isLocked = (f: ReportFieldDefinition): boolean => !!f.isFrozen && hasPriorValue(f);
 
+  // Pre-fill locked (frozen) fields with the prior value so the user sees them.
+  useEffect(() => {
+    const nextForm: Record<string, any> = {};
+    const nextLoc: Record<string, any> = {};
+    const nextRoutes: Record<string, any> = {};
+    let dirty = false;
+    for (const g of plan) for (const f of g.fields) {
+      if (!isLocked(f)) continue;
+      const v = priorValueOf(f);
+      if (f.fieldType === 'location') { nextLoc[f.fieldKey] = v; dirty = true; }
+      else if (f.fieldType === 'multi_location' || f.fieldType === 'route') { nextRoutes[f.fieldKey] = Array.isArray(v) ? v : []; dirty = true; }
+      else { nextForm[f.fieldKey] = v; dirty = true; }
+    }
+    if (dirty) {
+      setForm(prev => ({ ...nextForm, ...prev, ...nextForm }));
+      setLocations(prev => ({ ...nextLoc, ...prev, ...nextLoc }));
+      setRoutes(prev => ({ ...nextRoutes, ...prev, ...nextRoutes }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priorReport, state.fieldDefinitions]);
+
+
 
   const reportExists = state.todayReports.find(r => r.officeId === user.officeId);
   const today = operationalDate();
