@@ -44,6 +44,7 @@ export default function LoginPage() {
       if (error || !user) { toast.error(error || 'فشل تسجيل الدخول'); return; }
       dispatch({ type: 'AUTH_SUCCESS', user });
       toast.success(`أهلاً ${user.fullNameAr}`);
+      if (safeNext) { nav(safeNext, { replace: true }); return; }
       nav(user.role === 'agent' ? '/report' : '/dashboard', { replace: true });
     } finally { setSubmitting(false); }
   };
