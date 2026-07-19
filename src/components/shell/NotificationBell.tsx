@@ -25,13 +25,13 @@ export default function NotificationBell({ open, onOpenChange, isViewer }: Props
   const { state, dispatch } = useOps();
   const navigate = useNavigate();
 
-  const handleClick = (a: { id: string; type: string; targetPath?: string }) => {
+  const handleClick = (a: typeof state.lastActivity[number]) => {
     dispatch({ type: 'MARK_NOTIFICATION_READ', id: a.id });
     onOpenChange(false);
     navigate(isViewer ? '/dashboard' : notifTarget(a.type, a.targetPath, isViewer));
   };
 
-  const items = state.lastActivity.filter(a => !(isViewer && a.type === 'emergency'));
+  const items = state.lastActivity.filter((a) => !(isViewer && a.type === 'emergency'));
 
   return (
     <div className="relative">
