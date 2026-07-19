@@ -54,7 +54,7 @@ export default function WalkieTalkie() {
   const pick = (t: Target) => { setTarget(t); setPickerOpen(false); };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-950/40 to-[#0B0F19] border-2 border-indigo-500/30 rounded-2xl p-5 md:p-6 mt-5">
+    <div className="bg-gradient-to-br from-indigo-950/40 to-[#070B09] border-2 border-indigo-500/30 rounded-2xl p-5 md:p-6 mt-5">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
           <Radio className="w-6 h-6" />
@@ -74,7 +74,7 @@ export default function WalkieTalkie() {
         <button
           type="button"
           onClick={() => setPickerOpen((o) => !o)}
-          className="w-full flex items-center justify-between gap-2 bg-[#1E293B] border border-[#263244] rounded-lg px-3 py-3 text-sm text-white hover:border-indigo-500/40 transition-colors"
+          className="w-full flex items-center justify-between gap-2 bg-[#16211D] border border-[#1F2D28] rounded-lg px-3 py-3 text-sm text-white hover:border-indigo-500/40 transition-colors"
         >
           <span className="flex items-center gap-2">
             <Users className="w-4 h-4 text-indigo-300" />
@@ -85,7 +85,7 @@ export default function WalkieTalkie() {
         </button>
 
         {pickerOpen && (
-          <div className="absolute z-20 mt-1 w-full bg-[#111827] border border-[#1E293B] rounded-lg shadow-2xl max-h-72 overflow-y-auto p-1 animate-fade-in-up">
+          <div className="absolute z-20 mt-1 w-full bg-[#0E1512] border border-[#16211D] rounded-lg shadow-2xl max-h-72 overflow-y-auto p-1 animate-fade-in-up">
             <button
               onClick={() => pick({ mode: 'all' })}
               className="w-full text-right px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-indigo-500/15"
@@ -121,7 +121,7 @@ export default function WalkieTalkie() {
       </div>
 
       {/* Who will hear this call — based on LIVE presence (real connected users) */}
-      <div className="mb-4 rounded-lg bg-[#0B0F19] border border-[#1E293B] p-3">
+      <div className="mb-4 rounded-lg bg-[#070B09] border border-[#16211D] p-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1.5">
             <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400" /> من سيسمع نداءك الآن (متصلون فعلياً)
@@ -141,7 +141,7 @@ export default function WalkieTalkie() {
                 { label: 'مدخلو البيانات', value: recipients.agent },
                 { label: 'غيرهم', value: recipients.other },
               ].map((c) => (
-                <div key={c.label} className="rounded-md bg-[#111827] border border-[#1E293B] px-2 py-1.5 text-center">
+                <div key={c.label} className="rounded-md bg-[#0E1512] border border-[#16211D] px-2 py-1.5 text-center">
                   <div className="text-base font-black text-slate-100">{c.value}</div>
                   <div className="text-[10px] text-slate-500">{c.label}</div>
                 </div>
@@ -163,7 +163,7 @@ export default function WalkieTalkie() {
 
       {/* Director-only: live online list + who actually heard the last call */}
       {isDirector && (
-        <div className="mb-4 rounded-lg bg-[#0B0F19] border border-indigo-500/20 p-3 space-y-3">
+        <div className="mb-4 rounded-lg bg-[#070B09] border border-indigo-500/20 p-3 space-y-3">
           <div>
             <div className="text-[11px] text-slate-400 font-bold mb-1.5 flex items-center gap-1.5">
               <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400" /> المتصلون الآن ({onlineUsers.length})
@@ -173,7 +173,7 @@ export default function WalkieTalkie() {
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {onlineUsers.map((u) => (
-                  <span key={u.id} className="text-[10px] px-2 py-0.5 rounded-full bg-[#111827] border border-[#1E293B] text-slate-300">
+                  <span key={u.id} className="text-[10px] px-2 py-0.5 rounded-full bg-[#0E1512] border border-[#16211D] text-slate-300">
                     {u.name} <span className="text-slate-500">· {ROLE_LABELS[u.role]}</span>
                   </span>
                 ))}
@@ -208,7 +208,7 @@ export default function WalkieTalkie() {
           className={`w-full mb-3 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 border ${
             directorListening
               ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-              : 'bg-[#1E293B] border-[#263244] text-slate-400 hover:text-slate-200'
+              : 'bg-[#16211D] border-[#1F2D28] text-slate-400 hover:text-slate-200'
           }`}
         >
           {directorListening ? <Headphones className="w-4 h-4" /> : <HeadphoneOff className="w-4 h-4" />}
@@ -253,7 +253,7 @@ export default function WalkieTalkie() {
         className={`w-full mt-3 py-2.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-2 border ${
           bgEnabled
             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-            : 'bg-[#1E293B] border-[#263244] text-slate-400 hover:text-slate-200'
+            : 'bg-[#16211D] border-[#1F2D28] text-slate-400 hover:text-slate-200'
         }`}
       >
         {bgEnabled ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5" />}

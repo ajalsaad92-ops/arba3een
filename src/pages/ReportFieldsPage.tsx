@@ -3,7 +3,7 @@ import { Settings2 } from 'lucide-react';
 
 export default function ReportFieldsPage() {
   return (
-    <div className="h-full overflow-y-auto bg-[#0B0F19] p-3 md:p-5">
+    <div className="h-full overflow-y-auto bg-[#070B09] p-3 md:p-5">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">

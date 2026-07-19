@@ -83,9 +83,9 @@ export default function DashboardPage() {
     `${state.officeFilter.length} مكاتب`;
 
   return (
-    <div className="h-full flex flex-col bg-[#0B0F19] overflow-hidden">
-      <div className="shrink-0 px-4 pt-3 pb-2 flex items-center gap-3 flex-wrap border-b border-[#1E293B]">
-        <div className="flex items-center gap-1 bg-[#111827] border border-[#1E293B] rounded-lg p-1">
+    <div className="h-full flex flex-col bg-[#070B09] overflow-hidden">
+      <div className="shrink-0 px-4 pt-3 pb-2 flex items-center gap-3 flex-wrap border-b border-[#16211D]">
+        <div className="flex items-center gap-1 bg-[#0E1512] border border-[#16211D] rounded-lg p-1">
           {[
             { id:'ops', label:'العمليات', icon: Map },
             { id:'command', label:'القيادة', icon: Activity },
@@ -102,21 +102,21 @@ export default function DashboardPage() {
         {user.role !== 'agent' && (
           <div className="relative">
             <button onClick={()=>setFilterOpen(!filterOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111827] border border-[#1E293B] text-xs text-slate-300">
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0E1512] border border-[#16211D] text-xs text-slate-300">
               <span>المكاتب:</span><span className="text-amber-400 font-bold">{officeFilterLabel}</span>
               <Search className="w-3 h-3 text-slate-500" />
             </button>
             {filterOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={()=>setFilterOpen(false)} />
-                <div className="absolute right-0 mt-2 w-72 bg-[#111827] border border-[#1E293B] rounded-xl shadow-2xl z-40 max-h-96 overflow-hidden">
-                  <div className="p-2 border-b border-[#1E293B]">
+                <div className="absolute right-0 mt-2 w-72 bg-[#0E1512] border border-[#16211D] rounded-xl shadow-2xl z-40 max-h-96 overflow-hidden">
+                  <div className="p-2 border-b border-[#16211D]">
                     <input placeholder="بحث..." value={search} onChange={e=>setSearch(e.target.value)}
-                      className="w-full bg-[#0B0F19] border border-[#1E293B] rounded-md px-2 py-1.5 text-xs text-white" />
+                      className="w-full bg-[#070B09] border border-[#16211D] rounded-md px-2 py-1.5 text-xs text-white" />
                   </div>
                   <div className="max-h-64 overflow-y-auto p-1">
                     <button onClick={()=>{ dispatch({ type:'SET_OFFICE_FILTER', ids:[]}); setFilterOpen(false); }}
-                      className="w-full text-right px-2 py-1.5 rounded text-xs text-amber-400 hover:bg-[#1E293B] font-bold">
+                      className="w-full text-right px-2 py-1.5 rounded text-xs text-amber-400 hover:bg-[#16211D] font-bold">
                       ✓ كل المكاتب
                     </button>
                     {offices.filter(o=> permittedIds.includes(o.id) && o.nameAr.includes(search)).map(o=>{
@@ -125,7 +125,7 @@ export default function DashboardPage() {
                         <button key={o.id} onClick={()=>{
                           const next = sel ? state.officeFilter.filter(x=>x!==o.id) : [...state.officeFilter, o.id];
                           dispatch({ type:'SET_OFFICE_FILTER', ids: next });
-                        }} className={`w-full text-right px-2 py-1.5 rounded text-xs flex items-center gap-2 hover:bg-[#1E293B] ${sel?'text-amber-400':'text-slate-300'}`}>
+                        }} className={`w-full text-right px-2 py-1.5 rounded text-xs flex items-center gap-2 hover:bg-[#16211D] ${sel?'text-amber-400':'text-slate-300'}`}>
                           <span className={`w-3 h-3 rounded border ${sel?'bg-amber-500 border-amber-500':'border-slate-500'}`} />
                           {o.nameAr}
                         </button>
@@ -169,13 +169,13 @@ function DrillDown({ office, onClose }: { office: any; onClose: ()=>void }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-[500]" onClick={onClose} />
-      <div className="fixed top-0 left-0 bottom-0 w-[380px] max-w-[90vw] bg-[#0B0F19] border-r border-amber-500/30 z-[501] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-[#0B0F19] border-b border-[#1E293B] p-4 flex items-center justify-between">
+      <div className="fixed top-0 left-0 bottom-0 w-[380px] max-w-[90vw] bg-[#070B09] border-r border-amber-500/30 z-[501] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-[#070B09] border-b border-[#16211D] p-4 flex items-center justify-between">
           <div>
             <div className="text-lg font-display font-black text-amber-400">{office.nameAr}</div>
             <div className="text-xs text-slate-400">{office.governorateAr} • {report ? relativeTime(report.submittedAt) : 'لا يوجد تقرير'}</div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-[#1E293B] hover:bg-[#263244] flex items-center justify-center text-slate-400"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-[#16211D] hover:bg-[#1F2D28] flex items-center justify-center text-slate-400"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-4 space-y-4">
           {report ? (
@@ -188,7 +188,7 @@ function DrillDown({ office, onClose }: { office: any; onClose: ()=>void }) {
                 ['الحوادث', report.incidentsCount],
                 ['الفعاليات', report.eventsCount],
               ].map(([l,v])=>(
-                <div key={l as string} className="bg-[#111827] border border-[#1E293B] rounded-lg p-3">
+                <div key={l as string} className="bg-[#0E1512] border border-[#16211D] rounded-lg p-3">
                   <div className="text-[10px] text-slate-400">{l}</div>
                   <div className="text-lg font-black text-slate-200">{formatNumber(v as number)}</div>
                 </div>
@@ -199,9 +199,9 @@ function DrillDown({ office, onClose }: { office: any; onClose: ()=>void }) {
           )}
           <div>
             <div className="text-xs font-bold text-slate-300 mb-2">مستخدمو الموقع النشطون ({agents.length})</div>
-            {agents.length === 0 ? <div className="text-xs text-slate-500 bg-[#111827] border border-[#1E293B] rounded-lg p-3 text-center">لا يوجد</div> :
+            {agents.length === 0 ? <div className="text-xs text-slate-500 bg-[#0E1512] border border-[#16211D] rounded-lg p-3 text-center">لا يوجد</div> :
               agents.map(a=>(
-                <div key={a.agentId} className="flex items-center gap-2 p-2 rounded-md bg-[#111827] border border-[#1E293B] text-xs mb-1">
+                <div key={a.agentId} className="flex items-center gap-2 p-2 rounded-md bg-[#0E1512] border border-[#16211D] text-xs mb-1">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   <span className="flex-1">{a.agentName}</span>
                   <span className="text-slate-500 text-[10px]">{a.lat.toFixed(2)}, {a.lng.toFixed(2)}</span>
