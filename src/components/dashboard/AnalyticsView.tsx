@@ -58,13 +58,16 @@ export const AnalyticsView = React.memo(function AnalyticsView({ agg, trend, agg
 
   const activeMetric = CHART_METRICS.find(m=>m.id===chartMetric) || CHART_METRICS[0];
   const officesForChart = useMemo(()=> availableOffices.filter(o=> selectedChartOffices.includes(o.id)).slice(0,8), [availableOffices, selectedChartOffices]);
+  const visibleIds = useMemo(
+    () => new Set(getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis)),
+    [state.customKpis, state.fieldDefinitions, state.hiddenKpis]
+  );
   const additionalKpis = useMemo(() => {
     const alreadyShown = new Set(['visitors', 'vehicles', 'deaths', 'violations', 'events', 'emergencies']);
-    const visible = getVisibleKpiIds(state.customKpis, state.fieldDefinitions, state.hiddenKpis)
-      .filter(id => !alreadyShown.has(id));
+    const visible = [...visibleIds].filter(id => !alreadyShown.has(id));
     const catalog = getEffectiveKpiCatalog(state.fieldDefinitions);
     return visible.map(id => catalog.find(k => k.id === id)).filter(Boolean);
-  }, [state.customKpis, state.fieldDefinitions, state.hiddenKpis]);
+  }, [visibleIds, state.fieldDefinitions]);
 
   const hasAnyData = state.todayReports.length > 0 || state.historicalReports.length > 0;
 
