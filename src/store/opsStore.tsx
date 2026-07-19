@@ -184,8 +184,9 @@ function reducer(state: OpsState, action: Action): OpsState {
     }
     case 'ADD_REPORT': {
       const todayReports = state.todayReports.filter(r => r.officeId !== action.report.officeId);
-      const newAct = { id: `a-${Date.now()}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
-      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
+      const newAct = { id: `a-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
+      const isMine = state.currentUser?.id === action.report.submittedBy;
+      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 50), unreadNotifications: isMine ? state.unreadNotifications : state.unreadNotifications + 1 };
     }
     case 'REMOVE_REPORT': return { ...state, todayReports: state.todayReports.filter(r => r.id !== action.id) };
     case 'ADD_EMERGENCY': {
