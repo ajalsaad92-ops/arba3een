@@ -35,7 +35,7 @@ interface OpsState {
   hiddenKpis: string[];
   dateRange: { from: string; to: string } | null;
   unreadNotifications: number;
-  lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'system'; text: string; officeId?: string; createdAt: string; read?: boolean }[];
+  lastActivity: { id: string; type: 'report' | 'emergency' | 'extension' | 'frozen' | 'system'; text: string; officeId?: string; createdAt: string; read?: boolean; targetPath?: string }[];
   loadingFlags: Record<string, boolean>;
   errors: Record<string, string | null>;
 }
@@ -184,8 +184,9 @@ function reducer(state: OpsState, action: Action): OpsState {
     }
     case 'ADD_REPORT': {
       const todayReports = state.todayReports.filter(r => r.officeId !== action.report.officeId);
-      const newAct = { id: `a-${Date.now()}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
-      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 50) };
+      const newAct = { id: `a-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, type: 'report' as const, text: `${action.report.officeId} - تقرير جديد`, officeId: action.report.officeId, createdAt: new Date().toISOString() };
+      const isMine = state.currentUser?.id === action.report.submittedBy;
+      return { ...state, todayReports: [...todayReports, action.report], lastActivity: [newAct, ...state.lastActivity].slice(0, 50), unreadNotifications: isMine ? state.unreadNotifications : state.unreadNotifications + 1 };
     }
     case 'REMOVE_REPORT': return { ...state, todayReports: state.todayReports.filter(r => r.id !== action.id) };
     case 'ADD_EMERGENCY': {
@@ -226,7 +227,7 @@ function reducer(state: OpsState, action: Action): OpsState {
     case 'ADD_USER': return { ...state, users: [...state.users, action.user] };
     case 'UPDATE_USER': return { ...state, users: state.users.map(u => u.id === action.id ? { ...u, ...action.patch } : u) };
     case 'ADD_BORDER_CROSSING': return { ...state, borderCrossings: [...state.borderCrossings, action.crossing] };
-    case 'ADD_ACTIVITY': return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50) };
+    case 'ADD_ACTIVITY': return { ...state, lastActivity: [action.activity, ...state.lastActivity].slice(0, 50), unreadNotifications: state.unreadNotifications + 1 };
     case 'MARK_NOTIFICATION_READ': return { ...state, lastActivity: state.lastActivity.map(a => a.id === action.id ? { ...a, read: true } : a), unreadNotifications: Math.max(0, state.unreadNotifications - 1) };
     case 'MARK_ALL_NOTIFICATIONS_READ': return { ...state, lastActivity: state.lastActivity.map(a => ({ ...a, read: true })), unreadNotifications: 0 };
     case 'CLEAR_UNREAD': return { ...state, unreadNotifications: 0 };
@@ -443,7 +444,30 @@ export function OpsProvider({ children }: { children: ReactNode }) {
             specialPermissions: upd.special_permissions ?? undefined,
             isActive: upd.is_active,
           }});
-        }
+        },
+        onFrozenRequestChange: ev => {
+          const r = ev.new; if (!r) return;
+          const me = currentUserRef.current; if (!me) return;
+          const role = me.role;
+          const isApprover = role === 'supervisor' || role === 'director';
+          const isRequester = r.requestedById === me.id;
+          const act = (text: string) => dispatch({ type: 'ADD_ACTIVITY', activity: {
+            id: `fz-${r.id}-${ev.type}-${Date.now()}`, type: 'frozen', text,
+            officeId: r.officeId, createdAt: new Date().toISOString(), targetPath: '/frozen-requests',
+          }});
+          if (ev.type === 'INSERT' && isApprover && !isRequester) {
+            alert('extension', '🔒 طلب تعديل حقل مجمّد', `${r.fieldLabelAr || r.fieldKey} — ${r.requestedByName || ''}`);
+            act(`طلب تعديل حقل مجمّد: ${r.fieldLabelAr || r.fieldKey}`);
+          } else if (ev.type === 'UPDATE' && isRequester) {
+            if (r.status === 'approved') {
+              alert('report', '✅ تمت الموافقة على تعديل الحقل', `${r.fieldLabelAr || r.fieldKey}`);
+              act(`تمت الموافقة على تعديل: ${r.fieldLabelAr || r.fieldKey}`);
+            } else if (r.status === 'rejected') {
+              alert('system', '❌ رُفض طلب تعديل الحقل', `${r.fieldLabelAr || r.fieldKey}`);
+              act(`رُفض طلب تعديل: ${r.fieldLabelAr || r.fieldKey}`);
+            }
+          }
+        },
       });
     })();
     return () => { cancelled = true; unsub(); };

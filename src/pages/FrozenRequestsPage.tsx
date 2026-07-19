@@ -15,8 +15,8 @@ function fmtVal(v: any): string {
 }
 
 const STATUS_META: Record<FrozenFieldChangeRequest['status'], { label: string; cls: string }> = {
-  pending_supervisor: { label: 'بانتظار المشرف', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-  pending_director:   { label: 'بانتظار المدير العام', cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
+  pending_supervisor: { label: 'قيد الانتظار', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+  pending_director:   { label: 'قيد الانتظار', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
   approved:           { label: 'تمت الموافقة', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
   rejected:           { label: 'مرفوض', cls: 'bg-red-500/15 text-red-300 border-red-500/30' },
 };
@@ -45,21 +45,17 @@ export default function FrozenRequestsPage() {
   const filtered = useMemo(() => {
     if (tab === 'mine') return items.filter(r => r.requestedById === user.id);
     if (tab === 'done') return items.filter(r => r.status === 'approved' || r.status === 'rejected');
-    // pending
-    return items.filter(r =>
-      isDirector ? r.status === 'pending_director' :
-      isSupervisor ? r.status === 'pending_supervisor' :
-      false
-    );
-  }, [items, tab, user.id, isDirector, isSupervisor]);
+    // pending: any pending request is visible to both supervisor and director.
+    return items.filter(r => r.status === 'pending_supervisor' || r.status === 'pending_director');
+  }, [items, tab, user.id]);
 
   const approve = async (r: FrozenFieldChangeRequest) => {
     if (!isDirector && !isSupervisor) return;
     setBusyId(r.id);
     const t = toast.loading('جاري الموافقة...');
     try {
-      await api.approveFrozenRequest(r.id, user.id, isDirector && r.status === 'pending_director' ? 'director' : 'supervisor');
-      toast.success('تمت الموافقة', { id: t });
+      await api.approveFrozenRequest(r.id, user.id, isDirector ? 'director' : 'supervisor');
+      toast.success('تمت الموافقة وتطبيق التعديل', { id: t });
       await load();
     } catch (e: any) { toast.error(e?.message || 'فشل', { id: t }); }
     finally { setBusyId(null); }
@@ -87,7 +83,7 @@ export default function FrozenRequestsPage() {
           <div>
             <div className="text-2xl font-display font-black text-blue-300">طلبات تعديل الحقول المجمّدة</div>
             <div className="text-xs text-slate-400 mt-0.5">
-              الحقول المجمّدة تُدخل مرة واحدة وتُقفل. أي تعديل لاحق يتطلب موافقة المشرف ثم المدير العام.
+              الحقول المجمّدة تُدخل مرة واحدة وتُقفل. أي تعديل لاحق يحتاج إلى موافقة المشرف أو المدير العام (أحدهما يكفي).
             </div>
           </div>
         </div>
@@ -117,8 +113,8 @@ export default function FrozenRequestsPage() {
             {filtered.map(r => {
               const sm = STATUS_META[r.status];
               const off = officeById(r.officeId);
-              const canAct = (r.status === 'pending_supervisor' && (isSupervisor || isDirector))
-                          || (r.status === 'pending_director' && isDirector);
+              const canAct = (isSupervisor || isDirector) &&
+                (r.status === 'pending_supervisor' || r.status === 'pending_director');
               return (
                 <div key={r.id} className="bg-[#1a1a1a] border border-[#232323] rounded-xl p-4">
                   <div className="flex items-start gap-3 flex-wrap">

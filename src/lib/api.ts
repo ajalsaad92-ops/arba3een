@@ -671,6 +671,7 @@ export const api = {
     onAgentLocationChange?: (payload: AgentLocation) => void;
     onBorderCrossingChange?: (payload: BorderCrossing) => void;
     onProfileChange?: (payload: any) => void;
+    onFrozenRequestChange?: (payload: { type: string; new?: import('../data/types').FrozenFieldChangeRequest; old?: import('../data/types').FrozenFieldChangeRequest }) => void;
   }): () => void {
     const mapRow = (table: string, row: any) => {
       if (!row) return row;
@@ -712,6 +713,14 @@ export const api = {
     if (callbacks.onProfileChange) {
       ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' },
         (p: any) => callbacks.onProfileChange!(p));
+    }
+    if (callbacks.onFrozenRequestChange) {
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: 'frozen_field_change_requests' },
+        (p: any) => callbacks.onFrozenRequestChange!({
+          type: p.eventType,
+          new: p.new ? rowToFrozenRequest(p.new) : undefined,
+          old: p.old ? rowToFrozenRequest(p.old) : undefined,
+        }));
     }
     ch.subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -815,20 +824,19 @@ export const api = {
   async approveFrozenRequest(reqId: string, approverId: string, asRole: 'supervisor' | 'director'): Promise<import('../data/types').FrozenFieldChangeRequest> {
     const { data: cur, error: e1 } = await supabase.from('frozen_field_change_requests').select('*').eq('id', reqId).single();
     if (e1) throw e1;
+    if (cur.status === 'approved' || cur.status === 'rejected') throw new Error('الطلب حُسم مسبقاً');
     const now = new Date().toISOString();
-    let patch: any = {};
-    if (asRole === 'supervisor') {
-      if (cur.status !== 'pending_supervisor') throw new Error('الطلب ليس بانتظار موافقة المشرف');
-      patch = { status: 'pending_director', supervisor_approved_by: approverId, supervisor_approved_at: now };
-    } else {
-      if (cur.status !== 'pending_director') throw new Error('الطلب ليس بانتظار موافقة المدير العام');
-      patch = { status: 'approved', director_approved_by: approverId, director_approved_at: now, applied_at: now };
-    }
+    // Single-approver flow: either supervisor OR director can approve.
+    const patch: any = {
+      status: 'approved',
+      applied_at: now,
+      ...(asRole === 'director'
+        ? { director_approved_by: approverId, director_approved_at: now }
+        : { supervisor_approved_by: approverId, supervisor_approved_at: now }),
+    };
     const { data, error } = await supabase.from('frozen_field_change_requests').update(patch).eq('id', reqId).select('*').single();
     if (error) throw error;
-    if (asRole === 'director') {
-      await applyFrozenChange(data);
-    }
+    await applyFrozenChange(data);
     return rowToFrozenRequest(data);
   },
 
